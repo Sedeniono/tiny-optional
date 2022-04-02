@@ -38,9 +38,9 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{67f2dcfe-b0f2-429f-864e-aa7962bc981f}</ProjectGuid>
-    <RootNamespace>TinyOptionalTests</RootNamespace>
+    <RootNamespace>Tests</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>TinyOptionalTests</ProjectName>
+    <ProjectName>Tests</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Debug C++17|Win32'" Label="Configuration">
@@ -129,52 +129,52 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Debug C++17|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Debug C++20|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Release C++17|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Release C++20|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Debug C++17|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Debug C++20|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Release C++17|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Release C++20|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)bin\$(Configuration) $(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)bin\$(Configuration) $(Platform)\obj\</IntDir>
+    <OutDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\bin\$(Configuration) $(Platform)\obj\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Msvc Debug C++17|Win32'">
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -186,10 +186,10 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -203,12 +203,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ControlFlowGuard>false</ControlFlowGuard>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -224,12 +224,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars32.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ControlFlowGuard>false</ControlFlowGuard>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -243,13 +243,13 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <ControlFlowGuard>false</ControlFlowGuard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -261,13 +261,13 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <ControlFlowGuard>false</ControlFlowGuard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -281,12 +281,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++17 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -302,12 +302,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR=R"?($(SolutionDir)../include)?";TINY_OPTIONAL_TESTS_COMPILATION_FLAGS="/std:c++20 /permissive-";TINY_OPTIONAL_TESTS_VC_INSTALL_DIR=R"?($(VCInstallDir))?";TINY_OPTIONAL_TESTS_VCVARS_NAME="vcvars64.bat";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
