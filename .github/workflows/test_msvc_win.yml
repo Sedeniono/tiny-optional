@@ -22,7 +22,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.1
     - name: Build
       working-directory: ${{env.TEST_DIR}}
-      run: msbuild /p:Configuration="Msvc Debug C++17" /p:Platform=x64 tiny-optional.sln
+      run: msbuild /m /p:Configuration="Msvc Debug C++17" /p:Platform=x64 tiny-optional.sln
     - name: Execute
       working-directory: ${{env.TEST_DIR}}
       run: |

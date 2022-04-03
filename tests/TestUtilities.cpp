@@ -199,6 +199,12 @@ std::filesystem::path CreateTemporaryCodeFile(std::string const & code)
     throw std::runtime_error("Failed to write to temporary code file: " + tempFile.string());
   }
 
+  out.close();
+
+  if (!std::filesystem::exists(tempFile)) {
+    throw std::runtime_error("Written temporary file does not exist after writing: " + tempFile.string());
+  }
+
   return std::filesystem::absolute(tempFile);
 }
 
