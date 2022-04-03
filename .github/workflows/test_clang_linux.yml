@@ -18,6 +18,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Build and run clang64cpp20
-      run: make clang64cpp20
+    - name: Build and run clang_x64_cpp17_gcclib
+      run: make clang_x64_cpp17_gcclib
       
