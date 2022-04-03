@@ -52,7 +52,6 @@ auto MsvcCompilationChecks::PerformCompilation(std::string const & code) const -
           "\"" + mVcvarsBatFile.string() + "\"" + " "
         // Second command: Change working directory to where the temporary file is located.
         + "&& cd /D \"" + tempDirectory.string() + "\" "
-        + "&& dir "
         // Third command: Compile. 
         // /c causes the link step to be skipped.
         + "&& cl.exe "
