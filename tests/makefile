@@ -41,12 +41,12 @@ clang_x64_cpp17_gcclib: $(CPP_FILES)
 	$(CXX_AND_RUN_COMMAND)
 
 
-gcc64cpp20: $(CPP_FILES)
+gcc_x64_cpp20: $(CPP_FILES)
 	$(eval CXX = $(CXX_GCC))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -Wno-deprecated-copy)
 	$(CXX_AND_RUN_COMMAND)
 
-gcc64cpp17: $(CPP_FILES)
+gcc_x64_cpp17: $(CPP_FILES)
 	$(eval CXX = $(CXX_GCC))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -Wno-deprecated-copy)
 	$(CXX_AND_RUN_COMMAND)
