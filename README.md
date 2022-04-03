@@ -1,5 +1,9 @@
 # tiny::optional
 
+![tests of gcc on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_linux.yml/badge.svg)
+![tests of clang on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_linux.yml/badge.svg)
+
+
 ## Introduction
 The goal of this library is to provide the functionality of `std::optional` while not unnecessarily wasting any memory for 
 * types with unused bits (`double`, `bool`, ...), or 
