@@ -50,6 +50,8 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
   //-----------------------------
   // Run the program.
 
+  std::cerr << "MSVC: ExecuteProgramSync 1" << std::endl;
+
   SECURITY_ATTRIBUTES saAttr;
   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
   saAttr.bInheritHandle = TRUE;
@@ -81,6 +83,8 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
   siStartInfo.hStdOutput = hWriteToChild;
   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
+  std::cerr << "MSVC: ExecuteProgramSync 2" << std::endl;
+
   std::string commandlineCopy = commandline;
   BOOL const bSuccess = CreateProcessA(
       NULL,
@@ -94,6 +98,8 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
       &siStartInfo, // STARTUPINFO pointer
       &piProcInfo); // receives PROCESS_INFORMATION
 
+  std::cerr << "MSVC: ExecuteProgramSync 3" << std::endl;
+
   if (!bSuccess) {
     throw std::runtime_error("CreateProcess failed with error code " + std::to_string(::GetLastError()));
   }
@@ -104,7 +110,7 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
 
   //-----------------------------
   // Read stdout and stdderr until the process terminates.
-
+  std::cerr << "MSVC: ExecuteProgramSync 4" << std::endl;
   std::string receivedOutput;
 
   {
@@ -121,7 +127,7 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
       receivedOutput += std::string(chBuf, dwRead);
     }
   }
-
+  std::cerr << "MSVC: ExecuteProgramSync 5" << std::endl;
   //-----------------------------
   // Check exit code of the process.
 
@@ -132,7 +138,7 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
   if (exitCode == STILL_ACTIVE) {
     throw std::runtime_error("Process did not exit yet although it should have.");
   }
-
+  std::cerr << "MSVC: ExecuteProgramSync 6" << std::endl;
   return ExecutionResult{commandline, static_cast<int>(exitCode), std::move(receivedOutput)};
 }
 
