@@ -51,7 +51,7 @@ auto MsvcCompilationChecks::PerformCompilation(std::string const & code) const -
         // First command: Execute the batch that imports all the necessary environment variables required by cl.exe to actually work.
           "\"" + mVcvarsBatFile.string() + "\"" + " "
         // Second command: Change working directory to where the temporary file is located.
-        + "&& cd \"" + tempDirectory.string() + "\" "
+        + "&& cd /D \"" + tempDirectory.string() + "\" "
         + "&& dir "
         // Third command: Compile. 
         // /c causes the link step to be skipped.
