@@ -1,6 +1,5 @@
 PWD = $(shell pwd)
 CXX_CLANG = clang++
-CXX_GCC = g++
 
 BIN_DIR = ../bin
 EXE_NAME = TinyOptionalTests
@@ -41,12 +40,13 @@ clang_x64_cpp17_gcclib: $(CPP_FILES)
 	$(CXX_AND_RUN_COMMAND)
 
 
+# The default compiler on github actions is currently g++-9, which does not yet support C++20.
 gcc_x64_cpp20: $(CPP_FILES)
-	$(eval CXX = $(CXX_GCC))
+	$(eval CXX = g++-10)
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -Wno-deprecated-copy)
 	$(CXX_AND_RUN_COMMAND)
 
 gcc_x64_cpp17: $(CPP_FILES)
-	$(eval CXX = $(CXX_GCC))
+	$(eval CXX = g++)
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -Wno-deprecated-copy)
 	$(CXX_AND_RUN_COMMAND)

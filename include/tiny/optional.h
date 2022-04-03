@@ -130,19 +130,18 @@ namespace impl
     static_assert(std::is_integral_v<TargetT>);
     static_assert(std::is_integral_v<SourceT>);
 
-    constexpr TargetT targetMin = std::numeric_limits<TargetT>::lowest();
-    constexpr TargetT targetMax = std::numeric_limits<TargetT>::max();
-
     if constexpr (std::is_signed_v<TargetT> == std::is_signed_v<SourceT>) {
       using CommonT = std::common_type_t<TargetT, SourceT>;
-      return static_cast<CommonT>(targetMin) <= static_cast<CommonT>(value)
-             && static_cast<CommonT>(value) <= static_cast<CommonT>(targetMax);
+      return static_cast<CommonT>(std::numeric_limits<TargetT>::lowest()) <= static_cast<CommonT>(value)
+             && static_cast<CommonT>(value) <= static_cast<CommonT>(std::numeric_limits<TargetT>::max());
     }
     else if constexpr (std::is_signed_v<SourceT>) {
       // Source = signed, target = unsigned
       return value >= 0 && IsIntegralInRange<TargetT>(static_cast<std::make_unsigned_t<SourceT>>(value));
     }
     else {
+      constexpr TargetT targetMax = std::numeric_limits<TargetT>::max();
+
       // Source = unsigned, target = signed
       static_assert(std::is_signed_v<TargetT>);
       static_assert(targetMax > 0);
