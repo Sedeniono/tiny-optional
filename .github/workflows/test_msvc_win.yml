@@ -25,4 +25,5 @@ jobs:
       run: msbuild /p:Configuration="Msvc Debug C++17" /p:Platform=x64 tiny-optional.sln
     - name: Execute
       working-directory: ${{env.TEST_DIR}}
-      run: & "..\bin\Msvc Debug C++17 x64\Tests.exe"
+      run: |
+        & "../bin/Msvc Debug C++17 x64/Tests.exe"
