@@ -1,0 +1,28 @@
+name: msvc windows
+
+on:
+  #push:
+  #  branches: [ main ]
+  #pull_request:
+  #  branches: [ main ]
+  workflow_dispatch:
+
+
+env:
+  TEST_DIR: tests
+
+
+jobs:
+  # Several jobs instead of steps to run them in parallel
+  msvc_x64_debug_cpp17:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+    - name: Build
+      working-directory: ${{env.TEST_DIR}}
+      run: msbuild /p:Configuration="Msvc Debug C++17" /p:Platform=x64 tiny-optional.sln
+    - name: Execute
+      working-directory: ${{env.TEST_DIR}}
+      run: "..\bin\Msvc Debug C++17 x64\Tests.exe"

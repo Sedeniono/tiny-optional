@@ -7,6 +7,11 @@ on:
     branches: [ main ]
   workflow_dispatch:
   
+  
+env:
+  TEST_DIR: ./tests
+
+
 jobs:
   # Several jobs instead of steps to run them in parallel
   gcc_x64_cpp20:
@@ -14,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build and run gcc_x64_cpp20
-      working-directory: ./tests
+      working-directory: ${{env.TEST_DIR}}
       run: make gcc_x64_cpp20
       
   gcc_x64_cpp17:
@@ -22,6 +27,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build and run gcc_x64_cpp17
-      working-directory: ./tests
+      working-directory: ${{env.TEST_DIR}}
       run: make gcc_x64_cpp17
    
