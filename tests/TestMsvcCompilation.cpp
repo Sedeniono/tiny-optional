@@ -66,7 +66,10 @@ auto MsvcCompilationChecks::PerformCompilation(std::string const & code) const -
   ;
   // clang-format on
 
-  return ExecuteProgramSync(batchCmd);
+  std::cerr << "MSVC: Before ExecuteProgramSync" << std::endl;
+  auto result = ExecuteProgramSync(batchCmd);
+  std::cerr << "MSVC: After ExecuteProgramSync" << std::endl;
+  return result;
 }
 
 
