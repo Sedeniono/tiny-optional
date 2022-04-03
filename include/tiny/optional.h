@@ -22,7 +22,10 @@
   #define TINY_OPTIONAL_HAS_BIT_CAST
 #elif __cplusplus >= 202002L
   // clang libc++ only support std::bit_cast starting with clang 14.
-  #if !defined(_LIBCPP_VERSION) || _LIBCPP_VERSION >= 14000
+  #if defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 14000
+    #define TINY_OPTIONAL_HAS_BIT_CAST
+  // gcc libstdc++ supports std::bit_cast starting with gcc 11.
+  #elif defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE >= 11
     #define TINY_OPTIONAL_HAS_BIT_CAST
   #endif
 #endif

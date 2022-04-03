@@ -17,11 +17,11 @@ jobs:
       working-directory: ./tests
       run: make clang_x64_cpp17_gcclib
       
-  # clang_x64_cpp20_gcclib:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - name: Build and run clang_x64_cpp20_gcclib
-  #     working-directory: ./tests
-  #     run: make clang_x64_cpp20_gcclib
+  clang_x64_cpp20_gcclib:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build and run clang_x64_cpp20_gcclib
+      working-directory: ./tests
+      run: make clang_x64_cpp20_gcclib
     
