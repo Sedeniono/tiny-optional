@@ -1,0 +1,23 @@
+name: clang linux
+
+on:
+  #push:
+  #  branches: [ main ]
+  #pull_request:
+  #  branches: [ main ]
+  workflow_dispatch:
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./tests
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build and run clang64cpp20
+      run: make clang64cpp20
+      

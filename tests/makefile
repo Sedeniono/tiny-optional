@@ -12,30 +12,33 @@ TINY_OPTIONAL_INCLUDE_DIR = $(PWD)/../include
 CPP_FILES = Tests.cpp TestCompilationBase.cpp TestGccLikeCompilation.cpp TestMsvcCompilation.cpp TestUtilities.cpp
 
 
-CXX_COMMAND = mkdir -p $(OUT_DIR)   &&   $(CXX) -o $(OUT_DIR)/$(EXE_NAME) -I"$(TINY_OPTIONAL_INCLUDE_DIR)" $(ADDITIONAL_FLAGS) $(WARNING_FLAGS) $(SANITIZE_FLAGS) -pthread -DTINY_OPTIONAL_TESTS_COMPILER_EXECUTABLE='"$(CXX)"' -DTINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR='"$(TINY_OPTIONAL_INCLUDE_DIR)"' -DTINY_OPTIONAL_TESTS_COMPILATION_FLAGS='"$(ADDITIONAL_FLAGS) $(WARNING_FLAGS)"' $(CPP_FILES)
+CXX_AND_RUN_COMMAND = \
+	mkdir -p $(OUT_DIR) \
+	&&   $(CXX) -o $(OUT_DIR)/$(EXE_NAME) -I"$(TINY_OPTIONAL_INCLUDE_DIR)" $(ADDITIONAL_FLAGS) $(WARNING_FLAGS) $(SANITIZE_FLAGS) -pthread -DTINY_OPTIONAL_TESTS_COMPILER_EXECUTABLE='"$(CXX)"' -DTINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR='"$(TINY_OPTIONAL_INCLUDE_DIR)"' -DTINY_OPTIONAL_TESTS_COMPILATION_FLAGS='"$(ADDITIONAL_FLAGS) $(WARNING_FLAGS)"' $(CPP_FILES) \
+	&&   $(OUT_DIR)/$(EXE_NAME)
 
 
 clang64cpp20: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -stdlib=libc++)
 	$(eval OUT_DIR = $(BIN_DIR)/linux_clang_C++20_x64)
-	$(CXX_COMMAND)
+	$(CXX_AND_RUN_COMMAND)
 	
 clang64cpp17: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -stdlib=libc++)
 	$(eval OUT_DIR = $(BIN_DIR)/linux_clang_C++17_x64)
-	$(CXX_COMMAND)
+	$(CXX_AND_RUN_COMMAND)
 
 
 gcc64cpp20: $(CPP_FILES)
 	$(eval CXX = $(CXX_GCC))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -Wno-deprecated-copy)
 	$(eval OUT_DIR = $(BIN_DIR)/linux_gcc_C++20_x64)
-	$(CXX_COMMAND)
+	$(CXX_AND_RUN_COMMAND)
 
 gcc64cpp17: $(CPP_FILES)
 	$(eval CXX = $(CXX_GCC))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -Wno-deprecated-copy)
 	$(eval OUT_DIR = $(BIN_DIR)/linux_gcc_C++17_x64)
-	$(CXX_COMMAND)
+	$(CXX_AND_RUN_COMMAND)
