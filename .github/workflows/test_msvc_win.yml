@@ -2,7 +2,7 @@ name: msvc windows
 
 on:
   push:
-    branches: [ main, ActionsMSVCTests ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
