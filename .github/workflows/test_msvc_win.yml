@@ -28,16 +28,16 @@ jobs:
       run: |
         & "../bin/Msvc Debug C++17 x64/Tests.exe"
 
-  #msvc_x64_debug_cpp20:
-  #  runs-on: windows-latest
-  #  steps:
-  #  - uses: actions/checkout@v3
-  #  - name: Add MSBuild to PATH
-  #    uses: microsoft/setup-msbuild@v1.1
-  #  - name: Build
-  #    working-directory: ${{env.TEST_DIR}}
-  #    run: msbuild /m /p:Configuration="Msvc Debug C++20" /p:Platform=x64 tiny-optional.sln
-  #  - name: Execute
-  #    working-directory: ${{env.TEST_DIR}}
-  #    run: |
-  #      & "../bin/Msvc Debug C++20 x64/Tests.exe"
+  msvc_x64_debug_cpp20:
+   runs-on: windows-latest
+   steps:
+   - uses: actions/checkout@v3
+   - name: Add MSBuild to PATH
+     uses: microsoft/setup-msbuild@v1.1
+   - name: Build
+     working-directory: ${{env.TEST_DIR}}
+     run: msbuild /m /p:Configuration="Msvc Debug C++20" /p:Platform=x64 tiny-optional.sln
+   - name: Execute
+     working-directory: ${{env.TEST_DIR}}
+     run: |
+       & "../bin/Msvc Debug C++20 x64/Tests.exe"
