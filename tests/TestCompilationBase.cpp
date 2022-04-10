@@ -14,26 +14,20 @@ std::string CompilationChecksBase::CheckDoesNotCompile(
 {
   std::string const code = CompleteCppCodeSnippet(codeSnippet);
   ExecutionResult const result = PerformCompilation(code);
-  std::cerr << "MSVC: After PerformCompilation " << std::endl;
 
   // 0 means the compilation succeeded, but we expect a failure.
   if (result.exitCode == 0) {
-    std::cerr << "MSVC: exit code " << std::endl;
     return "ERROR: The compilation succeeded unexpectedly (exit code == " + std::to_string(result.exitCode)
            + "). Expected that it fails and includes the regex \"" + expectedRegex + "\" in the compiler's output.\n"
            + FormatInfo(code, result);
   }
   else {
-    std::cerr << "MSVC: before regex" << std::endl;
     std::regex r(expectedRegex);
-    std::cerr << "MSVC: after construction regex" << std::endl;
     bool const foundExpected = std::regex_search(result.output, r);
-    std::cerr << "MSVC: after regex_search" << std::endl;
     if (!foundExpected) {
       return "ERROR: Failed to find the expected regex \"" + expectedRegex + "\" in the compiler's output.\n"
              + FormatInfo(code, result);
     }
-    std::cerr << "MSVC: foundExpected" << std::endl;
   }
 
   return {};

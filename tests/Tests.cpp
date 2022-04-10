@@ -1809,10 +1809,7 @@ void test_ExpressionsThatShouldNotCompile()
   for (auto check : checks) {
     auto threadFunc = [&checker, check]() -> std::string {
       auto const & [toCompile, expectedErrorRegex] = check;
-      std::cerr << "before CheckDoesNotCompile" << std::endl;
-      auto result = checker->CheckDoesNotCompile(toCompile, expectedErrorRegex);
-      std::cerr << "after CheckDoesNotCompile" << std::endl;
-      return result;
+      return checker->CheckDoesNotCompile(toCompile, expectedErrorRegex);
     };
 
     checkResults.push_back(std::async(cRunSerial ? std::launch::deferred : std::launch::async, std::move(threadFunc)));
@@ -1822,9 +1819,7 @@ void test_ExpressionsThatShouldNotCompile()
   bool foundFailure = false;
   for (size_t idx = 0; idx < checkResults.size(); ++idx) {
     std::cout << "\tCompilation check " << idx + 1 << "/" << checks.size() << std::endl;
-    std::cerr << "before checkResults.get()" << std::endl;
     auto const result = checkResults.at(idx).get();
-    std::cerr << "after checkResults.get()" << std::endl;
     if (!result.empty()) {
       if (foundFailure) {
         std::cerr << "========================================\n";

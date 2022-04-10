@@ -35,11 +35,9 @@ void MsvcCompilationChecks::PrintInputOptions(std::ostream & out) const
 auto MsvcCompilationChecks::PerformCompilation(std::string const & code) const -> ExecutionResult
 {
   // cl.exe cannot read from stdin, so we need to put the code into a temporary file.
-  std::cerr << "MSVC: Creating temporary file" << std::endl;
   WindowsTemporaryCodeFileScope tempFileScope(code);
   auto const tempCodeFilename = tempFileScope.GetFilename();
   auto const tempDirectory = tempFileScope.GetDirectory();
-  std::cerr << "MSVC: Created temporary file: " << tempFileScope.GetFullFilename() << std::endl;
 
   // clang-format off
   // 
@@ -66,10 +64,7 @@ auto MsvcCompilationChecks::PerformCompilation(std::string const & code) const -
   ;
   // clang-format on
 
-  std::cerr << "MSVC: Before ExecuteProgramSync" << std::endl;
-  auto result = ExecuteProgramSync(batchCmd);
-  std::cerr << "MSVC: After ExecuteProgramSync" << std::endl;
-  return result;
+  return ExecuteProgramSync(batchCmd);
 }
 
 
