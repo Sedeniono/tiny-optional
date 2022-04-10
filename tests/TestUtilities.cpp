@@ -104,7 +104,6 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
 
   //-----------------------------
   // Read stdout and stdderr until the process terminates.
-
   std::string receivedOutput;
 
   {
@@ -132,7 +131,6 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
   if (exitCode == STILL_ACTIVE) {
     throw std::runtime_error("Process did not exit yet although it should have.");
   }
-
   return ExecutionResult{commandline, static_cast<int>(exitCode), std::move(receivedOutput)};
 }
 
@@ -220,7 +218,25 @@ WindowsTemporaryCodeFileScope ::~WindowsTemporaryCodeFileScope()
 {
   auto const tempDir = GetDirectory();
   if (std::filesystem::is_directory(tempDir)) {
-    std::filesystem::remove_all(tempDir);
+    // Try several times to remove the directory. It often happens that files that were opened by now exited processes
+    // are still locked for a short amount of time.
+    std::error_code ec;
+    size_t attempt = 0;
+    do {
+      if (attempt > 0) {
+        Sleep(1000);
+      }
+      ec = {};
+      std::uintmax_t const result = std::filesystem::remove_all(tempDir, ec);
+      ++attempt;
+    }
+    while (ec && attempt < 60);
+
+    if (ec) {
+      // Stop the tests. Note that we cannot throw an exception from within a destructor.
+      std::cerr << "Error: Failed to remove temporary directory '" << tempDir << "' after several attempts." << std::endl;
+      terminate();
+    }
   }
 }
 

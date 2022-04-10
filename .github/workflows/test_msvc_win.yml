@@ -2,7 +2,7 @@ name: msvc windows
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, ActionsMSVCTests ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -10,14 +10,13 @@ on:
 
 env:
   TEST_DIR: tests
-  TIMEOUT_IN_MINUTES: 10
 
 
 jobs:
   # Several jobs instead of steps to run them in parallel
   msvc_x64_debug_cpp17:
     runs-on: windows-latest
-    timeout-minutes: ${{env.TIMEOUT_IN_MINUTES}}
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v3
     - name: Add MSBuild to PATH
@@ -32,7 +31,7 @@ jobs:
 
   msvc_x64_debug_cpp20:
    runs-on: windows-latest
-   timeout-minutes: ${{env.TIMEOUT_IN_MINUTES}}
+   timeout-minutes: 10
    steps:
    - uses: actions/checkout@v3
    - name: Add MSBuild to PATH
