@@ -227,7 +227,7 @@ WindowsTemporaryCodeFileScope ::~WindowsTemporaryCodeFileScope()
         Sleep(1000);
       }
       ec = {};
-      std::uintmax_t const result = std::filesystem::remove_all(tempDir, ec);
+      std::filesystem::remove_all(tempDir, ec);
       ++attempt;
     }
     while (ec && attempt < 60);
