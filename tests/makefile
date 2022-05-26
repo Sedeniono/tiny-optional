@@ -1,5 +1,6 @@
 PWD = $(shell pwd)
-CXX_CLANG = clang++
+CXX_CLANG ?= clang++
+CXX_GCC ?= g++
 
 BIN_DIR = ../bin
 EXE_NAME = TinyOptionalTests
@@ -18,35 +19,94 @@ CXX_AND_RUN_COMMAND = \
 	&&   $(OUT_DIR)/$(EXE_NAME)
 
 
-clang_x64_cpp20_libcpp: $(CPP_FILES)
+#---------------------------------------------------------------------
+# clang
+#---------------------------------------------------------------------
+
+clang_x64_cpp20_libcpp_debug: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -stdlib=libc++)
 	$(CXX_AND_RUN_COMMAND)
 	
-clang_x64_cpp17_libcpp: $(CPP_FILES)
+clang_x64_cpp17_libcpp_debug: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -stdlib=libc++)
 	$(CXX_AND_RUN_COMMAND)
 
+clang_x64_cpp17_libcpp_release: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -O3 -DNDEBUG -stdlib=libc++)
+	$(CXX_AND_RUN_COMMAND)
 
-clang_x64_cpp20_gcclib: $(CPP_FILES)
+clang_x64_cpp20_libcpp_release: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -O3 -DNDEBUG -stdlib=libc++)
+	$(CXX_AND_RUN_COMMAND)
+
+
+clang_x86_cpp20_libcpp_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m32 -std=c++20 -stdlib=libc++)
+	$(CXX_AND_RUN_COMMAND)
+	
+clang_x86_cpp17_libcpp_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m32 -std=c++17 -stdlib=libc++)
+	$(CXX_AND_RUN_COMMAND)
+
+
+clang_x64_cpp20_gcclib_debug: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -stdlib=libstdc++)
 	$(CXX_AND_RUN_COMMAND)
 	
-clang_x64_cpp17_gcclib: $(CPP_FILES)
+clang_x64_cpp17_gcclib_debug: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -stdlib=libstdc++)
 	$(CXX_AND_RUN_COMMAND)
 
 
-# The default compiler on github actions is currently g++-9, which does not yet support C++20.
-gcc_x64_cpp20: $(CPP_FILES)
-	$(eval CXX = g++-10)
-	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -Wno-deprecated-copy)
+
+#---------------------------------------------------------------------
+# gcc
+#---------------------------------------------------------------------
+
+gcc_x64_cpp20_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20)
 	$(CXX_AND_RUN_COMMAND)
 
-gcc_x64_cpp17: $(CPP_FILES)
-	$(eval CXX = g++)
-	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -Wno-deprecated-copy)
+gcc_x64_cpp17_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17)
 	$(CXX_AND_RUN_COMMAND)
+
+gcc_x86_cpp20_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m32 -std=c++20)
+	$(CXX_AND_RUN_COMMAND)
+
+gcc_x86_cpp17_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m32 -std=c++17)
+	$(CXX_AND_RUN_COMMAND)
+
+gcc_x64_cpp20_release: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -O3 -DNDEBUG)
+	$(CXX_AND_RUN_COMMAND)
+	
+gcc_x64_cpp17_release: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -O3 -DNDEBUG)
+	$(CXX_AND_RUN_COMMAND)
+
+
+#---------------------------------------------------------------------
+# generic version, used by the github actions
+# Expects that CXX and ADDITIONAL_FLAGS are set from the environment.
+#---------------------------------------------------------------------
+
+generic: $(CPP_FILES)
+	$(CXX_AND_RUN_COMMAND)
+

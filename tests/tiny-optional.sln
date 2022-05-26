@@ -7,32 +7,32 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests.vcxproj", "{
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Msvc Debug C++17|Win32 = Msvc Debug C++17|Win32
 		Msvc Debug C++17|x64 = Msvc Debug C++17|x64
-		Msvc Debug C++17|x86 = Msvc Debug C++17|x86
+		Msvc Debug C++20|Win32 = Msvc Debug C++20|Win32
 		Msvc Debug C++20|x64 = Msvc Debug C++20|x64
-		Msvc Debug C++20|x86 = Msvc Debug C++20|x86
+		Msvc Release C++17|Win32 = Msvc Release C++17|Win32
 		Msvc Release C++17|x64 = Msvc Release C++17|x64
-		Msvc Release C++17|x86 = Msvc Release C++17|x86
+		Msvc Release C++20|Win32 = Msvc Release C++20|Win32
 		Msvc Release C++20|x64 = Msvc Release C++20|x64
-		Msvc Release C++20|x86 = Msvc Release C++20|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|Win32.ActiveCfg = Msvc Debug C++17|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|Win32.Build.0 = Msvc Debug C++17|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|x64.ActiveCfg = Msvc Debug C++17|x64
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|x64.Build.0 = Msvc Debug C++17|x64
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|x86.ActiveCfg = Msvc Debug C++17|Win32
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|x86.Build.0 = Msvc Debug C++17|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20|Win32.ActiveCfg = Msvc Debug C++20|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20|Win32.Build.0 = Msvc Debug C++20|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20|x64.ActiveCfg = Msvc Debug C++20|x64
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20|x64.Build.0 = Msvc Debug C++20|x64
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20|x86.ActiveCfg = Msvc Debug C++20|Win32
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20|x86.Build.0 = Msvc Debug C++20|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++17|Win32.ActiveCfg = Msvc Release C++17|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++17|Win32.Build.0 = Msvc Release C++17|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++17|x64.ActiveCfg = Msvc Release C++17|x64
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++17|x64.Build.0 = Msvc Release C++17|x64
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++17|x86.ActiveCfg = Msvc Release C++17|Win32
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++17|x86.Build.0 = Msvc Release C++17|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++20|Win32.ActiveCfg = Msvc Release C++20|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++20|Win32.Build.0 = Msvc Release C++20|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++20|x64.ActiveCfg = Msvc Release C++20|x64
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++20|x64.Build.0 = Msvc Release C++20|x64
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++20|x86.ActiveCfg = Msvc Release C++20|Win32
-		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Release C++20|x86.Build.0 = Msvc Release C++20|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

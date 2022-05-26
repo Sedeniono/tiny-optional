@@ -1,0 +1,35 @@
+name: clang mac
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  TEST_DIR: ./tests
+
+
+jobs:
+  all:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Note: No clang version variation since the macOS runners to not have versioned executables (e.g. clang++-13).
+        cpp_version: [c++17, c++20]
+        buildmode: [~ , -O3 -DNDEBUG] # Debug and release mode
+    
+    runs-on: macos-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build and run tests
+      working-directory: ${{env.TEST_DIR}}
+      env:
+        CXX: clang++
+        ADDITIONAL_FLAGS: ${{ format('-std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
+      run: make generic
+

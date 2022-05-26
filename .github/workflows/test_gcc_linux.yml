@@ -6,29 +6,45 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-  
-  
+
 env:
   TEST_DIR: ./tests
 
 
 jobs:
-  # Several jobs instead of steps to run them in parallel
-  gcc_x64_cpp20:
+  all:
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc_version: [9, 10]
+        cpp_version: [c++17, c++20]
+        arch: [m64, m32] # 64 and 32 bit
+        buildmode: [~ , -O3 -DNDEBUG] # Debug and release mode
+        
+        # gcc 9 does not support C++20
+        exclude:
+          - gcc_version: 9
+            cpp_version: c++20
+
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
     steps:
     - uses: actions/checkout@v3
-    - name: Build and run gcc_x64_cpp20
+
+    - name: Install gcc-multilib for x86 if required
+      # Creating a 32 bit executable on a 64 bit OS requires the gcc multilib. 
+      # It is not installed by default on the github runner.
+      if: ${{ matrix.arch == 'm32' }}
+      run: |
+        sudo apt update
+        sudo apt install ${{ format('gcc-{0}-multilib g++-{0}-multilib', matrix.gcc_version) }} -y 
+
+    - name: Build and run tests
       working-directory: ${{env.TEST_DIR}}
-      run: make gcc_x64_cpp20
-      
-  gcc_x64_cpp17:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build and run gcc_x64_cpp17
-      working-directory: ${{env.TEST_DIR}}
-      run: make gcc_x64_cpp17
-   
+      env:
+        CXX: ${{ format('g++-{0}', matrix.gcc_version) }}
+        ADDITIONAL_FLAGS: ${{ format('-{0} -std={1} {2}', matrix.arch, matrix.cpp_version, matrix.buildmode) }}
+      run: make generic
+
+

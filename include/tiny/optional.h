@@ -1188,7 +1188,15 @@ namespace impl
           std::is_copy_constructible_v<PayloadType>,
           "PayloadType must be copy constructible for value_or().");
       static_assert(std::is_convertible_v<U, PayloadType>, "U must be convertible to PayloadType for value_or().");
+
+#if defined(__GNUG__) && !defined(__clang__)
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
       return has_value() ? GetPayload() : static_cast<PayloadType>(std::forward<U>(defaultValue));
+#if defined(__GNUG__) && !defined(__clang__)
+  #pragma GCC diagnostic pop
+#endif
     }
 
     template <class U>
@@ -1198,7 +1206,15 @@ namespace impl
           std::is_move_constructible_v<PayloadType>,
           "PayloadType must be move constructible for value_or().");
       static_assert(std::is_convertible_v<U, PayloadType>, "U must be convertible to PayloadType for value_or().");
+
+#if defined(__GNUG__) && !defined(__clang__)
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
       return has_value() ? std::move(GetPayload()) : static_cast<PayloadType>(std::forward<U>(defaultValue));
+#if defined(__GNUG__) && !defined(__clang__)
+  #pragma GCC diagnostic pop
+#endif
     }
 
 
