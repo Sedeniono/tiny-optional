@@ -67,9 +67,11 @@ void test_NanExploit()
   using namespace tiny::impl;
 
   {
+#ifndef __FAST_MATH__  // std::isnan is broken with -ffast-math
     float testValue;
     std::memcpy(&testValue, &EmptyValueExploitingUnusedBits<float>::value, sizeof(float));
     ASSERT_TRUE(std::isnan(testValue));
+#endif
 
     constexpr float sNaN = std::numeric_limits<float>::signaling_NaN();
     ASSERT_TRUE(std::memcmp(&EmptyValueExploitingUnusedBits<float>::value, &sNaN, sizeof(float)) != 0);
@@ -77,9 +79,11 @@ void test_NanExploit()
     ASSERT_TRUE(std::memcmp(&EmptyValueExploitingUnusedBits<float>::value, &qNaN, sizeof(float)) != 0);
   }
   {
+#ifndef __FAST_MATH__ // std::isnan is broken with -ffast-math
     double testValue;
     std::memcpy(&testValue, &EmptyValueExploitingUnusedBits<double>::value, sizeof(double));
     ASSERT_TRUE(std::isnan(testValue));
+#endif
 
     constexpr double sNaN = std::numeric_limits<double>::signaling_NaN();
     ASSERT_TRUE(std::memcmp(&EmptyValueExploitingUnusedBits<double>::value, &sNaN, sizeof(double)) != 0);
@@ -1563,7 +1567,7 @@ void test_MakeOptional()
 
 
 template <class Opt1, class Opt2, class Val1, class Val2, class Comparer>
-void TestCompareOptWithOpt(Val1 val1, Val2 val2, Comparer comparer)
+void TestCompareOptWithOpt(Val1 val1, Val2 val2, Comparer comparer) 
 {
   std::cout << "\tComparison '" << typeid(Comparer).name() << "':\n\t\tOpt1='" << typeid(Opt1).name() << "' and Opt2='"
             << typeid(Opt2).name() << "'\n\t\tval1='" << val1 << "' and val2='" << val2 << "'" << std::endl;
@@ -1645,7 +1649,10 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<int>>(42, 42.0, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<int>>(42, 999.0, comparer), ...);
 
+#ifndef __FAST_MATH__
     // Comparisons involving partially ordered values.
+    // Note: These fail with -ffast-math and C++20, probably because std::optional defines the comparison operators in
+    // terms of the spaceship operator while tiny::optional does not.
     static constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(NaN, NaN, comparer), ...);
@@ -1653,6 +1660,7 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<double>>(NaN, NaN, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<double>>(std::nullopt, NaN, comparer), ...);
+#endif
 
     // Comparisons for optional_empty_via_type.
     using OptionalIntViaType = tiny::optional_empty_via_type<int, std::integral_constant<int, 1>>;
@@ -1668,11 +1676,14 @@ void test_Comparisons()
     // Rough cross check that the tests also work with std::optional
     (TestCompareOptWithOpt<std::optional<int>, std::optional<int>>(42, 42, comparer), ...);
     (TestCompareOptWithOpt<std::optional<int>, std::optional<double>>(42, 999.0, comparer), ...);
-    (TestCompareOptWithOpt<std::optional<int>, std::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithOpt<std::optional<int>, std::optional<int>>(42, std::nullopt, comparer), ...);
     (TestCompareOptWithValue<std::optional<int>>(42, 999, comparer), ...);
     (TestCompareOptWithValue<std::optional<int>>(std::nullopt, 42, comparer), ...);
     (TestCompareOptWithValue<std::optional<int>>(42, std::nullopt, comparer), ...);
+
+#ifndef __FAST_MATH__ // As above
+    (TestCompareOptWithOpt<std::optional<int>, std::optional<double>>(42, NaN, comparer), ...);
+#endif
   };
 
 
