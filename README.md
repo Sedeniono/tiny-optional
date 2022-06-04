@@ -9,36 +9,52 @@
 
 
 
-## Introduction
+# Introduction
 The goal of this library is to provide the functionality of `std::optional` while not unnecessarily wasting any memory for 
-* types with unused bits (`double`, `bool`, ...), or 
-* where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` or `MAX_INT` should indicate "no value").
+* types with unused bits in practice (`double`, `float`, `bool`, pointers), or 
+* where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
 
 
-## Motivation
-`std::optional` always uses a separate `bool` member to store the information if a value is set. A `bool` always has a size of at least 1 byte, and often implies several padding bytes. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes. But for several types, this is unnecessary, just wastes memory and is less cache-friendly. For example, a wide range of bit patterns of IEEE-754 floating point values all indicate quite or signaling NaNs, but typically only 1 bit pattern is used in practice. Another example is `bool` (size of at least 1 byte to form addresses to it), where 7 of the 8 bites are unused. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. I.e., we have `sizeof(tiny::optional<double>) == sizeof(double)`.
+# Motivation
+`std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes. But for several types this is unnecessary, just wastes memory and is less cache-friendly. In the case of IEEE-754 floating point values, a wide range of bit patterns indicate quiet or signaling NaNs, but typically only one specific bit pattern for each is used in practice. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. E.e., we have `sizeof(tiny::optional<double>) == sizeof(double)`.
 
-Moreover, sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about an integer that stores an index to some array, or the special value `-1` to indicate that it does not refer to anything. Often, it is not immediately clear that a variable can have such a special "empty" state, which makes code harder to understand and might introduce subtle bugs. To provide more semantics, the present library can be used: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that `-1` must not be within the set of valid values, while it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`).
-
-
-## Requirements
-The library currently supports x64 and x86 architectures on Windows and Linux. Tested on MSVC, clang and gcc. It requires at least C++17 mode. Besides the STL, no external dependencies.
+Moreover, sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about an integer that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`).
 
 
-## Usage
-Usage: This is a header-only library. Just copy the folder from the include directory containing the single header to your project. Include it via `#include <tiny/optional>`. Instead of writing `std::optional`, use `tiny::optional`.
-
-If you just want to exploit unused bit patterns of standard types, just use e.g. `tiny::optional<double>`, and the library takes care of the rest. I.e. `sizeof(tiny::optional<double>) == sizeof(double)`. If you want to use a special sentinel value, let's say `42` for an integer, the syntax is `tiny::optional<int, 42>`.
-
-If the type is not a built-in type for which the "tiny" state is possible, the size is equal to that of `std::optional`. E.g. `sizeof(tiny::optional<int>) == sizeof(std::optional<int>)`, or `sizeof(tiny::optional<SomeStruct>) == sizeof(std::optional<SomeStruct>)`.
-
-TODO: Document that you can also store the empty flag in a member of the type.
+# Requirements
+The library currently supports x64 and x86 architectures on Windows, Linux and Mac. It is tested on MSVC, clang and gcc. It requires at least C++17. Besides the C++ standard library, there are no external dependencies.
 
 
-## Notes
-This is a work in progress, hence there are some rough edges, but it should already work pretty well.
+# Usage
+This is a header-only library. Just copy the folder from the include directory containing the single header to your project. Include it via `#include <tiny/optional>`.
+
+## Using `tiny::optional` as `std::optional` replacement
+Instead of writing `std::optional<T>`, use `tiny::optional<T>` in your code.
+If `T` is a `float`, `double`, `bool` or a pointer (in the sense of `std::is_pointer`), the optional will not require additional space. E.g.: `sizeof(tiny::optional<double>) == sizeof(double)`.
+Note: The type `long double` requires additional space at the moment, simply because the differing characteristics on the various supported platforms are not yet implemented.
+
+For other types (where the automatic "tiny" state is not possible), the size of `tiny::optional` is equal to that of `std::optional`. E.g. `sizeof(tiny::optional<int>) == sizeof(std::optional<int>)`, or `sizeof(tiny::optional<SomeStruct>) == sizeof(std::optional<SomeStruct>)`. 
+
+
+## Using sentinel values
+`tiny::optional` has a second optional template parameter: `tiny::optional<T, sentinel>`. 
+`sentinel` is not a type but rather a non-type template parameter.
+Setting this `sentinel` value instructs the library to assume that the value `sentinel` cannot occur as a valid value of `T` and thus allows the library to use it to indicate the empty state. As a result: `sizeof(tiny::optional<T, sentinel> == sizeof(T)`.
+
+The `sentinel` should be of type `T`. Any value is possible that is supported by the compiler as a non-type template parameter. That means integers, and since C++20 also floating point types and literal class types (i.e. POD like types) that are equipped with an `operator==`.
+
+Examples: `tiny::optional<unsigned int, MAX_UINT>`, `tiny::optional<int, -1>`.
+
+
+# Notes
+This is a work in progress, hence there are some rough edges. But it should already work pretty well as indicated by the automatic tests.
 Currently, the following components of the interface of `std::optional` are not yet supported:
 * No converting constructors and assignment operators implemented.
 * Methods and types are not yet `constexpr`.
-* Constructors and destructors are not trivial, even when they could be.
+* Constructors and destructors are not trivial, even if the value type `T` would allow it.
+* C++20 monadic operations (`and_then` etc) are not yet implemented.
 
+
+
+# TODO
+TODO: Describe more precisely how it works + the member pointer stuff.
