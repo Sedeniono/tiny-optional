@@ -74,11 +74,7 @@ std::string CompilationChecksBase::FormatInfo(std::string const & code, Executio
 
 std::unique_ptr<CompilationChecksBase> CreateCompilationChecker()
 {
-#ifdef TINY_OPTIONAL_WINDOWS_BUILD
-  #ifdef TINY_OPTIONAL_CLANG_BUILD
-    #error Clang on Windows not yet implemented
-  #elif defined(TINY_OPTIONAL_MSVC_BUILD)
-
+#if defined(TINY_OPTIONAL_MSVC_BUILD)
   // E.g.: "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\"
   std::filesystem::path const vcInstallDir = TINY_OPTIONAL_TESTS_VC_INSTALL_DIR;
   // E.g.: vcvars64.bat
@@ -90,9 +86,7 @@ std::unique_ptr<CompilationChecksBase> CreateCompilationChecker()
   std::string const compilationFlags = TINY_OPTIONAL_TESTS_COMPILATION_FLAGS;
 
   return std::make_unique<MsvcCompilationChecks>(fullVcvarsPath, tinyOptionalIncludeDir, compilationFlags);
-  #else
-    #error Unsupported compiler on Windows
-  #endif
+
 #else
   std::filesystem::path const executable = TINY_OPTIONAL_TESTS_COMPILER_EXECUTABLE;
   std::filesystem::path const tinyOptionalIncludeDir = TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR;

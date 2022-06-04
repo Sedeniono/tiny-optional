@@ -1876,7 +1876,7 @@ int main()
 {
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
   // Explicitly disable the creation of windows due to assert(). I suspect this might cause problems in the github
-  // action runners (a window might pop up and prevents the termination of the runners because the window waits for user
+  // action runners (a window might pop up and prevent the termination of the runners because the window waits for user
   // input which will never come).
   _set_error_mode(_OUT_TO_STDERR);
   _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
@@ -1889,13 +1889,13 @@ int main()
     return 0;
   }
   catch (std::exception const & ex) {
-    std::cerr << "Caught exception: " << ex.what() << " (type: " << typeid(ex).name() << ")" << std::endl;
+    std::cerr << "ERROR: Caught exception: " << ex.what() << " (type: " << typeid(ex).name() << ")" << std::endl;
     assert(false);
-    exit(44);
+    return 44;
   }
   catch (...) {
-    std::cerr << "Caught unknown exception." << std::endl;
+    std::cerr << "ERROR: Caught unknown exception." << std::endl;
     assert(false);
-    exit(45);
+    return 45;
   }
 }
