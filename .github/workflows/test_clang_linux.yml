@@ -21,7 +21,7 @@ jobs:
         cpp_version: [c++17, c++20]
         stdlib: [libc++, libstdc++] # llvm library and gcc library
         arch: [m64, m32] # 64 and 32 bit
-        buildmode: [~ , -O3 -DNDEBUG] # Debug and release mode
+        buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
     
     runs-on: ubuntu-latest
     timeout-minutes: 10
