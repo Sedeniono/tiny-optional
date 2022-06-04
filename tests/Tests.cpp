@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#ifdef TINY_OPTIONAL_MSVC_BUILD
+#ifdef TINY_OPTIONAL_WINDOWS_BUILD
   #include <crtdbg.h>
 #endif
 

@@ -1,5 +1,6 @@
 #include "TestUtilities.h"
 
+#include <exception>
 #include <fstream>
 #include <stdexcept>
 #include <utility>
@@ -235,7 +236,7 @@ WindowsTemporaryCodeFileScope ::~WindowsTemporaryCodeFileScope()
     if (ec) {
       // Stop the tests. Note that we cannot throw an exception from within a destructor.
       std::cerr << "Error: Failed to remove temporary directory '" << tempDir << "' after several attempts." << std::endl;
-      terminate();
+      std::terminate();
     }
   }
 }

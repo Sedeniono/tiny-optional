@@ -14,7 +14,7 @@
 // Detection macros
 //=================================================================
 
-#if defined(_WIN64) || defined(_WIN32)
+#if defined(_WIN64) || defined(_WIN32) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__CYGWIN__)
   #define TINY_OPTIONAL_WINDOWS_BUILD
 #endif
 
