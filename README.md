@@ -22,16 +22,18 @@ Moreover, sometimes one wants to use special "sentinel" or "flag" values to indi
 
 
 # Requirements
-The library currently supports x64 and x86 architectures on Windows, Linux and Mac. It is tested on MSVC, clang and gcc. It requires at least C++17. Besides the C++ standard library, there are no external dependencies.
+The library currently supports x64 and x86 architectures on Windows, Linux and Mac. It is tested on MSVC, clang and gcc (see the github actions). It requires at least C++17. Besides the C++ standard library, there are no external dependencies.
 
 
 # Limitations
 This is a work in progress, hence there are some rough edges. But it should already work pretty well as indicated by the automatic tests.
 Currently, the following components of the interface of `std::optional` are not yet supported:
-* No converting constructors and assignment operators implemented.
+* No converting constructors and assignment operators implemented (e.g. `tiny::optional<unsigned>` to `tiny::optional<int>`).
 * Methods and types are not yet `constexpr`.
-* Constructors and destructors are not trivial, even if the value type `T` would allow it.
+* Constructors and destructors are not trivial, even if the payload type `T` would allow it.
 * C++20 monadic operations (`and_then` etc.) are not yet implemented.
+
+Moreover, the library exploits platform specific behavior. So if your own code also uses platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained.
 
 
 # Usage
