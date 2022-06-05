@@ -17,23 +17,6 @@
   #error "The library requires at least C++17"
 #endif
 
-// https://stackoverflow.com/a/53557910
-#if defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-  #define TINY_OPTIONAL_HAS_BIT_CAST
-#elif __cplusplus >= 202002L
-  // clang libc++ only support std::bit_cast starting with clang 14.
-  #if defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 14000
-    #define TINY_OPTIONAL_HAS_BIT_CAST
-  // gcc libstdc++ supports std::bit_cast starting with gcc 11.
-  #elif defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE >= 11
-    #define TINY_OPTIONAL_HAS_BIT_CAST
-  #endif
-#endif
-
-
-#ifdef TINY_OPTIONAL_HAS_BIT_CAST
-  #include <bit>
-#endif
 
 
 namespace tiny
@@ -55,8 +38,10 @@ namespace impl
   // Utilities for the implementation
   //====================================================================================
 
+  // Marked as [[maybe_unused]] since clang till version 8 emits a warning that
+  // this variable is supposedly unused.
   template <class... T>
-  constexpr bool always_false = false;
+  [[maybe_unused]] constexpr bool always_false = false;
 
 
   // std::remove_cvref is only available since C++20.
@@ -213,16 +198,11 @@ namespace impl
   struct EmptyValueExploitingUnusedBits<bool>
   {
     // We could use any value besides 0x00 and 0x01.
-    static constexpr std::uint8_t value = 0xfe;
-    static_assert(sizeof(value) <= sizeof(bool));
-
     // If a bool contains any other numerical value than 0 or 1, the bool can be true and false 'at the same time', i.e.
     // weird stuff can happen. See https://stackoverflow.com/q/56369080. In the code here we never use the bool as a
     // bool when its value is not 0 or 1.
-#ifdef TINY_OPTIONAL_HAS_BIT_CAST
-    static_assert(std::bit_cast<std::uint8_t>(true) != value);
-    static_assert(std::bit_cast<std::uint8_t>(false) != value);
-#endif
+    static constexpr std::uint8_t value = 0xfe;
+    static_assert(sizeof(value) <= sizeof(bool));
   };
 
 
@@ -235,11 +215,6 @@ namespace impl
     static constexpr std::uint64_t value = 0x7ff8fedcba987654;
     static_assert(sizeof(value) == sizeof(double));
     static_assert(std::numeric_limits<double>::is_iec559);
-
-#ifdef TINY_OPTIONAL_HAS_BIT_CAST
-    static_assert(std::bit_cast<std::uint64_t>(std::numeric_limits<double>::signaling_NaN()) != value);
-    static_assert(std::bit_cast<std::uint64_t>(std::numeric_limits<double>::quiet_NaN()) != value);
-#endif
   };
 
 
@@ -254,11 +229,6 @@ namespace impl
     static constexpr std::uint32_t value = 0x7fedcba9;
     static_assert(sizeof(value) == sizeof(float));
     static_assert(std::numeric_limits<float>::is_iec559);
-
-#ifdef TINY_OPTIONAL_HAS_BIT_CAST
-    static_assert(std::bit_cast<std::uint32_t>(std::numeric_limits<float>::signaling_NaN()) != value);
-    static_assert(std::bit_cast<std::uint32_t>(std::numeric_limits<float>::quiet_NaN()) != value);
-#endif
   };
 
 
