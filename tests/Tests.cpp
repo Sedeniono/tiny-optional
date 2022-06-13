@@ -7,6 +7,12 @@
   #pragma warning(disable : 4702)
 #endif
 
+#if defined(TINY_OPTIONAL_GCC_BUILD) && defined(TINY_OPTIONAL_WINDOWS_BUILD)
+  // mingw gcc 12.1 prints this warning for the swap test with TestClassForInplace.
+  // It is a false positive.
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include "tiny/optional.h"
 
 #include <cstdlib>
