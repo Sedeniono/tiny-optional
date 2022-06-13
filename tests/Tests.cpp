@@ -812,9 +812,9 @@ void test_TinyOptional()
     EXERCISE_OPTIONAL((tiny::optional{testValue1}), EXPECT_SEPARATE, testValue1, testValue2);
   }
 
+  // Tests that target cases where the deduction guide of std::optional would come into play.
+  // https://en.cppreference.com/w/cpp/utility/optional/deduction_guides
   {
-    // Tests that target cases where the deduction guide of std::optional would come into play.
-    // https://en.cppreference.com/w/cpp/utility/optional/deduction_guides
     int arr1[2] = {1, 2};
     int arr2[2] = {3, 4};
     static_assert(std::is_same_v<decltype(tiny::optional{arr1})::value_type, int *>);
@@ -827,6 +827,24 @@ void test_TinyOptional()
       NonCopyable(NonCopyable &&) = default;
     };
     static_assert(std::is_same_v<decltype(tiny::optional{NonCopyable{}})::value_type, NonCopyable>);
+  }
+
+  // Tests of nested optionals. These basically check that the various constructors are not ambiguous.
+  {
+    tiny::optional<double> tiny1{43.0};
+    tiny::optional<double> tiny2{44.0};
+    tiny::optional<double> tinyEmpty;
+    EXERCISE_OPTIONAL((tiny::optional<tiny::optional<double>>{}), EXPECT_SEPARATE, tiny1, tiny2);
+    EXERCISE_OPTIONAL((tiny::optional<tiny::optional<double>>{}), EXPECT_SEPARATE, tinyEmpty, tiny2);
+
+    EXERCISE_OPTIONAL((std::optional<tiny::optional<double>>{}), EXPECT_SEPARATE, tiny1, tiny2);
+    EXERCISE_OPTIONAL((std::optional<tiny::optional<double>>{}), EXPECT_SEPARATE, tinyEmpty, tiny2);
+    
+    std::optional<double> std1{43.0};
+    std::optional<double> std2{44.0};
+    std::optional<double> stdEmpty;
+    EXERCISE_OPTIONAL((tiny::optional<std::optional<double>>{}), EXPECT_SEPARATE, std1, std2);
+    EXERCISE_OPTIONAL((tiny::optional<std::optional<double>>{}), EXPECT_SEPARATE, stdEmpty, std2);
   }
 
   // Test for the std::hash specialization

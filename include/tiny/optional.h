@@ -401,7 +401,6 @@ namespace impl
   public:
     [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
     {
-      // TODO: Does std::bit_cast give better results?
       return std::memcmp(&isEmptyFlag, &valueToIndicateEmpty, sizeof(valueToIndicateEmpty)) == 0;
     }
 
