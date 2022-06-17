@@ -27,8 +27,8 @@ The library currently supports x64 and x86 architectures on Windows, Linux and M
 
 # Limitations
 Currently, the following components of the interface of `std::optional` are not yet supported:
-* No converting constructors and assignment operators implemented (e.g. `tiny::optional<unsigned>` to `tiny::optional<int>`).
-* Methods and types are not `constexpr`.
+* No converting constructors and assignment operators implemented. The major issue here is to decide what to do with conversions like `tiny::optional<int, -1>` to `tiny::optional<unsigned, 42>`: What if the source contains a `42`? Should an exception be thrown?
+* Methods and types are not `constexpr`. This will probably not be possible in C++17 because some of the tricks rely on `std::memcpy`, which is not `constexpr`. `std::bit_cast` should help here for C++20. 
 * Constructors and destructors are not trivial, even if the payload type `T` would allow it.
 * C++20 monadic operations (`and_then` etc.) are not yet implemented.
 
