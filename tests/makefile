@@ -9,7 +9,7 @@ SANITIZE_FLAGS =
 WARNING_FLAGS = -Wall -Wextra -pedantic -Wconversion -Werror
 TINY_OPTIONAL_INCLUDE_DIR = $(PWD)/../include
 
-CPP_FILES = Tests.cpp TestCompilationBase.cpp TestGccLikeCompilation.cpp TestMsvcCompilation.cpp TestUtilities.cpp
+CPP_FILES = ComparisonTests.cpp CompilationBase.cpp CompilationErrorTests.cpp ConstructionTests.cpp ExerciseOptionalEmptyViaType.cpp ExerciseOptionalInplace.cpp ExerciseStdOptional.cpp ExerciseTinyOptional.cpp GccLikeCompilation.cpp IntermediateTests.cpp MsvcCompilation.cpp Tests.cpp TestUtilities.cpp
 
 
 CXX_AND_RUN_COMMAND = \

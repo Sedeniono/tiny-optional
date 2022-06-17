@@ -3,7 +3,7 @@
 #include "TestUtilities.h"
 
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
-  #include "TestCompilationBase.h"
+  #include "CompilationBase.h"
 
   #include <filesystem>
 #endif

@@ -1,4 +1,4 @@
-#include "TestMsvcCompilation.h"
+#include "MsvcCompilation.h"
 
 #include "TestUtilities.h"
 

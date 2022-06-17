@@ -182,6 +182,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -197,6 +198,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -216,6 +218,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -237,6 +240,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -257,6 +261,7 @@
       <ControlFlowGuard>false</ControlFlowGuard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -275,6 +280,7 @@
       <ControlFlowGuard>false</ControlFlowGuard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -294,6 +300,7 @@
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -315,6 +322,7 @@
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -324,18 +332,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="TestCompilationBase.cpp" />
-    <ClCompile Include="TestGccLikeCompilation.cpp" />
-    <ClCompile Include="TestMsvcCompilation.cpp" />
+    <ClCompile Include="ComparisonTests.cpp" />
+    <ClCompile Include="CompilationErrorTests.cpp" />
+    <ClCompile Include="ConstructionTests.cpp" />
+    <ClCompile Include="ExerciseOptionalEmptyViaType.cpp" />
+    <ClCompile Include="ExerciseOptionalInplace.cpp" />
+    <ClCompile Include="ExerciseStdOptional.cpp" />
+    <ClCompile Include="ExerciseTinyOptional.cpp" />
+    <ClCompile Include="IntermediateTests.cpp" />
+    <ClCompile Include="CompilationBase.cpp" />
+    <ClCompile Include="GccLikeCompilation.cpp" />
+    <ClCompile Include="MsvcCompilation.cpp" />
     <ClCompile Include="Tests.cpp" />
     <ClCompile Include="TestUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\tiny\optional.h" />
-    <ClInclude Include="TestCompilationBase.h" />
-    <ClInclude Include="TestGccLikeCompilation.h" />
+    <ClInclude Include="ComparisonTests.h" />
+    <ClInclude Include="CompilationErrorTests.h" />
+    <ClInclude Include="ConstructionTests.h" />
+    <ClInclude Include="ExerciseOptionalEmptyViaType.h" />
+    <ClInclude Include="ExerciseOptionalInplace.h" />
+    <ClInclude Include="Exercises.h" />
+    <ClInclude Include="CompilationBase.h" />
+    <ClInclude Include="ExerciseStdOptional.h" />
+    <ClInclude Include="ExerciseTinyOptional.h" />
+    <ClInclude Include="GccLikeCompilation.h" />
+    <ClInclude Include="IntermediateTests.h" />
     <ClInclude Include="TestTypes.h" />
-    <ClInclude Include="TestMsvcCompilation.h" />
+    <ClInclude Include="MsvcCompilation.h" />
     <ClInclude Include="TestUtilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

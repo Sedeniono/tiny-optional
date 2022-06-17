@@ -226,3 +226,62 @@ struct TestDoubleValue
   static constexpr double value = 42.0;
 };
 
+
+
+// Used for C++20 tests where we specify a sentinel value at compile to be an instance of this class.
+struct LiteralClass
+{
+  constexpr LiteralClass(int v1, double v2)
+    : v1(v1)
+    , v2(v2)
+  {
+  }
+
+  // Not default so that we have a non-trivial copy constructor.
+  constexpr LiteralClass(LiteralClass const & rhs)
+    : v1(rhs.v1)
+    , v2(rhs.v2)
+  {
+  }
+
+  // Not default so that we have a non-trivial copy assignment.
+  constexpr LiteralClass & operator=(LiteralClass const & rhs) noexcept
+  {
+    v1 = rhs.v1;
+    v2 = rhs.v2;
+    return *this;
+  }
+
+  int v1;
+  double v2;
+};
+
+inline constexpr bool operator==(LiteralClass const & lhs, LiteralClass const & rhs) noexcept
+{
+  return lhs.v1 == rhs.v1 && lhs.v2 == rhs.v2;
+}
+
+
+// Used for C++20 tests where we specify a sentinel value at compile to be an instance of this class, and stored in the
+// member lc.
+struct TestClassWithLiteralClass
+{
+  TestClassWithLiteralClass()
+    : TestClassWithLiteralClass(1, 2.0, 3)
+  {
+  }
+
+  TestClassWithLiteralClass(int v1, double v2, int v3)
+    : lc(v1, v2)
+    , someInt(v3)
+  {
+  }
+
+  LiteralClass lc;
+  int someInt;
+};
+
+inline bool operator==(TestClassWithLiteralClass const & lhs, TestClassWithLiteralClass const & rhs)
+{
+  return lhs.lc == rhs.lc && lhs.someInt == rhs.someInt;
+}

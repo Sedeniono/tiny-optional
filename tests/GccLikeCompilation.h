@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TestCompilationBase.h"
+#include "CompilationBase.h"
 
 #include <filesystem>
 

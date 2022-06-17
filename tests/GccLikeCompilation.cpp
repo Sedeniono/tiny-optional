@@ -1,4 +1,4 @@
-#include "TestGccLikeCompilation.h"
+#include "GccLikeCompilation.h"
 
 #include "TestUtilities.h"
 

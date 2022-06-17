@@ -1,7 +1,7 @@
-#include "TestCompilationBase.h"
+#include "CompilationBase.h"
 
-#include "TestGccLikeCompilation.h"
-#include "TestMsvcCompilation.h"
+#include "GccLikeCompilation.h"
+#include "MsvcCompilation.h"
 #include "TestUtilities.h"
 
 #include <regex>

@@ -18,16 +18,40 @@
     <ClCompile Include="Tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TestMsvcCompilation.cpp">
+    <ClCompile Include="MsvcCompilation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TestUtilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TestGccLikeCompilation.cpp">
+    <ClCompile Include="GccLikeCompilation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TestCompilationBase.cpp">
+    <ClCompile Include="CompilationBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExerciseOptionalEmptyViaType.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExerciseTinyOptional.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExerciseOptionalInplace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExerciseStdOptional.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstructionTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ComparisonTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CompilationErrorTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IntermediateTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,19 +59,46 @@
     <ClInclude Include="TestTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TestMsvcCompilation.h">
+    <ClInclude Include="MsvcCompilation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TestUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TestGccLikeCompilation.h">
+    <ClInclude Include="GccLikeCompilation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TestCompilationBase.h">
+    <ClInclude Include="CompilationBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\tiny\optional.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Exercises.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComparisonTests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CompilationErrorTests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstructionTests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExerciseOptionalEmptyViaType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExerciseOptionalInplace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExerciseStdOptional.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExerciseTinyOptional.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IntermediateTests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

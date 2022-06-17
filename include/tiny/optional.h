@@ -14,9 +14,12 @@
 #include <utility>
 
 #if (!defined(__cplusplus) || __cplusplus < 201703L) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
-  #error "The library requires at least C++17"
+  #error "The tiny::optional library requires at least C++17"
 #endif
 
+#if (defined(__cplusplus) && __cplusplus >= 202002L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
+  #define TINY_OPTIONAL_CPP20
+#endif
 
 
 namespace tiny
@@ -281,7 +284,7 @@ namespace impl
     using PayloadType = PayloadType_;
     using StoredType = SeparateFlagWrapper<PayloadType>;
 
-    [[nodiscard]] static constexpr auto & GetIsEmptyFlag(StoredType & v) noexcept
+    [[nodiscard]] static constexpr bool & GetIsEmptyFlag(StoredType & v) noexcept
     {
       return v.isEmptyFlag;
     }
@@ -365,7 +368,7 @@ namespace impl
 
 
   // Used when the optional is behaving as a std::optional, i.e. when the 'IsEmpty' flag is
-  // stored in a separate bool variable (typicall via SeparateFlagWrapper).
+  // stored in a separate bool variable (typically via SeparateFlagWrapper).
   struct OrdinaryBoolFlagManipulator
   {
     [[nodiscard]] static bool IsEmpty(bool isEmptyFlag) noexcept
@@ -396,7 +399,11 @@ namespace impl
   private:
     static constexpr auto valueToIndicateEmpty = IsEmptyValue::value;
     static_assert(sizeof(valueToIndicateEmpty) <= sizeof(FlagType));
+
+    // Required so that we can use std::memcpy.
+    // Compare https://stackoverflow.com/a/59522771/3740047.
     static_assert(std::is_trivially_copyable_v<FlagType>);
+    static_assert(std::is_trivial_v<FlagType>);
 
   public:
     [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
@@ -419,9 +426,7 @@ namespace impl
 
   // Used when the user specified a specific value to 'swallow' and use to indicate the empty state.
   // For example, if the payload is an integer, the user might specify to use MAX_INT to indicate
-  // the empty state. In principle we could use MemcpyAndCmpFlagManipulator for this, too. However,
-  // ordinary assignment and comparison operators are absolutely sufficient in this case, so no
-  // need to use hacky memcpy and memcmp operations.
+  // the empty state. No need to use hacky memcpy and memcmp operations in this case.
   template <class FlagType, class IsEmptyValue>
   struct AssignmentFlagManipulator
   {
@@ -471,22 +476,32 @@ namespace impl
     }
 
     static constexpr FlagType valueToIndicateEmpty = ConvertEmptyValueToFlagType();
+    
 
   public:
     [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
     {
+      // Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same noexcept
+      // specification as std::optional.
+      static_assert(
+          noexcept(isEmptyFlag == valueToIndicateEmpty),
+          "The comparison operator of the flag type must be noexcept.");
       return isEmptyFlag == valueToIndicateEmpty;
     }
 
     static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
     {
-      uninitializedIsEmptyFlagMemory = valueToIndicateEmpty;
+      // Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same noexcept
+      // specification as std::optional.
+      static_assert(
+          noexcept(uninitializedIsEmptyFlagMemory = valueToIndicateEmpty),
+          "The assignment operator of the flag type must be noexcept.");
+      ::new (std::addressof(uninitializedIsEmptyFlagMemory)) FlagType(valueToIndicateEmpty);
     }
 
-    static void PrepareIsEmptyFlagForPayload(FlagType & /*isEmptyFlag*/) noexcept
+    static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
     {
-      // Nothing to do: The memory gets overwritten by the payload. It then automatically indicates that a value is set
-      // (because we used an IsEmpty-value that is never used by a valid constructed payload).
+      isEmptyFlag.~FlagType();
     }
   };
 
@@ -507,19 +522,20 @@ namespace impl
     using PayloadType = typename StoredTypeDecomposition::PayloadType;
     using FlagType = std::decay_t<decltype(StoredTypeDecomposition::GetIsEmptyFlag(std::declval<StoredType &>()))>;
 
+    // The various helper functions must be noexcept so that we can get the same noexcept specification
+    // as for std::optional.
+    // Especially FlagManipulator::InitializeIsEmptyFlag() must be noexcept because otherwise an optional could be
+    // left in a weird uninitialized state. I.e. setting the IsEmpty-flag must always be possible. Also, various 
+    // noexcept specifications of member functions would be more complex.
     static_assert(
         noexcept(StoredTypeDecomposition::GetIsEmptyFlag(std::declval<StoredType &>())),
         "StoredTypeDecomposition::GetIsEmptyFlag() must be noexcept");
     static_assert(
         noexcept(StoredTypeDecomposition::GetPayload(std::declval<StoredType &>())),
         "StoredTypeDecomposition::GetPayload() must be noexcept");
-
     static_assert(
         noexcept(FlagManipulator::IsEmpty(std::declval<FlagType>())),
         "FlagManipulator::IsEmpty() must be noexcept");
-    // Especially InitializeIsEmptyFlag() must be noexcept because otherwise an optional could be
-    // left in a weird uninitialized state. I.e. setting the IsEmpty-flag must always be possible.
-    // Also, various noexcept specifications of member functions would be more complex.
     static_assert(
         noexcept(FlagManipulator::InitializeIsEmptyFlag(std::declval<FlagType &>())),
         "FlagManipulator::InitializeIsEmptyFlag() must be noexcept");
@@ -1256,7 +1272,7 @@ namespace impl
   // That value is no longer considered to be in the valid value range, i.e. it is 'swallowed'.
   template <class T>
   struct TypeSupportsInplaceWithSwallowing
-    : std::integral_constant<bool, std::is_scalar_v<T> && !IsTypeWithUnusedBits<T>::value>
+    : std::integral_constant<bool, !IsTypeWithUnusedBits<T>::value>
   {
   };
 
@@ -1267,12 +1283,10 @@ namespace impl
   //
   // PayloadType: The actual value that the user wants to store in the optional.
   // EmptyValue: Either UseDefaultType to let the implementation here choose the most suitable value to indicate an
-  // empty
-  //             state. Otherwise, EmptyValue::value must be the value to use to indicate an empty state.
+  //             empty state. Otherwise, EmptyValue::value must be the value to use to indicate an empty state.
   // memPtrToFlag: Either UseDefaultValue if the 'IsEmpty'-flag should not be stored in a member variable of the
-  // payload.
-  //               Otherwise, this must be a member pointer to the member variable where to store the 'IsEmpty'-flag
-  //               in-place.
+  //             payload. Otherwise, this must be a member pointer to the member variable where to store the
+  //             'IsEmpty'-flag in-place.
   template <class PayloadType, class EmptyValue, auto memPtrToFlag, class = void>
   struct SelectDecomposition
   {
@@ -1315,13 +1329,15 @@ namespace impl
       PayloadType,
       EmptyValue,
       UseDefaultValue,
-      std::enable_if_t<!std::is_scalar_v<PayloadType> && !std::is_same_v<EmptyValue, UseDefaultType>>>
+      std::enable_if_t<
+          !TypeSupportsInplaceWithSwallowing<PayloadType>::value && !IsTypeWithUnusedBits<PayloadType>::value
+          && !std::is_same_v<EmptyValue, UseDefaultType>>>
   {
     static_assert(
         always_false<PayloadType>,
         "The payload type does not support an inplace flag, and you also did not specify that the flag should be stored in a member of the payload. "
         "That means a separate bool needs to be used to store the flag (meaning the optional is no longer tiny). However, you specified an EmptyValue, "
-        "which is inconistent and unnecessary.");
+        "which is inconistent and unnecessary. Remove the EmptyValue.");
   };
 
 
