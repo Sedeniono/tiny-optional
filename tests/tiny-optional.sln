@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests.vcxproj", "{
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Msvc Debug C++17 permissive|Win32 = Msvc Debug C++17 permissive|Win32
+		Msvc Debug C++17 permissive|x64 = Msvc Debug C++17 permissive|x64
 		Msvc Debug C++17|Win32 = Msvc Debug C++17|Win32
 		Msvc Debug C++17|x64 = Msvc Debug C++17|x64
 		Msvc Debug C++20|Win32 = Msvc Debug C++20|Win32
@@ -17,6 +19,10 @@ Global
 		Msvc Release C++20|x64 = Msvc Release C++20|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17 permissive|Win32.ActiveCfg = Msvc Debug C++17 permissive|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17 permissive|Win32.Build.0 = Msvc Debug C++17 permissive|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17 permissive|x64.ActiveCfg = Msvc Debug C++17 permissive|x64
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17 permissive|x64.Build.0 = Msvc Debug C++17 permissive|x64
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|Win32.ActiveCfg = Msvc Debug C++17|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|Win32.Build.0 = Msvc Debug C++17|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|x64.ActiveCfg = Msvc Debug C++17|x64

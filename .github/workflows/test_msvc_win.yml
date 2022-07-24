@@ -19,6 +19,12 @@ jobs:
         platform: [x64, Win32]
         buildmode: [Debug, Release]
 
+        include:
+        - cpp_version: "C++17 permissive"
+          platform: x64
+          buildmode: Debug
+
+
     runs-on: windows-latest
     timeout-minutes: 10
 

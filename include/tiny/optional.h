@@ -1639,18 +1639,18 @@ namespace impl
 // contain additional data members. In fact, as explained above, we actually would like optional to be a typedef to
 // TinyOptionalImpl, but which is not possible due to the deduction guides. Moreover, public inheritance allows to
 // re-use various functions, such as the comparison operators, without re-defining them for all possible combinations.
-template <class PayloadType, auto emptyValueOrMemPtr = UseDefaultValue, auto irrelevantOrEmptyValue = UseDefaultValue>
+template <class PayloadType_, auto emptyValueOrMemPtr = UseDefaultValue, auto irrelevantOrEmptyValue = UseDefaultValue>
 class optional
   : public impl::TinyOptionalFromSelection<
-        impl::SelectEmptyValueAndMemPtrFromConstants<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue>>
+        impl::SelectEmptyValueAndMemPtrFromConstants<PayloadType_, emptyValueOrMemPtr, irrelevantOrEmptyValue>>
 {
 private:
   using Base = impl::TinyOptionalFromSelection<
-      impl::SelectEmptyValueAndMemPtrFromConstants<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue>>;
+      impl::SelectEmptyValueAndMemPtrFromConstants<PayloadType_, emptyValueOrMemPtr, irrelevantOrEmptyValue>>;
 
 public:
   using typename Base::value_type;
-  static_assert(std::is_same_v<PayloadType, value_type>);
+  static_assert(std::is_same_v<PayloadType_, value_type>);
 
   optional() = default;
   optional(optional const &) = default;
@@ -1680,7 +1680,7 @@ public:
 
 
   template <
-      class U = PayloadType,
+      class U = PayloadType_,
       std::enable_if_t<Base::template EnableConvertingAssignment<optional, U>::value, int> = 0>
   optional & operator=(U && v)
   {
