@@ -370,6 +370,7 @@ TinyOptionalGCC
 LinuxBin
 Debug C++17
 Debug C++20
-
+clangPerf
+gccPerf
 
 .vscode

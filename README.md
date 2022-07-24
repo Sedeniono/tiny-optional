@@ -16,9 +16,16 @@ The goal of this library is to provide the functionality of [`std::optional`](ht
 
 
 # Motivation
-`std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes. But for several types this is unnecessary, just wastes memory and is less cache-friendly. In the case of IEEE-754 floating point values, a wide range of bit patterns indicate quiet or signaling NaNs, but typically only one specific bit pattern for each is used in practice. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. E.g., we have `sizeof(tiny::optional<double>) == sizeof(double)`.
+## Use case 1
+`std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes. But for several types this is unnecessary, just wastes memory and is less cache-friendly. In the case of IEEE-754 floating point values, a wide range of bit patterns indicate quiet or signaling NaNs, but typically only one specific bit pattern for each is used in practice. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. For example, we have `sizeof(tiny::optional<double>) == sizeof(double)`.
 
-Moreover, sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about an integer that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`).
+The results below show that in memory bound applications this can result in a significant performance improvement.
+
+
+## Use case 2
+Moreover, sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about an integer that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. 
+
+The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`).
 
 
 # Requirements
@@ -263,6 +270,62 @@ int main()
     //o = Iterator{};
 }
 ```
+
+
+# Performance results
+First note that one goal of the library has no runtime performance impact: Namely it provides a more semantically expressive way to have variables where a special value indicates the empty state, i.e. instead of
+```C++
+int oneBasedIndex; // 0 means "does not reference anything"
+```
+one can write 
+```C++
+tiny::optional<int, 0> oneBasedIndex;
+```
+
+The second goal of the library is get rid of the additional `bool` required to store the empty state where possible. This reduces the size and thus should improve runtime performance in applications where memory bandwidth is the limiting factor.
+But as always, you have to profile it in your specific application if `tiny::optional` results in a performance improvement.
+As a somewhat contrived example that highlights a rather extreme case, consider the type
+```C++
+struct WeirdVector
+{
+    tiny::optional<double> x, y, z;
+    tiny::optional<double> length2;
+};
+```
+which has a size of 32 bytes. Using `std::optional<double>` instead, it is twice as large, i.e. has a size of 64 bytes.
+The following piece of test code is rather memory bound:
+```C++
+template <class T>
+constexpr T Sqr(T v) { return v*v; }
+
+double PerformTest(std::vector<WeirdVector> & values) 
+{
+    for (WeirdVector & vec : values) {
+        if (vec.x || vec.y || vec.z) {
+            vec.length2.emplace(Sqr(vec.x.value_or(0)) + Sqr(vec.y.value_or(0)) + Sqr(vec.z.value_or(0)));
+        }
+    }
+
+    double totalLength = 0;
+    for (WeirdVector & vec : values) {
+        totalLength += vec.length2.value_or(0);
+    }
+    return totalLength;
+}
+```
+Running this code with `tiny::optional` and with `std::optional` on an Intel Core i7-4770K results in the following:
+![Performance results](performance/results_relative.png)
+clang 13 and gcc 11 were compiled with `-O3 -DNDEBUG -mavx`, MSVC 19.29 used `/O2 /arch:AVX /GS- /sdl-`.
+The vertical axis shows the ratio of the execution time for `std::optional` divided by the execution time of the version with `tiny::optional`. 
+A value of 1 thus means that they are equally fast, a value >1 means that `tiny::optional` is faster. The horizontal axis depicts the number of values in the input container `values`.
+The three vertical lines show when the values using `tiny::optional` completely fill the L1 (64kiB per core), L2 (256kiB per core) and L3 cache (8.0MiB) of the Intel i7-4770K.
+
+If the data of both the std and the tiny version fit completely into the L1 cache, there is not much performance difference. That `tiny::optional` is slightly faster for MSVC is apparently because MSVC is [better at optimizing `tiny::optional` than `std::optional`](https://stackoverflow.com/q/72755405/3740047).
+Once the the std data no longer fits in the L1 cache, the tiny case is always faster compared to the std case by roughly a factor of 1.5x. The std case needs to load more data from the slower caches.
+The peak improvement is reached once most of the tiny data still fits into the L3 cache but the std data does not (meaning that a significant part of the std data needs to be retrieved from RAM), in which case the tiny version is up to roughly 3x faster.
+Once most of the data in both cases no longer fit, the improvement converges to a factor of roughly 2x.
+The reason is that most data needs to be streamed from the RAM and the amount of data in the tiny case is half of that of the std case.
+
 
 
 # How does it work
