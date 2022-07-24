@@ -174,15 +174,6 @@ namespace impl
   }
 
 
-  // When optional is not doing anything special, i.e. in cases where it behaves just like std::optional, it uses
-  // this wrapper to store the 'IsEmpty'-Flag outside of the payload.
-  template <class PayloadType>
-  struct SeparateFlagWrapper
-  {
-    std::remove_const_t<PayloadType> payload;
-    bool isEmptyFlag;
-  };
-
 
 //====================================================================================
 // IsTypeWithUnusedBits and EmptyValueExploitingUnusedBits
@@ -283,6 +274,44 @@ namespace impl
 
 
   //====================================================================================
+  // Types used as storage in the optional.
+  //====================================================================================
+
+  // When optional is not doing anything special, i.e. in cases where it behaves just like std::optional, it uses
+  // this wrapper to store the 'IsEmpty'-Flag outside of the payload.
+  template <class PayloadType>
+  struct SeparateFlagWrapper
+  {
+    union
+    {
+      std::remove_const_t<PayloadType> payload;
+    };
+
+    bool isEmptyFlag;
+
+    SeparateFlagWrapper() { }
+    ~SeparateFlagWrapper() { }
+  };
+
+
+  // Used by the optional if the IsEmpty flag is stored within the payload.
+  template <class PayloadWithInplaceFlagType>
+  struct InplaceStorage
+  {
+    // Union to prevent automatic initialization of mStorage. I.e. this only allocates the memory without
+    // calling the constructor of PayloadWithInplaceFlagType.
+    // TODO for constexpr: Dummy member. Compare https://stackoverflow.com/a/57497579
+    union
+    {
+      std::remove_const_t<PayloadWithInplaceFlagType> storage;
+    };
+
+    InplaceStorage() { }
+    ~InplaceStorage() { }
+  };
+
+
+  //====================================================================================
   // StoredTypeDecomposition
   //====================================================================================
 
@@ -328,20 +357,20 @@ namespace impl
   // Decomposition used when the stored type is both the payload and the 'IsEmpty'-flag at the same time.
   // The 'IsEmpty'-value can be stored by exploiting unused bit patterns or by 'swallowing' some
   // user specified value from the variable's value range.
-  template <class StoredType_>
+  template <class PayloadType_>
   struct InplaceStoredTypeDecomposition
   {
-    using StoredType = StoredType_;
-    using PayloadType = StoredType;
+    using StoredType = InplaceStorage<PayloadType_>;
+    using PayloadType = PayloadType_;
 
-    [[nodiscard]] static constexpr StoredType & GetIsEmptyFlag(StoredType & v) noexcept
+    [[nodiscard]] static constexpr auto & GetIsEmptyFlag(StoredType & v) noexcept
     {
-      return v;
+      return v.storage;
     }
 
     [[nodiscard]] static constexpr PayloadType & GetPayload(StoredType & v) noexcept
     {
-      return v;
+      return v.storage;
     }
   };
 
@@ -351,23 +380,29 @@ namespace impl
   // This member variable is identified by the member pointer 'memPtrToIsEmptyFlag'.
   // The actual 'IsEmpty'-value can be stored by exploiting unused bit patterns or by 'swallowing' some
   // user specified value from the variable's value range.
-  template <class StoredType_, auto memPtrToIsEmptyFlag>
+  //
+  // Note: We rely on undefined behavior here. We get the address of the IsEmpty-flag by using the provided member
+  // pointer on the StoredType variable. But the StoredType object does not exist yet when we do so, since the
+  // StoredType and the PayloadType are basically the same. The PayloadType cannot exist yet because the whole point of
+  // an empty optional is to not require the existence of the payload. In other words, we apply the member pointer to a
+  // non-existing payload.
+  template <class PayloadType_, auto memPtrToIsEmptyFlag>
   struct InplaceDecompositionViaMemPtr
   {
     static_assert(std::is_member_object_pointer_v<decltype(memPtrToIsEmptyFlag)>);
     static_assert(memPtrToIsEmptyFlag != nullptr);
 
-    using StoredType = StoredType_;
-    using PayloadType = StoredType;
+    using StoredType = InplaceStorage<PayloadType_>;
+    using PayloadType = PayloadType_;
 
     [[nodiscard]] static constexpr auto & GetIsEmptyFlag(StoredType & v) noexcept
     {
-      return v.*memPtrToIsEmptyFlag;
+      return v.storage.*memPtrToIsEmptyFlag;
     }
 
     [[nodiscard]] static constexpr PayloadType & GetPayload(StoredType & v) noexcept
     {
-      return v;
+      return v.storage;
     }
   };
 
@@ -386,7 +421,7 @@ namespace impl
    *
    * - PrepareIsEmptyFlagForPayload(): This function receives the flag (which currently indicates
    *   the empty state, i.e. IsEmpty() returns true for it). The function is called just before
-   *   the payload is constructed. It then must deconstruct the value such that after the payload
+   *   the payload is constructed. It must deconstruct the value such that after the payload
    *   has been constructed the 'IsEmpty'-flag must indicate that some value is set.
    *   Note: It must NOT free the memory!
    *
@@ -397,7 +432,7 @@ namespace impl
 
 
   // Used when the optional is behaving as a std::optional, i.e. when the 'IsEmpty' flag is
-  // stored in a separate bool variable (typically via SeparateFlagWrapper).
+  // stored in a separate bool variable (via SeparateFlagWrapper).
   struct OrdinaryBoolFlagManipulator
   {
     [[nodiscard]] static bool IsEmpty(bool isEmptyFlag) noexcept
@@ -407,11 +442,15 @@ namespace impl
 
     static void InitializeIsEmptyFlag(bool & uninitializedIsEmptyFlagMemory) noexcept
     {
+      // Using placement new would be wrong here: The constructor of SeparateFlagWrapper already pops the bool object
+      // into existence (but with an indeterminate value).
       uninitializedIsEmptyFlagMemory = true;
     }
 
     static void PrepareIsEmptyFlagForPayload(bool & isEmptyFlag) noexcept
     {
+      // We do not destruct the bool object, since we continue to query it. Its lifetime extends until the destruction
+      // of the optional.
       isEmptyFlag = false;
     }
   };
@@ -429,7 +468,7 @@ namespace impl
     static constexpr auto valueToIndicateEmpty = IsEmptyValue::value;
     static_assert(sizeof(valueToIndicateEmpty) <= sizeof(FlagType));
 
-    // Required so that we can use std::memcpy.
+    // Required so that we can use std::memcpy in a way that is covered by the C++ standard.
     // Compare https://stackoverflow.com/a/59522771/3740047.
     static_assert(std::is_trivially_copyable_v<FlagType>);
     static_assert(std::is_trivial_v<FlagType>);
@@ -442,13 +481,19 @@ namespace impl
 
     static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
     {
+      // Similar to placement new, memcpy pops the flag object into existence:
+      // https://en.cppreference.com/w/cpp/string/byte/memcpy
+      // To this end note the static_asserts above: The flag is trivially copyable.
       std::memcpy(&uninitializedIsEmptyFlagMemory, &valueToIndicateEmpty, sizeof(valueToIndicateEmpty));
     }
 
-    static void PrepareIsEmptyFlagForPayload(FlagType & /*isEmptyFlag*/) noexcept
+    static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
     {
-      // Nothing to do: The memory gets overwritten by the payload. It then automatically indicates that a value is set
-      // (because we used an IsEmpty-value that is never used by a valid constructed payload).
+      // Destroy the flag object. In cases such as a simple 'double', this does not really translate to any
+      // instructions. But it ensures that we formally destroy the object that was previously created in
+      // InitializeIsEmptyFlag(). By design, the payload that will be constructed will overlap with the flag memory and
+      // assign a value that can never be equal to valueToIndicateEmpty.
+      isEmptyFlag.~FlagType();
     }
   };
 
@@ -520,8 +565,8 @@ namespace impl
 
     static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
     {
-      // Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same noexcept
-      // specification as std::optional.
+      // static_assert: Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same
+      // noexcept specification as std::optional.
       static_assert(
           noexcept(uninitializedIsEmptyFlagMemory = valueToIndicateEmpty),
           "The assignment operator of the flag type must be noexcept.");
@@ -530,6 +575,8 @@ namespace impl
 
     static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
     {
+      // Destroy the object that was previously created in InitializeIsEmptyFlag() (but do not free the 
+      // associated memory!).
       isEmptyFlag.~FlagType();
     }
   };
@@ -646,18 +693,18 @@ namespace impl
     struct InitializeIsEmptyFlagScope
     {
       explicit InitializeIsEmptyFlagScope(StorageBase & opt) noexcept
-        : mOptional(opt)
+        : opt(opt)
       {
       }
 
       ~InitializeIsEmptyFlagScope()
       {
         if (!doNotInitialize) {
-          FlagManipulator::InitializeIsEmptyFlag(mOptional.GetIsEmptyFlag());
+          FlagManipulator::InitializeIsEmptyFlag(opt.GetIsEmptyFlag());
         }
       }
 
-      StorageBase & mOptional;
+      StorageBase & opt;
       bool doNotInitialize = false;
     };
 
@@ -721,13 +768,8 @@ namespace impl
     }
 
 
-    // Union to prevent automatic initialization of mStorage. I.e. this only allocates the memory without
-    // calling the constructor of StoredType.
-    // TODO for constexpr: Dummy member. Compare https://stackoverflow.com/a/57497579
-    union
-    {
-      std::remove_const_t<StoredType> mStorage;
-    };
+  private:
+    std::remove_const_t<StoredType> mStorage;
   };
 
 
@@ -761,7 +803,7 @@ namespace impl
     // TODO: It is a trivial constructor if std::is_trivially_move_constructible_v<T> is true
     MoveConstructionBase(MoveConstructionBase && rhs) noexcept(std::is_nothrow_move_constructible_v<PayloadType>)
       // Call Base's default constructor since the whole purpose of the present class is to implement
-      // the proper copy constructor (so the base class does not have a proper one).
+      // the proper move constructor (so the base class does not have a proper one).
       : Base()
     {
       if (rhs.has_value()) {
