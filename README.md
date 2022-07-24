@@ -1,4 +1,4 @@
-# tiny::optional
+# tiny::optional  <!-- omit in toc -->
 
 ![tests of gcc on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_linux.yml/badge.svg)
 ![tests of clang on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_linux.yml/badge.svg)
@@ -8,6 +8,22 @@
 ![tests of clang on macOS](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_mac.yml/badge.svg)
 
 
+- [Introduction](#introduction)
+- [Motivation](#motivation)
+- [Requirements](#requirements)
+- [Limitations](#limitations)
+- [Usage](#usage)
+  - [Installation](#installation)
+  - [Using `tiny::optional` as `std::optional` replacement](#using-tinyoptional-as-stdoptional-replacement)
+  - [Using a sentinel value](#using-a-sentinel-value)
+  - [Storing the empty state in a member variable](#storing-the-empty-state-in-a-member-variable)
+  - [The full signature of `tiny::optional`](#the-full-signature-of-tinyoptional)
+  - [Non-member definitions](#non-member-definitions)
+  - [Specifying a sentinel value via a type](#specifying-a-sentinel-value-via-a-type)
+  - [Using custom emptiness logic](#using-custom-emptiness-logic)
+- [Performance results](#performance-results)
+- [How it works](#how-it-works)
+
 
 # Introduction
 The goal of this library is to provide the functionality of [`std::optional`](https://en.cppreference.com/w/cpp/utility/optional) while not unnecessarily wasting any memory for 
@@ -16,13 +32,13 @@ The goal of this library is to provide the functionality of [`std::optional`](ht
 
 
 # Motivation
-## Use case 1
+## Use case 1  <!-- omit in toc -->
 `std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes. But for several types this is unnecessary, just wastes memory and is less cache-friendly. In the case of IEEE-754 floating point values, a wide range of bit patterns indicate quiet or signaling NaNs, but typically only one specific bit pattern for each is used in practice. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. For example, we have `sizeof(tiny::optional<double>) == sizeof(double)`.
 
 The results below show that in memory bound applications this can result in a significant performance improvement.
 
 
-## Use case 2
+## Use case 2  <!-- omit in toc -->
 Moreover, sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about an integer that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. 
 
 The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`).
@@ -328,7 +344,7 @@ The reason is that most data needs to be streamed from the RAM and the amount of
 
 
 
-# How does it work
+# How it works
 
 The library exploits **platform specific behavior** (that is not guaranteed by the C++ standard) to construct optionals that have the same size as the payload. Specifically:
 
