@@ -1,12 +1,13 @@
 #include "ConstructionTests.h"
 
 #include "TestTypes.h"
-#include "tiny/optional.h"
 
 #ifdef TINY_OPTIONAL_MSVC_BUILD
   // Disable "unreachable code" because it is triggered by exception tests.
   #pragma warning(disable : 4702)
 #endif
+
+#include "tiny/optional.h"
 
 namespace
 {
