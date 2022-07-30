@@ -470,13 +470,25 @@ namespace impl
 
     // Required so that we can use std::memcpy in a way that is covered by the C++ standard.
     // Compare https://stackoverflow.com/a/59522771/3740047.
+    // Until gcc <=9, however, CWG 2094 was not implemented (https://stackoverflow.com/q/36098055/3740047),
+    // meaning that this static_assert fails with volatile payloads.
+#if defined(__GNUG__) && !defined(__clang__) && __GNUC__ <= 9
+    static_assert(std::is_trivially_copyable_v<std::remove_cv_t<FlagType>>);
+#else
     static_assert(std::is_trivially_copyable_v<FlagType>);
+#endif
+
     static_assert(std::is_trivial_v<FlagType>);
 
   public:
     [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
     {
-      return std::memcmp(&isEmptyFlag, &valueToIndicateEmpty, sizeof(valueToIndicateEmpty)) == 0;
+      // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
+      return std::memcmp(
+                 const_cast<void *>(static_cast<void const volatile *>(&isEmptyFlag)),
+                 &valueToIndicateEmpty,
+                 sizeof(valueToIndicateEmpty))
+             == 0;
     }
 
     static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
@@ -484,7 +496,11 @@ namespace impl
       // Similar to placement new, memcpy pops the flag object into existence:
       // https://en.cppreference.com/w/cpp/string/byte/memcpy
       // To this end note the static_asserts above: The flag is trivially copyable.
-      std::memcpy(&uninitializedIsEmptyFlagMemory, &valueToIndicateEmpty, sizeof(valueToIndicateEmpty));
+      // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
+      std::memcpy(
+          const_cast<void *>(static_cast<void const volatile *>(&uninitializedIsEmptyFlagMemory)),
+          &valueToIndicateEmpty,
+          sizeof(valueToIndicateEmpty));
     }
 
     static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
@@ -570,7 +586,9 @@ namespace impl
       static_assert(
           noexcept(uninitializedIsEmptyFlagMemory = valueToIndicateEmpty),
           "The assignment operator of the flag type must be noexcept.");
-      ::new (std::addressof(uninitializedIsEmptyFlagMemory)) FlagType(valueToIndicateEmpty);
+      // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
+      ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(uninitializedIsEmptyFlagMemory))))
+          FlagType(valueToIndicateEmpty);
     }
 
     static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
@@ -596,7 +614,8 @@ namespace impl
   {
     using StoredType = typename StoredTypeDecomposition::StoredType;
     using PayloadType = typename StoredTypeDecomposition::PayloadType;
-    using FlagType = std::decay_t<decltype(StoredTypeDecomposition::GetIsEmptyFlag(std::declval<StoredType &>()))>;
+    using FlagType
+        = std::remove_reference_t<decltype(StoredTypeDecomposition::GetIsEmptyFlag(std::declval<StoredType &>()))>;
 
     // The various helper functions must be noexcept so that we can get the same noexcept specification
     // as for std::optional.
@@ -610,7 +629,7 @@ namespace impl
         noexcept(StoredTypeDecomposition::GetPayload(std::declval<StoredType &>())),
         "StoredTypeDecomposition::GetPayload() must be noexcept");
     static_assert(
-        noexcept(FlagManipulator::IsEmpty(std::declval<FlagType>())),
+        noexcept(FlagManipulator::IsEmpty(std::declval<FlagType const &>())),
         "FlagManipulator::IsEmpty() must be noexcept");
     static_assert(
         noexcept(FlagManipulator::InitializeIsEmptyFlag(std::declval<FlagType &>())),
@@ -716,17 +735,21 @@ namespace impl
       // But that means, if the placement new throws, we need to initialize the
       // empty flag again afterwards. This is done by means of InitializeIsEmptyFlagScope.
 
+      // Regarding the volatile casts: https://stackoverflow.com/q/63325244/3740047
+
       assert(!has_value());
       FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
 
       if constexpr (std::is_nothrow_constructible_v<PayloadType, ArgsT...>) {
         // Don't burden the optimizer with optimizing away the InitializeIsEmptyFlagScope if the scope is unnecessary in
         // the first place (i.e. if the construction cannot throw).
-        ::new (std::addressof(GetPayload())) PayloadType(std::forward<ArgsT>(args)...);
+        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+            PayloadType(std::forward<ArgsT>(args)...);
       }
       else {
         InitializeIsEmptyFlagScope initScope{*this};
-        ::new (std::addressof(GetPayload())) PayloadType(std::forward<ArgsT>(args)...);
+        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+            PayloadType(std::forward<ArgsT>(args)...);
         initScope.doNotInitialize = true;
       }
 
@@ -1040,6 +1063,7 @@ namespace impl
       && std::is_assignable_v<PayloadType&, U>
       // The following ensures that, if e.g. PayloadType==int, "o = {};" does not call this assignment operator here
       // with int initialized to 0, but instead constructs and then assigns an empty optional.
+      // Compare https://stackoverflow.com/q/33511641/3740047
       && (!std::is_scalar_v<PayloadType> || !std::is_same_v<std::decay_t<U>, PayloadType>)
   >;
 
@@ -1238,7 +1262,7 @@ namespace impl
 
 
     template <class U>
-    [[nodiscard]] PayloadType value_or(U && defaultValue) const &
+    [[nodiscard]] std::remove_cv_t<PayloadType> value_or(U && defaultValue) const &
     {
       static_assert(
           std::is_copy_constructible_v<PayloadType>,
@@ -1250,14 +1274,14 @@ namespace impl
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
-      return has_value() ? GetPayload() : static_cast<PayloadType>(std::forward<U>(defaultValue));
+      return has_value() ? GetPayload() : static_cast<std::remove_cv_t<PayloadType>>(std::forward<U>(defaultValue));
 #if defined(__GNUG__) && !defined(__clang__)
   #pragma GCC diagnostic pop
 #endif
     }
 
     template <class U>
-    [[nodiscard]] PayloadType value_or(U && defaultValue) &&
+    [[nodiscard]] std::remove_cv_t<PayloadType> value_or(U && defaultValue) &&
     {
       static_assert(
           std::is_move_constructible_v<PayloadType>,
@@ -1269,7 +1293,8 @@ namespace impl
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
-      return has_value() ? std::move(GetPayload()) : static_cast<PayloadType>(std::forward<U>(defaultValue));
+      return has_value() ? std::move(GetPayload())
+                         : static_cast<std::remove_cv_t<PayloadType>>(std::forward<U>(defaultValue));
 #if defined(__GNUG__) && !defined(__clang__)
   #pragma GCC diagnostic pop
 #endif
@@ -1392,7 +1417,8 @@ namespace impl
     static constexpr auto test = SelectedDecompositionTest::NoArgsButExploitUnusedBits;
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
-    using FlagManipulator = MemcpyAndCmpFlagManipulator<PayloadType, EmptyValueExploitingUnusedBits<PayloadType>>;
+    using FlagManipulator
+        = MemcpyAndCmpFlagManipulator<PayloadType, EmptyValueExploitingUnusedBits<std::remove_cv_t<PayloadType>>>;
   };
 
 
@@ -1466,7 +1492,8 @@ namespace impl
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
-    using FlagManipulator = MemcpyAndCmpFlagManipulator<MemVarType, EmptyValueExploitingUnusedBits<MemVarType>>;
+    using FlagManipulator
+        = MemcpyAndCmpFlagManipulator<MemVarType, EmptyValueExploitingUnusedBits<std::remove_cv_t<MemVarType>>>;
   };
 
 

@@ -170,6 +170,12 @@ void test_TinyOptional()
     EXERCISE_OPTIONAL((tiny::optional<std::optional<double>>{}), EXPECT_SEPARATE, stdEmpty, std2);
   }
 
+
+  // Tests of volatile
+  EXERCISE_OPTIONAL((tiny::optional<double volatile>{}), EXPECT_INPLACE, 43.0, 44.0);
+  static_assert(std::is_same_v<tiny::optional<double volatile>::value_type, double volatile>);
+
+
   // C++20 allows using floating point values and literal class types in templates.
   // Unfortunately, even clang 14 does yet support it.
 #if defined(TINY_OPTIONAL_CPP20) && !defined(TINY_OPTIONAL_CLANG_BUILD)

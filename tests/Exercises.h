@@ -186,8 +186,19 @@ void ExerciseOptional(
     {"Assignment_bracesToNonEmpty", [] (TEST_PARAMS) {
       Optional o(validValueToAssign1);
       ASSERT_TRUE(o.has_value());
+      // See EnableConvertingAssignment in the tiny::optional implementation: Usually, assigning {} to e.g. an optional<int>
+      // is the same as assigning std::nullopt. But if the contained type is volatile int, the check that prevents {} from 
+      // constructing an integer with value 0 and then assigning it to the optional fails to detect it. This is also in the
+      // C++ standard. The standard forgets to cast away the volatile from the payload type in the comparison if the 
+      // assignment operator should be enabled. I guess no one uses volatile in optionals...
       Optional & returned = (o = {});
-      ASSERT_FALSE(o.has_value());
+      if constexpr (std::is_volatile_v<typename Optional::value_type>) {
+        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(AreEqual(o.value(), std::remove_cv_t<typename Optional::value_type>{}));
+      }
+      else {
+        ASSERT_FALSE(o.has_value());
+      }
       ASSERT_TRUE(&o == &returned);
     }}
     ,

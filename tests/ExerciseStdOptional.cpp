@@ -27,4 +27,7 @@ void test_CrosscheckStdOptional()
         initList,
         ScopedEnum::v2);
   }
+
+  EXERCISE_OPTIONAL((std::optional<double volatile>{}), EXPECT_SEPARATE, 43.0, 44.0);
+  static_assert(std::is_same_v<std::optional<double volatile>::value_type, double volatile>);
 }
