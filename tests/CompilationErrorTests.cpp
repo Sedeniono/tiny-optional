@@ -113,6 +113,16 @@ void test_ExpressionsThatShouldNotCompile()
      )",
      // First for MSVC, second for clang, third for gcc.
      /*expected regex*/ "(no.*operator.*found)|(no.*viable.*overloaded)|(no.*match.*for.*operator)"}
+
+    ,
+
+    // Neither references nor raw arrays are allowed by the C++ standard.
+    {/*code*/ "tiny::optional<int &> o;",
+     /*expected regex*/ "The payload type must meet the C\\+\\+ requirement 'Destructible'"}
+    ,
+    {/*code*/ "tiny::optional<int []> o;",
+     /*expected regex*/ "The payload type must meet the C\\+\\+ requirement 'Destructible'"}
+
   };
   // clang-format on
 
