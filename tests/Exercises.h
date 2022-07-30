@@ -110,13 +110,15 @@ void ExerciseOptional(
     }}
     ,
     {"Constructor_CopyOfNonEmpty", [] (TEST_PARAMS) {
-      Optional o;
-      o = validValueToAssign1;
-      Optional copy(o);
-      ASSERT_TRUE(o.has_value());
-      ASSERT_TRUE(copy.has_value());
-      ASSERT_TRUE(AreEqual(o.value(), validValueToAssign1));
-      ASSERT_TRUE(AreEqual(copy.value(), validValueToAssign1));
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o;
+        o = validValueToAssign1;
+        Optional copy(o);
+        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(copy.has_value());
+        ASSERT_TRUE(AreEqual(o.value(), validValueToAssign1));
+        ASSERT_TRUE(AreEqual(copy.value(), validValueToAssign1));
+      }
     }}
     ,
     {"Constructor_MoveOfEmpty", [] (TEST_PARAMS) {
@@ -184,133 +186,157 @@ void ExerciseOptional(
     }}
     ,
     {"Assignment_bracesToNonEmpty", [] (TEST_PARAMS) {
-      Optional o(validValueToAssign1);
-      ASSERT_TRUE(o.has_value());
-      // See EnableConvertingAssignment in the tiny::optional implementation: Usually, assigning {} to e.g. an optional<int>
-      // is the same as assigning std::nullopt. But if the contained type is volatile int, the check that prevents {} from 
-      // constructing an integer with value 0 and then assigning it to the optional fails to detect it. This is also in the
-      // C++ standard. The standard forgets to cast away the volatile from the payload type in the comparison if the 
-      // assignment operator should be enabled. I guess no one uses volatile in optionals...
-      Optional & returned = (o = {});
-      if constexpr (std::is_volatile_v<typename Optional::value_type>) {
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o(validValueToAssign1);
         ASSERT_TRUE(o.has_value());
-        ASSERT_TRUE(AreEqual(o.value(), std::remove_cv_t<typename Optional::value_type>{}));
+        // See EnableConvertingAssignment in the tiny::optional implementation: Usually, assigning {} to e.g. an optional<int>
+        // is the same as assigning std::nullopt. But if the contained type is volatile int, the check that prevents {} from 
+        // constructing an integer with value 0 and then assigning it to the optional fails to detect it. This is also in the
+        // C++ standard. The standard forgets to cast away the volatile from the payload type in the comparison if the 
+        // assignment operator should be enabled. I guess no one uses volatile in optionals...
+        Optional & returned = (o = {});
+        if constexpr (std::is_volatile_v<typename Optional::value_type>) {
+          ASSERT_TRUE(o.has_value());
+          ASSERT_TRUE(AreEqual(o.value(), std::remove_cv_t<typename Optional::value_type>{}));
+        }
+        else {
+          ASSERT_FALSE(o.has_value());
+        }
+        ASSERT_TRUE(&o == &returned);
       }
-      else {
-        ASSERT_FALSE(o.has_value());
-      }
-      ASSERT_TRUE(&o == &returned);
     }}
     ,
     {"Assignment_EmptyToEmpty", [] (TEST_PARAMS) {
-      Optional o1;
-      ASSERT_FALSE(o1.has_value());
-      Optional o2;
-      Optional & returned = (o2 = o1);
-      ASSERT_FALSE(o2.has_value());
-      ASSERT_TRUE(&o2 == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o1;
+        ASSERT_FALSE(o1.has_value());
+        Optional o2;
+        Optional & returned = (o2 = o1);
+        ASSERT_FALSE(o2.has_value());
+        ASSERT_TRUE(&o2 == &returned);
+      }
     }}
     ,
     {"Assignment_EmptyToNonEmpty", [] (TEST_PARAMS) {
-      Optional o(validValueToAssign1);
-      ASSERT_TRUE(o.has_value());
-      Optional empty;
-      Optional & returned = (o = empty);
-      ASSERT_FALSE(o.has_value());
-      ASSERT_TRUE(&o == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o(validValueToAssign1);
+        ASSERT_TRUE(o.has_value());
+        Optional empty;
+        Optional & returned = (o = empty);
+        ASSERT_FALSE(o.has_value());
+        ASSERT_TRUE(&o == &returned);
+      }
     }}
     ,
     {"Assignment_NonEmptyToNonEmpty", [] (TEST_PARAMS) {
-      Optional o1(validValueToAssign1);
-      ASSERT_TRUE(o1.has_value());
-      Optional o2(validValueToAssign2);
-      ASSERT_TRUE(o2.has_value());
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o1(validValueToAssign1);
+        ASSERT_TRUE(o1.has_value());
+        Optional o2(validValueToAssign2);
+        ASSERT_TRUE(o2.has_value());
 
-      Optional & returned = (o2 = o1);
-      ASSERT_TRUE(o2.has_value());
-      ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
-      ASSERT_TRUE(AreEqual(o2.value(), o1.value()));
-      ASSERT_TRUE(&o2 == &returned);
+        Optional & returned = (o2 = o1);
+        ASSERT_TRUE(o2.has_value());
+        ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
+        ASSERT_TRUE(AreEqual(o2.value(), o1.value()));
+        ASSERT_TRUE(&o2 == &returned);
+      }
     }}
     ,
     {"Assignment_NonEmptyToEmpty", [] (TEST_PARAMS) {
-      Optional o1(validValueToAssign1);
-      ASSERT_TRUE(o1.has_value());
-      Optional o2;
-      ASSERT_FALSE(o2.has_value());
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o1(validValueToAssign1);
+        ASSERT_TRUE(o1.has_value());
+        Optional o2;
+        ASSERT_FALSE(o2.has_value());
 
-      Optional & returned = (o2 = o1);
-      ASSERT_TRUE(o2.has_value());
-      ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
-      ASSERT_TRUE(AreEqual(o2.value(), o1.value()));
-      ASSERT_TRUE(&o2 == &returned);
+        Optional & returned = (o2 = o1);
+        ASSERT_TRUE(o2.has_value());
+        ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
+        ASSERT_TRUE(AreEqual(o2.value(), o1.value()));
+        ASSERT_TRUE(&o2 == &returned);
+      }
     }}
     ,
     {"Assignment_MoveOfEmptyToEmpty", [] (TEST_PARAMS) {
-      Optional o;
-      Optional moveTarget;
-      Optional & returned = (moveTarget = std::move(o));
-      ASSERT_FALSE(o.has_value());
-      ASSERT_FALSE(moveTarget.has_value());
-      ASSERT_TRUE(&moveTarget == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o;
+        Optional moveTarget;
+        Optional & returned = (moveTarget = std::move(o));
+        ASSERT_FALSE(o.has_value());
+        ASSERT_FALSE(moveTarget.has_value());
+        ASSERT_TRUE(&moveTarget == &returned);
+      }
     }}
     ,
     {"Assignment_MoveOfNonEmptyToEmpty", [] (TEST_PARAMS) {
-      Optional o(validValueToAssign1);
-      Optional moveTarget;
-      Optional & returned = (moveTarget = std::move(o));
-      ASSERT_TRUE(o.has_value()); // Original optional must still have a value according to the standard...
-      ASSERT_TRUE(EmptyOrNoContainer(o.value())); // ... but the value itself is empty.
-      ASSERT_TRUE(moveTarget.has_value());
-      ASSERT_TRUE(AreEqual(moveTarget.value(), validValueToAssign1));
-      ASSERT_TRUE(&moveTarget == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o(validValueToAssign1);
+        Optional moveTarget;
+        Optional & returned = (moveTarget = std::move(o));
+        ASSERT_TRUE(o.has_value()); // Original optional must still have a value according to the standard...
+        ASSERT_TRUE(EmptyOrNoContainer(o.value())); // ... but the value itself is empty.
+        ASSERT_TRUE(moveTarget.has_value());
+        ASSERT_TRUE(AreEqual(moveTarget.value(), validValueToAssign1));
+        ASSERT_TRUE(&moveTarget == &returned);
+      }
     }}
     ,
     {"Assignment_MoveOfNonEmptyToNonEmpty", [] (TEST_PARAMS) {
-      Optional o(validValueToAssign1);
-      Optional moveTarget(validValueToAssign2);
-      Optional & returned = (moveTarget = std::move(o));
-      ASSERT_TRUE(o.has_value()); // Original optional must still have a value according to the standard...
-      ASSERT_TRUE(EmptyOrNoContainer(o.value())); // ... but the value itself is empty.
-      ASSERT_TRUE(moveTarget.has_value());
-      ASSERT_TRUE(AreEqual(moveTarget.value(), validValueToAssign1));
-      ASSERT_TRUE(&moveTarget == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o(validValueToAssign1);
+        Optional moveTarget(validValueToAssign2);
+        Optional & returned = (moveTarget = std::move(o));
+        ASSERT_TRUE(o.has_value()); // Original optional must still have a value according to the standard...
+        ASSERT_TRUE(EmptyOrNoContainer(o.value())); // ... but the value itself is empty.
+        ASSERT_TRUE(moveTarget.has_value());
+        ASSERT_TRUE(AreEqual(moveTarget.value(), validValueToAssign1));
+        ASSERT_TRUE(&moveTarget == &returned);
+      }
     }}
     ,
     {"Assignment_MoveOfEmptyToNonEmpty", [] (TEST_PARAMS) {
-      Optional empty;
-      Optional moveTarget(validValueToAssign1);
-      ASSERT_TRUE(moveTarget.has_value());
-      Optional & returned = (moveTarget = std::move(empty));
-      ASSERT_FALSE(empty.has_value());
-      ASSERT_FALSE(moveTarget.has_value());
-      ASSERT_TRUE(&moveTarget == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional empty;
+        Optional moveTarget(validValueToAssign1);
+        ASSERT_TRUE(moveTarget.has_value());
+        Optional & returned = (moveTarget = std::move(empty));
+        ASSERT_FALSE(empty.has_value());
+        ASSERT_FALSE(moveTarget.has_value());
+        ASSERT_TRUE(&moveTarget == &returned);
+      }
     }}
     ,
     {"Assignment_PayloadToEmpty", [] (TEST_PARAMS) {
-      Optional o;
-      Optional & returned = (o = validValueToAssign1);
-      ASSERT_TRUE(o.has_value());
-      ASSERT_TRUE(AreEqual(o.value(), validValueToAssign1));
-      ASSERT_TRUE(&o == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o;
+        Optional & returned = (o = validValueToAssign1);
+        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(AreEqual(o.value(), validValueToAssign1));
+        ASSERT_TRUE(&o == &returned);
+      }
     }}
     ,
     {"Assignment_PayloadToNonEmpty", [] (TEST_PARAMS) {
-      Optional o(validValueToAssign1);
-      Optional & returned = (o = validValueToAssign2);
-      ASSERT_TRUE(o.has_value());
-      ASSERT_TRUE(AreEqual(o.value(), validValueToAssign2));
-      ASSERT_TRUE(&o == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        Optional o(validValueToAssign1);
+        Optional & returned = (o = validValueToAssign2);
+        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(AreEqual(o.value(), validValueToAssign2));
+        ASSERT_TRUE(&o == &returned);
+      }
     }}
     ,
     {"Assignment_MovePayloadToEmpty", [] (TEST_PARAMS) {
-      auto moveFrom = validValueToAssign1;
-      Optional o;
-      Optional & returned = (o = std::move(moveFrom));
-      ASSERT_TRUE(o.has_value());
-      ASSERT_TRUE(AreEqual(o.value(), validValueToAssign1));
-      ASSERT_TRUE(EmptyOrNoContainer(moveFrom)); // If moveFrom is a container, it should now be empty due to the move
-      ASSERT_TRUE(&o == &returned);
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        auto moveFrom = validValueToAssign1;
+        Optional o;
+        Optional & returned = (o = std::move(moveFrom));
+        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(AreEqual(o.value(), validValueToAssign1));
+        ASSERT_TRUE(EmptyOrNoContainer(moveFrom)); // If moveFrom is a container, it should now be empty due to the move
+        ASSERT_TRUE(&o == &returned);
+      }
     }}
     ,
     {"Emplace_ToEmpty", [] (TEST_PARAMS) {
@@ -323,8 +349,7 @@ void ExerciseOptional(
     }}
     ,
     {"Emplace_ToNonEmpty", [] (TEST_PARAMS) {
-      Optional o;
-      o = validValueToAssign1;
+      Optional o = validValueToAssign1;
       auto & added = o.emplace(constructorArgs...);
       ASSERT_TRUE(o.has_value());
       ASSERT_TRUE(AreEqual(o.value(), added));
@@ -341,21 +366,20 @@ void ExerciseOptional(
     }}
     ,
     {"ResetOfNonEmpty", [] (TEST_PARAMS) {
-      Optional o;
-      o = validValueToAssign1;
+      Optional o = validValueToAssign1;
       ASSERT_TRUE(o.has_value());
       o.reset();
       ASSERT_FALSE(o.has_value());
     }}
     ,
     {"OperatorBool", [] (TEST_PARAMS) {
-      Optional o;
-      static_assert(noexcept(static_cast<bool>(o)));
-      ASSERT_FALSE(o.has_value());
-      ASSERT_FALSE(o);
-      o = validValueToAssign1;
-      ASSERT_TRUE(o.has_value());
-      ASSERT_TRUE(o);
+      Optional o1;
+      static_assert(noexcept(static_cast<bool>(o1)));
+      ASSERT_FALSE(o1.has_value());
+      ASSERT_FALSE(o1);
+      Optional o2 = validValueToAssign1;
+      ASSERT_TRUE(o2.has_value());
+      ASSERT_TRUE(o2);
     }}
     ,
     {"pointerOperator", [] (TEST_PARAMS) {
@@ -484,39 +508,47 @@ void ExerciseOptional(
     }}
     ,
     {"swapOfEmptyAndEmpty", [] (TEST_PARAMS) {
-      using std::swap;
-      Optional empty1;
-      Optional empty2;
-      swap(empty1, empty2);
-      ASSERT_FALSE(empty1.has_value());
-      ASSERT_FALSE(empty2.has_value());
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        using std::swap;
+        Optional empty1;
+        Optional empty2;
+        swap(empty1, empty2);
+        ASSERT_FALSE(empty1.has_value());
+        ASSERT_FALSE(empty2.has_value());
+      }
     }}
     ,
     {"swapOfNonEmptyAndNonEmpty", [] (TEST_PARAMS) {
-      using std::swap;
-      Optional o1{validValueToAssign1};
-      Optional o2{validValueToAssign2};
-      swap(o1, o2);
-      ASSERT_TRUE(AreEqual(o1.value(), validValueToAssign2));
-      ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        using std::swap;
+        Optional o1{validValueToAssign1};
+        Optional o2{validValueToAssign2};
+        swap(o1, o2);
+        ASSERT_TRUE(AreEqual(o1.value(), validValueToAssign2));
+        ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
+      }
     }}
     ,
     {"swapOfEmptyAndNonEmpty", [] (TEST_PARAMS) {
-      using std::swap;
-      Optional o1;
-      Optional o2{validValueToAssign2};
-      swap(o1, o2);
-      ASSERT_TRUE(AreEqual(o1.value(), validValueToAssign2));
-      ASSERT_FALSE(o2.has_value());
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        using std::swap;
+        Optional o1;
+        Optional o2{validValueToAssign2};
+        swap(o1, o2);
+        ASSERT_TRUE(AreEqual(o1.value(), validValueToAssign2));
+        ASSERT_FALSE(o2.has_value());
+      }
     }}
     ,
     {"swapOfNonEmptyAndEmpty", [] (TEST_PARAMS) {
-      using std::swap;
-      Optional o1{validValueToAssign1};
-      Optional o2;
-      swap(o1, o2);
-      ASSERT_FALSE(o1.has_value());
-      ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
+      if constexpr (!std::is_const_v<typename Optional::value_type>) {
+        using std::swap;
+        Optional o1{validValueToAssign1};
+        Optional o2;
+        swap(o1, o2);
+        ASSERT_FALSE(o1.has_value());
+        ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
+      }
     }}
   };
   // clang-format on

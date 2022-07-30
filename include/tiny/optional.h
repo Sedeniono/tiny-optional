@@ -195,8 +195,8 @@ namespace impl
   template <class T>
   struct IsTypeWithUnusedBits
     : std::integral_constant<bool, 
-        (std::is_floating_point_v<T> || std::is_same_v<std::remove_const_t<T>, bool> || std::is_pointer_v<T>) 
-        && !std::is_same_v<std::remove_const_t<T>, long double>
+        (std::is_floating_point_v<T> || std::is_same_v<std::remove_cv_t<T>, bool> || std::is_pointer_v<T>) 
+        && !std::is_same_v<std::remove_cv_t<T>, long double>
       >
   {
   };
@@ -527,32 +527,33 @@ namespace impl
     // literals with the 'correct' postfix (e.g. 42u). Thus, we cast the value here. But before this we
     // check that the literal is not changed in the process. For example, specifying -1 for an optional
     // storing an 'unsigned' results in a compiler error.
-    [[nodiscard]] static constexpr FlagType ConvertEmptyValueToFlagType() noexcept
+    [[nodiscard]] static constexpr std::remove_cv_t<FlagType> ConvertEmptyValueToFlagType() noexcept
     {
       using ValueType = std::remove_cv_t<decltype(IsEmptyValue::value)>;
+      using FlagTypeNoCV = std::remove_cv_t<FlagType>;
 
-      if constexpr (std::is_same_v<FlagType, bool> || std::is_same_v<ValueType, bool>) {
+      if constexpr (std::is_same_v<FlagTypeNoCV, bool> || std::is_same_v<ValueType, bool>) {
         static_assert(
-            std::is_same_v<FlagType, ValueType>,
+            std::is_same_v<FlagTypeNoCV, ValueType>,
             "Either the variable used by the optional as IsEmpty flag or the specified compile-time constant "
             "for the empty value is a bool, but not both. If one is a bool, both should be a bool.");
         return IsEmptyValue::value;
       }
-      else if constexpr (std::is_integral_v<FlagType> && std::is_integral_v<ValueType>) {
+      else if constexpr (std::is_integral_v<FlagTypeNoCV> && std::is_integral_v<ValueType>) {
         // The static_cast prevents compiler warnings.
         // That we do not change the numeric value is ensured by the static_assert.
         static_assert(
-            IsIntegralInRange<FlagType>(IsEmptyValue::value),
+            IsIntegralInRange<FlagTypeNoCV>(IsEmptyValue::value),
             "The specified compile-time constant for the empty value is outside of the range supported "
             "by the type of the variable used by the optional as IsEmpty-flag. Just as an example: "
             "'optional<unsigned, -1>' triggers this because the value -1 cannot be held by an 'unsigned'.");
-        return static_cast<FlagType>(IsEmptyValue::value);
+        return static_cast<FlagTypeNoCV>(IsEmptyValue::value);
       }
-      else if constexpr (std::is_floating_point_v<FlagType> || std::is_floating_point_v<ValueType>) {
+      else if constexpr (std::is_floating_point_v<FlagTypeNoCV> || std::is_floating_point_v<ValueType>) {
         // Compile-time floating point values are fiddly, so for safety we require the types to be the same in this
         // case.
         static_assert(
-            std::is_same_v<FlagType, ValueType>,
+            std::is_same_v<FlagTypeNoCV, ValueType>,
             "The IsEmpty-flag or the specified literal which indicates the empty state is a floating point type. "
             "Please ensure that they both have the exact same type. For example, if the IsEmpty-flag is a float, "
             "ensure that the IsEmpty-value is also a float and not e.g. a double.");
@@ -584,7 +585,7 @@ namespace impl
       // static_assert: Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same
       // noexcept specification as std::optional.
       static_assert(
-          noexcept(uninitializedIsEmptyFlagMemory = valueToIndicateEmpty),
+          noexcept(*const_cast<std::remove_cv_t<FlagType> *>(&uninitializedIsEmptyFlagMemory) = valueToIndicateEmpty),
           "The assignment operator of the flag type must be noexcept.");
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
       ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(uninitializedIsEmptyFlagMemory))))

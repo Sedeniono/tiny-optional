@@ -171,9 +171,27 @@ void test_TinyOptional()
   }
 
 
-  // Tests of volatile
+  // Tests of const and volatile
+  EXERCISE_OPTIONAL((tiny::optional<double const>{}), EXPECT_INPLACE, 43.0, 44.0);
+  static_assert(std::is_same_v<tiny::optional<double const>::value_type, double const>);
   EXERCISE_OPTIONAL((tiny::optional<double volatile>{}), EXPECT_INPLACE, 43.0, 44.0);
   static_assert(std::is_same_v<tiny::optional<double volatile>::value_type, double volatile>);
+  EXERCISE_OPTIONAL((tiny::optional<double const volatile>{}), EXPECT_INPLACE, 43.0, 44.0);
+  static_assert(std::is_same_v<tiny::optional<double const volatile>::value_type, double const volatile>);
+
+  EXERCISE_OPTIONAL((tiny::optional<int const, 42>{}), EXPECT_INPLACE, 43, 44);
+  static_assert(std::is_same_v<tiny::optional<int const>::value_type, int const>);
+  EXERCISE_OPTIONAL((tiny::optional<int volatile, 42>{}), EXPECT_INPLACE, 43, 44);
+  static_assert(std::is_same_v<tiny::optional<int volatile>::value_type, int volatile>);
+  EXERCISE_OPTIONAL((tiny::optional<int const volatile, 42>{}), EXPECT_INPLACE, 43, 44);
+  static_assert(std::is_same_v<tiny::optional<int const volatile>::value_type, int const volatile>);
+
+  EXERCISE_OPTIONAL((tiny::optional<int const>{}), EXPECT_SEPARATE, 43, 44);
+  static_assert(std::is_same_v<tiny::optional<int const>::value_type, int const>);
+  EXERCISE_OPTIONAL((tiny::optional<int volatile>{}), EXPECT_SEPARATE, 43, 44);
+  static_assert(std::is_same_v<tiny::optional<int volatile>::value_type, int volatile>);
+  EXERCISE_OPTIONAL((tiny::optional<int const volatile>{}), EXPECT_SEPARATE, 43, 44);
+  static_assert(std::is_same_v<tiny::optional<int const volatile>::value_type, int const volatile>);
 
 
   // C++20 allows using floating point values and literal class types in templates.
