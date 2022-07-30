@@ -63,6 +63,9 @@ Moreover, this library exploits **platform specific behavior**. So if your own c
 ## Installation
 This is a header-only library. Just copy the folder from the include directory containing the single header to your project. Include it via `#include <tiny/optional>`.
 
+The library uses the standard [`assert()` macro](https://en.cppreference.com/w/cpp/error/assert) in a few places, which can be disabled as usual by defining `NDEBUG`.
+
+
 ## Using `tiny::optional` as `std::optional` replacement
 Instead of writing `std::optional<T>`, use `tiny::optional<T>` in your code.
 If `T` is a `float`, `double`, `bool` or a pointer (in the sense of `std::is_pointer`), the optional will not require additional space. E.g.: `sizeof(tiny::optional<double>) == sizeof(double)`.
