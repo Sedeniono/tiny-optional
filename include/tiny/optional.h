@@ -31,17 +31,15 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 */
 
 #include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
+#include <cstdint> // Required for std::uint64_t etc.
+#include <cstring> // Required for memcpy
 #include <functional> // Required for std::hash
 #include <initializer_list>
-#include <limits>
-#include <memory>
+#include <limits> // Required for std::numeric_limits
+#include <memory> // Required for std::addressof
 #include <optional> // Required for std::nullopt etc.
 #include <type_traits>
-#include <utility>
+#include <utility> // Required for std::move, std::swap, etc.
 
 #if (!defined(__cplusplus) || __cplusplus < 201703L) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
   #error "The tiny::optional library requires at least C++17"
