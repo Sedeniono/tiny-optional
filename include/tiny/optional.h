@@ -298,7 +298,6 @@ namespace impl
   {
     // Union to prevent automatic initialization of mStorage. I.e. this only allocates the memory without
     // calling the constructor of PayloadWithInplaceFlagType.
-    // TODO for constexpr: Dummy member. Compare https://stackoverflow.com/a/57497579
     union
     {
       std::remove_const_t<PayloadWithInplaceFlagType> storage;
@@ -1722,7 +1721,7 @@ optional(T) -> optional<T, UseDefaultValue, UseDefaultValue>;
 
 
 template <class PayloadType, auto emptyValueOrMemPtr = UseDefaultValue, auto irrelevantOrEmptyValue = UseDefaultValue>
-[[nodiscard]] constexpr optional<std::decay_t<PayloadType>, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
+[[nodiscard]] optional<std::decay_t<PayloadType>, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
     PayloadType && v)
 {
   return optional<std::decay_t<PayloadType>, emptyValueOrMemPtr, irrelevantOrEmptyValue>{std::forward<PayloadType>(v)};
@@ -1734,7 +1733,7 @@ template <
     auto emptyValueOrMemPtr = UseDefaultValue,
     auto irrelevantOrEmptyValue = UseDefaultValue,
     class... ArgsT>
-[[nodiscard]] constexpr optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
+[[nodiscard]] optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
     ArgsT &&... args)
 {
   return optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue>{std::in_place, std::forward<ArgsT>(args)...};
@@ -1747,7 +1746,7 @@ template <
     auto irrelevantOrEmptyValue = UseDefaultValue,
     class U,
     class... ArgsT>
-[[nodiscard]] constexpr optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
+[[nodiscard]] optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
     std::initializer_list<U> il,
     ArgsT &&... args)
 {
@@ -1782,32 +1781,32 @@ using optional_inplace = impl::TinyOptionalImpl<impl::InplaceStoredTypeDecomposi
   namespace impl                                                                                                         \
   {                                                                                                                      \
     template <class D1, class F1, class D2, class F2>                                                                    \
-    [[nodiscard]] constexpr bool operator Op(TinyOptionalImpl<D1, F1> const & lhs, TinyOptionalImpl<D2, F2> const & rhs) \
+    [[nodiscard]] bool operator Op(TinyOptionalImpl<D1, F1> const & lhs, TinyOptionalImpl<D2, F2> const & rhs)           \
     {                                                                                                                    \
       code                                                                                                               \
     }                                                                                                                    \
                                                                                                                          \
     template <class D1, class F1, class U>                                                                               \
-    [[nodiscard]] constexpr bool operator Op(TinyOptionalImpl<D1, F1> const & lhs, std::optional<U> const & rhs)         \
+    [[nodiscard]] bool operator Op(TinyOptionalImpl<D1, F1> const & lhs, std::optional<U> const & rhs)                   \
     {                                                                                                                    \
       code                                                                                                               \
     }                                                                                                                    \
                                                                                                                          \
     template <class U, class D1, class F1>                                                                               \
-    [[nodiscard]] constexpr bool operator Op(std::optional<U> const & lhs, TinyOptionalImpl<D1, F1> const & rhs)         \
+    [[nodiscard]] bool operator Op(std::optional<U> const & lhs, TinyOptionalImpl<D1, F1> const & rhs)                   \
     {                                                                                                                    \
       code                                                                                                               \
     }                                                                                                                    \
   }                                                                                                                      \
                                                                                                                          \
   template <class P, auto e, auto i, class U>                                                                            \
-  [[nodiscard]] constexpr bool operator Op(optional<P, e, i> const & lhs, std::optional<U> const & rhs)                  \
+  [[nodiscard]] bool operator Op(optional<P, e, i> const & lhs, std::optional<U> const & rhs)                            \
   {                                                                                                                      \
     code                                                                                                                 \
   }                                                                                                                      \
                                                                                                                          \
   template <class U, class P, auto e, auto i>                                                                            \
-  [[nodiscard]] constexpr bool operator Op(std::optional<U> const & lhs, optional<P, e, i> const & rhs)                  \
+  [[nodiscard]] bool operator Op(std::optional<U> const & lhs, optional<P, e, i> const & rhs)                            \
   {                                                                                                                      \
     code                                                                                                                 \
   }
@@ -1827,19 +1826,19 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator==(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator==(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
   {
     return !lhs.has_value();
   }
 
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator==(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator==(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
   {
     return !rhs.has_value();
   }
 
   template <class D1, class F1, class U>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator==(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator==(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -1847,7 +1846,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator==(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator==(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -1870,19 +1869,19 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator!=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator!=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
   {
     return lhs.has_value();
   }
 
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator!=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator!=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
   {
     return rhs.has_value();
   }
 
   template <class D1, class F1, class U>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator!=(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator!=(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -1890,7 +1889,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator!=(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator!=(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -1912,19 +1911,19 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator<(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
+  [[nodiscard]] bool operator<(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
   {
     return false;
   }
 
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator<(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator<(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
   {
     return rhs.has_value();
   }
 
   template <class D1, class F1, class U>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -1932,7 +1931,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -1954,19 +1953,19 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator<=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator<=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
   {
     return !lhs.has_value();
   }
 
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator<=(std::nullopt_t, TinyOptionalImpl<D1, F1> const &)
+  [[nodiscard]] bool operator<=(std::nullopt_t, TinyOptionalImpl<D1, F1> const &)
   {
     return true;
   }
 
   template <class D1, class F1, class U>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<=(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<=(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -1974,7 +1973,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<=(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<=(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -1996,19 +1995,19 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
   {
     return lhs.has_value();
   }
 
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator>(std::nullopt_t, TinyOptionalImpl<D1, F1> const &)
+  [[nodiscard]] bool operator>(std::nullopt_t, TinyOptionalImpl<D1, F1> const &)
   {
     return false;
   }
 
   template <class D1, class F1, class U>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2016,7 +2015,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -2038,19 +2037,19 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator>=(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
+  [[nodiscard]] bool operator>=(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
   {
     return true;
   }
 
   template <class D1, class F1>
-  [[nodiscard]] constexpr bool operator>=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator>=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
   {
     return !rhs.has_value();
   }
 
   template <class D1, class F1, class U>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>=(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>=(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2058,7 +2057,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] constexpr std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>=(
+  [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>=(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
