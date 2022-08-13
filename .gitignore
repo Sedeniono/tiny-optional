@@ -374,3 +374,7 @@ clangPerf
 gccPerf
 
 .vscode
+
+*.o
+a.out
+*.exe

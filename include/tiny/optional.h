@@ -33,13 +33,19 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 #include <cassert>
 #include <cstdint> // Required for std::uint64_t etc.
 #include <cstring> // Required for memcpy
-#include <functional> // Required for std::hash
-#include <initializer_list>
 #include <limits> // Required for std::numeric_limits
-#include <memory> // Required for std::addressof
 #include <optional> // Required for std::nullopt etc.
 #include <type_traits>
-#include <utility> // Required for std::move, std::swap, etc.
+
+// In principle the following headers are required, but we rely on the standard header <optional> to include the
+// necessary pieces from the omitted headers. This is a build performance optimization, especially when using gcc's
+// libstdc++. Especially <functional> is very expensive to include. libstdc++ <optional> bypasses the need to include
+// the whole <functional> by including an internal smaller header for std::hash.
+//#include <functional> // Required for std::hash
+//#include <initializer_list>
+//#include <memory> // Required for std::addressof
+//#include <utility> // Required for std::move, std::swap, etc.
+
 
 #if (!defined(__cplusplus) || __cplusplus < 201703L) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
   #error "The tiny::optional library requires at least C++17"

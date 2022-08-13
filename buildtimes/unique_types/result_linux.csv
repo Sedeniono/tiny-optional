@@ -1,0 +1,3 @@
+Testcode;clang++ -std=c++17;clang++ -O3 -std=c++17;clang++ -std=c++17 -stdlib=libc++;clang++ -O3 -std=c++17 -stdlib=libc++;g++ -std=c++17;g++ -O3 -std=c++17
+std.cpp;13.37;9.09;12.28;7.94;13.22;9.52
+tiny.cpp;22.37;13.53;21.27;12.17;23.84;12.26

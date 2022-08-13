@@ -22,6 +22,8 @@
   - [Specifying a sentinel value via a type](#specifying-a-sentinel-value-via-a-type)
   - [Using custom emptiness logic](#using-custom-emptiness-logic)
 - [Performance results](#performance-results)
+  - [Runtime](#runtime)
+  - [Build time](#build-time)
 - [How it works](#how-it-works)
 
 
@@ -292,6 +294,8 @@ int main()
 
 
 # Performance results
+
+## Runtime
 First note that one goal of the library has no runtime performance impact: Namely it provides a more semantically expressive way to have variables where a special value indicates the empty state, i.e. instead of
 ```C++
 int oneBasedIndex; // 0 means "does not reference anything"
@@ -334,7 +338,7 @@ double PerformTest(std::vector<WeirdVector> & values)
 ```
 Running this code with `tiny::optional` and with `std::optional` on an Intel Core i7-4770K results in the following:
 ![Performance results](performance/results_relative.png)
-clang 13 and gcc 11 were compiled with `-O3 -DNDEBUG -mavx`, MSVC 19.29 used `/O2 /arch:AVX /GS- /sdl-`.
+clang 13 and gcc 11 were compiled with `-O3 -DNDEBUG -mavx` on WSL, MSVC 19.29 used `/O2 /arch:AVX /GS- /sdl-`.
 The vertical axis shows the ratio of the execution time for `std::optional` divided by the execution time of the version with `tiny::optional`. 
 A value of 1 thus means that they are equally fast, a value >1 means that `tiny::optional` is faster. The horizontal axis depicts the number of values in the input container `values`.
 The three vertical lines show when the values using `tiny::optional` completely fill the L1 (64kiB per core), L2 (256kiB per core) and L3 cache (8.0MiB) of the Intel i7-4770K.
@@ -345,6 +349,45 @@ The peak improvement is reached once most of the tiny data still fits into the L
 Once most of the data in both cases no longer fit, the improvement converges to a factor of roughly 2x.
 The reason is that most data needs to be streamed from the RAM and the amount of data in the tiny case is half of that of the std case.
 
+
+## Build time
+To benchmark the time it takes to compile code using `tiny::optional` rather than `std::optional`, the following bit of generated C++ code is used:
+```C++
+struct S0
+{
+    struct impl{};
+
+    void test() {
+        o = std::nullopt;
+        [[maybe_unused]] bool v1 = o.has_value();
+        o = impl{};
+        [[maybe_unused]] auto v2 = o.value();
+        v2 = *o;
+        o.reset();
+        o.emplace(v2);
+        [[maybe_unused]] bool v3 = static_cast<bool>(o);
+    }
+    
+    tiny::optional<impl> o; // or std::optional
+};
+
+int main()
+{
+    S0 s0;
+    s0.test();
+}
+```
+However, not only a single class `S0` but additional ones `S1`, `S2`, etc. get generated and used to achieve meaningful build times.
+The same code but with `tiny::optional` replaced with `std::optional` is also measured.
+The ratio of the times (build time of `tiny::optional` divided by the build time of `std::optional`) is shown in the following figure:
+![Build times](buildtimes//unique_types/result.png)
+clang 13 and gcc 11 are used on WSL, and `cl.exe` means MSVC 19.29.
+clang without the `-stdlib=libc++` flag uses gcc's stdlibc++.
+
+Obviously, `tiny::optional` takes roughly ~1.5x-2x longer to compile than `std::optional`.
+The more generic interface of `tiny::optional` requires additional template meta-programming, which apparently takes its toll.
+But note that this is a rather extreme example since here the optional dominates the build time completely.
+In larger real world projects (where build times actually matter) one would expect that the overwhelming majority of all variables are not optionals, meaning that the usage of `tiny::optional` should not have a noticeable impact.
 
 
 # How it works
