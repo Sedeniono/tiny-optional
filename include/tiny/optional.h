@@ -488,7 +488,7 @@ namespace impl
     {
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
       return std::memcmp(
-                 const_cast<void *>(static_cast<void const volatile *>(&isEmptyFlag)),
+                 const_cast<void *>(static_cast<void const volatile *>(std::addressof(isEmptyFlag))),
                  &valueToIndicateEmpty,
                  sizeof(valueToIndicateEmpty))
              == 0;
@@ -501,7 +501,7 @@ namespace impl
       // To this end note the static_asserts above: The flag is trivially copyable.
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
       std::memcpy(
-          const_cast<void *>(static_cast<void const volatile *>(&uninitializedIsEmptyFlagMemory)),
+          const_cast<void *>(static_cast<void const volatile *>(std::addressof(uninitializedIsEmptyFlagMemory))),
           &valueToIndicateEmpty,
           sizeof(valueToIndicateEmpty));
     }
