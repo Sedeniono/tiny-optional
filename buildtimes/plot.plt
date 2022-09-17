@@ -5,7 +5,7 @@ set output "result.png"
 
 unset key
 set yrange [0:]
-set ylabel "Ratio of compilation time: std/tiny\n(>1 means tiny is slower)"
+set ylabel "Ratio of compilation times: tiny/std\n(>1 means tiny is slower)"
 set boxwidth 0.5
 set style fill solid
 set xtics rotate by 45 right
