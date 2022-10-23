@@ -25,7 +25,7 @@
   - [Runtime](#runtime)
   - [Build time](#build-time)
 - [How it works](#how-it-works)
-- [Similar libraries](#similar-libraries)
+- [Related work](#related-work)
 
 
 # Introduction
@@ -461,11 +461,14 @@ Additional ideas (not yet implemented!):
 * References: Similar to pointers. But references in optionals are currently forbidden by the C++ standard.
 * Enums: If there were a way to automatically get the min. or max. value in an enumeration, we could find an unused value as sentinel automatically.
 * Nested `tiny::optional<tiny::optional<T>>` could be optimized. But something like this is probably rare?
-* Strings: Idea from [reddit](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itftn0y/?utm_source=share&utm_medium=web2x&context=3): Use `"\0\0"` for std strings. The size of the sentinel string should not be larger than the internal storage used for the short string optimization (SSO). So maybe just set the whole memory of the std string to zero and compare with that (assuming that for SSO a static array is used internally).
+* Strings: Idea from [reddit](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itftn0y/?utm_source=share&utm_medium=web2x&context=3): Use `"\0\0"` for std strings, or maybe better `"\0\r\a..."`. The size of the sentinel string should not be larger than the internal storage used for the short string optimization (SSO).
 
 
-# Similar libraries
+# Related work
 The [discussion on reddit](https://www.reddit.com/r/cpp/comments/ybc4lf/tinyoptional_a_c_optional_that_does_not_waste/?utm_source=share&utm_medium=web2x&context=3) has shown that some other libraries with similar intent exist:
 * [`compact_optional`](https://github.com/akrzemi1/compact_optional) and his successors [`markable`](https://github.com/akrzemi1/markable). A major difference to `tiny::optional` is that `tiny::optional` attempts to be a drop-in replacement for `std::optional` while providing automatic optimization for floats etc. The sentinel functionality is opt-in (by specifying a second template argument). On the other hand, `markable` is not designed to be a direct replacement of `std::optional`. To get an optional of some generic type (where an additional internal boolean must be used to represent the empty state), `markable` needs to be told about this (so in a sense, it is opt-out): `markable<mark_optional<boost::optional<int>>>`. On the other hand, `tiny::optional<int>` does this automatically.
 * The [talk by Arthur O'Dwyer “The Best Type Traits that C++ Doesn't Have”](https://youtu.be/MWBfmmg8-Yo) from C++Now 2018 ([github repository](https://github.com/Quuxplusone/from-scratch)) introduces `tombstone_traits`, which exposes unused bit patterns. It is exploited by his [own implementation of optional](https://github.com/Quuxplusone/from-scratch/tree/master/include/scratch/bits/optional).
 * [foonathan/tiny](https://github.com/foonathan/tiny): Seems to be abandoned and to not implement a fully fledged `std::optional` replacement.
+
+
+Also, Rust's `Option` implements some magic for [references](https://stackoverflow.com/q/16504643/3740047) and [bools](https://stackoverflow.com/q/73180983/3740047).
