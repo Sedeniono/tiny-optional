@@ -32,6 +32,8 @@ The goal of this library is to provide the functionality of [`std::optional`](ht
 * types with unused bits in practice (`double`, `float`, `bool`, raw pointers), or 
 * where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
 
+**Warning:** This library exploits undefined/platform specific behavior on x86/x64 architectures. See below for more details.
+
 For a quick start, see the following example, also available [live on godbolt](https://godbolt.org/z/83xo9hdxT):
 ```C++
 //--------- Automatic exploitation of unused bit patterns ---------
