@@ -157,7 +157,7 @@ struct TestClassPrivate
     return MatchingFloat(lhs.someValue, rhs.someValue);
   }
 
-  friend void test_TinyOptional();
+  friend void test_TinyOptionalPayload_OtherTypes();
 
   TestClassPrivate()
     : someValue(-1.0)
