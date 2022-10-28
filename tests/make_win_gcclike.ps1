@@ -9,7 +9,7 @@ if ($null -ne $env:ADDITIONAL_FLAGS) { $ADDITIONAL_FLAGS = -split $env:ADDITIONA
 if ($null -ne $env:OUT_DIR_NAME) { $OUT_DIR_NAME = $env:OUT_DIR_NAME }
 
 $WARNING_FLAGS = "-Wall", "-Wextra", "-pedantic", "-Wconversion", "-Werror"
-$CPP_FILES = "ComparisonTests.cpp", "CompilationBase.cpp", "CompilationErrorTests.cpp", "ConstructionTests.cpp", "ExerciseOptionalEmptyViaType.cpp", "ExerciseOptionalInplace.cpp", "ExerciseStdOptional.cpp", "ExerciseTinyOptional.cpp", "GccLikeCompilation.cpp", "IntermediateTests.cpp", "MsvcCompilation.cpp", "Tests.cpp", "TestUtilities.cpp"
+$CPP_FILES = "ComparisonTests.cpp", "CompilationBase.cpp", "CompilationErrorTests.cpp", "ConstructionTests.cpp", "ExerciseOptionalEmptyViaType.cpp", "ExerciseOptionalInplace.cpp", "ExerciseStdOptional.cpp", "ExerciseTinyOptionalPayload.cpp", "GccLikeCompilation.cpp", "IntermediateTests.cpp", "MsvcCompilation.cpp", "Tests.cpp", "TestUtilities.cpp"
 $TINY_OPTIONAL_INCLUDE_DIR = "../include"
 $EXE_NAME = "TinyOptionalTests.exe"
 

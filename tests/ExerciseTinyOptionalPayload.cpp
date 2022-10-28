@@ -1,3 +1,5 @@
+#include "ExerciseTinyOptionalPayload.h"
+
 #include "Exercises.h"
 #include "TestTypes.h"
 #include "tiny/optional.h"

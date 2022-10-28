@@ -33,7 +33,7 @@
     <ClCompile Include="ExerciseOptionalEmptyViaType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ExerciseTinyOptional.cpp">
+    <ClCompile Include="ExerciseTinyOptionalPayload.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ExerciseOptionalInplace.cpp">
@@ -95,7 +95,7 @@
     <ClInclude Include="ExerciseStdOptional.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ExerciseTinyOptional.h">
+    <ClInclude Include="ExerciseTinyOptionalPayload.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IntermediateTests.h">

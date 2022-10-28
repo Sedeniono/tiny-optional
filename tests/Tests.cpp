@@ -4,7 +4,7 @@
 #include "ExerciseOptionalEmptyViaType.h"
 #include "ExerciseOptionalInplace.h"
 #include "ExerciseStdOptional.h"
-#include "ExerciseTinyOptional.h"
+#include "ExerciseTinyOptionalPayload.h"
 #include "IntermediateTests.h"
 #include "TestUtilities.h"
 #include "tiny/optional.h"
