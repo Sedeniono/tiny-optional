@@ -38,4 +38,11 @@ void test_CrosscheckStdOptional()
   EXERCISE_OPTIONAL((std::optional<double const volatile>{}), EXPECT_SEPARATE, 43.0, 44.0);
   static_assert(std::is_same_v<std::optional<double const volatile>::value_type, double const volatile>);
 #endif
+
+  {
+    int i = 0;
+    int j = 42;
+    EXERCISE_OPTIONAL((std::optional<void *>{}), EXPECT_SEPARATE, static_cast<void *>(&i), &j);
+    EXERCISE_OPTIONAL((std::optional<void *>{}), EXPECT_SEPARATE, nullptr, static_cast<void *>(&i));
+  }
 }

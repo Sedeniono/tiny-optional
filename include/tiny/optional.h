@@ -55,6 +55,14 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #define TINY_OPTIONAL_CPP20
 #endif
 
+// https://stackoverflow.com/a/66249936
+#if (defined(__x86_64__) || defined(_M_X64)) /* Is it x64?*/
+  #define TINY_OPTIONAL_x64
+#elif (defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86)) /*Is it x86?*/
+  #define TINY_OPTIONAL_x86
+#endif
+
+
 
 namespace tiny
 {
@@ -184,10 +192,7 @@ namespace impl
 //====================================================================================
 
 // So far the implementation defined exploits are only implemented and tested for x64 and x86.
-// https://stackoverflow.com/a/66249936
-#if !(                                                                                                                 \
-    (defined(__x86_64__) || defined(_M_X64)) /* Is it x64?*/                                                           \
-    || (defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86))) /*Is it x86?*/
+#if !defined(TINY_OPTIONAL_x86) && !defined(TINY_OPTIONAL_x64)
   #error "Exploiting of unused bits is not implemented for the target architecture."
 #endif
 
@@ -265,15 +270,50 @@ namespace impl
   template <class T>
   struct EmptyValueExploitingUnusedBits<T *>
   {
-    // Something like optional<T*> is rather unusal, because the usual thing would be to use a raw pointer instead
-    // and indicate a missing value via nullptr. However, we support it especially because it allows compressed
-    // optionals of structs/classes that contain a pointer. I.e. the 'IsEmpty'-flag can then be stored in a
-    // member variable which is a pointer.
-    //
-    // We do not want to 'swallow' the nullptr value. Hence, instead we use the highest possible address.
-    // In practice there should never be anything stored there.
-    static constexpr std::uintptr_t value = UINTPTR_MAX;
+    // We support a compressed optional<T*> especially because it allows compressed optionals of structs/classes that
+    // contain a pointer. I.e. the 'IsEmpty'-flag can then be stored in a member variable which is a pointer.
+    // The sentinel value is chosen by considering the following points:
+    // - We obviously don't want to use a nullptr. An optional containing a nullptr should be possible and should not
+    //   appear to be empty.
+    // - A sensible idea at first sight seems to be to use the highest possible value (i.e. 0xffff'ffff for 32 bit).
+    //   The problem is that on Windows there is the HANDLE type as well as similar types such as HINSTANCE or HWND.
+    //   They are just typedefs to void*. In case of errors, some WinAPIs return INVALID_HANDLE_VALUE as value, which 
+    //   is defined as -1 (i.e. 0xffff'ffff on 32 bit). Moreover, Windows defines so called 'pseudo handles' which can
+    //   be returned by various WinAPI functions. The known values are -1, -2, -3, -4, -5 and -6. See
+    //   https://github.com/winsiderss/systeminformer/blob/c19d69317a8eedcce773eb7317462eac8dfebf66/phnt/include/ntpsapi.h#L1294
+    //   https://devblogs.microsoft.com/oldnewthing/20210105-00/?p=104667
+    //   So all of these should not be used as sentinels.
+    // - Similar, small values such as 0x01 (which, in principle, shouldn't appear in practice as valid addresses) are
+    //   not a good choice either because at least the WinAPI function ShellExecute() function can return such values as
+    //   error codes.
+    // - Not all addresses are possible on 64 bit. Current CPUs only implement 48 meaningful bits since this is cheaper
+    //   Having enough memory to require true 64 bits is a thing for the distant future (thousands of petabytes...).
+    //   These so-called 'canonical addresses' range from 0x0000'0000'0000'0000 to 0x0000'7fff'ffff'ffff (which is
+    //   reserved for user space addresses) and from 0xffff'8000'0000'0000 to 0xffff'ffff'ffff'ffff (which is reserved
+    //   for kernel space addresses). All values in the gap between these two ranges can never occur as a real valid
+    //   virtual address. Thus, on 64 bit, we want to use a value from this gap of non-canonical addresses as sentinel.
+    //   Also see https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/
+    // - Allocated memory is usually aligned to 4 bytes on today's system. Of course, one can have valid addresses also
+    //   to non-aligned locations. But they occur less often in practice. Thus, if we choose a sentinel value that is
+    //   not divisible by 4, or even better not divisible by 2, we minimize the chance that the chosen sentinel value is
+    //   encountered as valid address in practice.
+
+#ifdef TINY_OPTIONAL_x64
+    // We simply use the highest non-canonical address on 64 bit.
+    static constexpr std::uintptr_t value = 0xffff'8000'0000'0000ull - 1;
+#elif defined(TINY_OPTIONAL_x86)
+    // >= 0xffff'ffff-5 are not possible due to the pseudo handles on Windows. 0xffff'ffff-6 would be possible. Just to
+    // get a bit more distance to the space of pseudo handles (in case another one will be introduced), we use
+    // 0xffff'ffff-8. The value 0xffff'ffff-7 is not used to satisfy the note about alignment above.
+    static constexpr std::uintptr_t value = 0xffff'ffff - 8;
+#else
+    #error Unknown architecture.
+#endif
+
     static_assert(sizeof(value) == sizeof(T *));
+
+    // Cross-check the thoughts about alignment explained above: Value should not be divisible by 2.
+    static_assert(value % 2 == 1);
   };
 
 

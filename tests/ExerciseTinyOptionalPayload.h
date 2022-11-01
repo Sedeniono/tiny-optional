@@ -10,4 +10,5 @@ void test_TinyOptionalPayload_StdTypes();
 void test_TinyOptionalPayload_NestedOptionals();
 void test_TinyOptionalPayload_ConstAndVolatile();
 void test_TinyOptionalPayload_Cpp20NTTP();
+void test_TinyOptionalPayload_WindowsHandles();
 void test_TinyOptionalPayload_OtherTypes();

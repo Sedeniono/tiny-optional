@@ -36,6 +36,7 @@ void RunTests()
          ADD_TEST(test_TinyOptionalPayload_NestedOptionals),
          ADD_TEST(test_TinyOptionalPayload_ConstAndVolatile),
          ADD_TEST(test_TinyOptionalPayload_Cpp20NTTP),
+         ADD_TEST(test_TinyOptionalPayload_WindowsHandles),
          ADD_TEST(test_TinyOptionalPayload_OtherTypes),
          ADD_TEST(test_TinyOptionalMemoryManagement),
          ADD_TEST(test_TinyOptionalCopyConstruction),
