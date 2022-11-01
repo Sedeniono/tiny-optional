@@ -286,9 +286,11 @@ void test_TinyOptionalPayload_WindowsHandles()
     //     NtCurrentSilo() ((HANDLE)(LONG_PTR)-1)
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentProcess(), INVALID_HANDLE_VALUE);
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentThread(), INVALID_HANDLE_VALUE);
+  #ifndef TINY_OPTIONAL_GCC_BUILD // Functions are unknown to mingw for some reason.
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentProcessToken(), INVALID_HANDLE_VALUE);
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentThreadToken(), INVALID_HANDLE_VALUE);
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentThreadEffectiveToken(), INVALID_HANDLE_VALUE);
+ #endif
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-1)), INVALID_HANDLE_VALUE);
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-2)), INVALID_HANDLE_VALUE);
     EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-3)), INVALID_HANDLE_VALUE);
