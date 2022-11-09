@@ -41,6 +41,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // necessary pieces from the omitted headers. This is a build performance optimization, especially when using gcc's
 // libstdc++. Especially <functional> is very expensive to include. libstdc++ <optional> bypasses the need to include
 // the whole <functional> by including an internal smaller header for std::hash.
+//#include <compare> // For operator<=>
 //#include <functional> // Required for std::hash
 //#include <initializer_list>
 //#include <memory> // Required for std::addressof
@@ -60,6 +61,18 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #define TINY_OPTIONAL_x64
 #elif (defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86)) /*Is it x86?*/
   #define TINY_OPTIONAL_x86
+#endif
+
+#ifdef __cpp_lib_three_way_comparison
+  #define TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON
+  #if !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
+    // With C++20, most of the comparison operators (==, <=, etc) that compare with a std::nullopt are no longer defined
+    // in the standard. Instead, the code relies on the C++20 reversal of arguments or the three way comparison
+    // operator. Unfortunately, gcc (at least up to and including gcc 12.2) does not implemented CWG 2445, meaning that
+    // e.g. std::nullopt==someOptional calls the wrong function. See https://stackoverflow.com/q/74330356/3740047.
+    // To work around this issue, we define all operators for gcc.
+    #define TINY_OPTIONAL_GCC_WORKAROUND_CWG2445
+  #endif
 #endif
 
 
@@ -1877,11 +1890,13 @@ namespace impl
     return !lhs.has_value();
   }
 
+#if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
   [[nodiscard]] bool operator==(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
   {
     return !rhs.has_value();
   }
+#endif
 
   template <class D1, class F1, class U>
   [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator==(
@@ -1914,6 +1929,7 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 
 namespace impl
 {
+#if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
   [[nodiscard]] bool operator!=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
   {
@@ -1925,6 +1941,7 @@ namespace impl
   {
     return rhs.has_value();
   }
+#endif
 
   template <class D1, class F1, class U>
   [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator!=(
@@ -1956,6 +1973,7 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 
 namespace impl
 {
+#if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
   [[nodiscard]] bool operator<(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
   {
@@ -1967,6 +1985,7 @@ namespace impl
   {
     return rhs.has_value();
   }
+#endif
 
   template <class D1, class F1, class U>
   [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<(
@@ -1998,6 +2017,7 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 
 namespace impl
 {
+#if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
   [[nodiscard]] bool operator<=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
   {
@@ -2009,6 +2029,7 @@ namespace impl
   {
     return true;
   }
+#endif
 
   template <class D1, class F1, class U>
   [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator<=(
@@ -2040,6 +2061,7 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 
 namespace impl
 {
+#if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
   [[nodiscard]] bool operator>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
   {
@@ -2051,6 +2073,7 @@ namespace impl
   {
     return false;
   }
+#endif
 
   template <class D1, class F1, class U>
   [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>(
@@ -2082,6 +2105,7 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 
 namespace impl
 {
+#if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
   [[nodiscard]] bool operator>=(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
   {
@@ -2093,6 +2117,7 @@ namespace impl
   {
     return !rhs.has_value();
   }
+#endif
 
   template <class D1, class F1, class U>
   [[nodiscard]] std::enable_if_t<EnableComparisonWithValue<U>(nullptr), bool> operator>=(
@@ -2111,6 +2136,86 @@ namespace impl
   }
 } // namespace impl
 
+
+//-----------------------
+// operator<=>
+
+#ifdef TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON
+// See TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS() for the reason of defining 
+// all the operator<=>(SomeOptional, SomeOptional)
+namespace impl
+{
+  template <class D1, class F1, class D2, class F2>
+  [[nodiscard]] std::compare_three_way_result_t<
+      typename TinyOptionalImpl<D1, F1>::value_type,
+      typename TinyOptionalImpl<D2, F2>::value_type>
+      operator<=>(TinyOptionalImpl<D1, F1> const & lhs, TinyOptionalImpl<D2, F2> const & rhs)
+    requires(std::three_way_comparable_with<
+             typename TinyOptionalImpl<D1, F1>::value_type,
+             typename TinyOptionalImpl<D2, F2>::value_type>)
+  {
+    return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
+  }
+
+  template <class D1, class F1, class U>
+  [[nodiscard]] std::compare_three_way_result_t<typename TinyOptionalImpl<D1, F1>::value_type, U> operator<=>(
+      TinyOptionalImpl<D1, F1> const & lhs,
+      std::optional<U> const & rhs)
+    requires(std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
+  {
+    return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
+  }
+
+  // TODO: Required?
+  template <class U, class D1, class F1>
+  [[nodiscard]] std::compare_three_way_result_t<U, typename TinyOptionalImpl<D1, F1>::value_type> operator<=>(
+      std::optional<U> const & lhs,
+      TinyOptionalImpl<D1, F1> const & rhs)
+    requires(std::three_way_comparable_with<U, typename TinyOptionalImpl<D1, F1>::value_type>)
+  {
+    return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
+  }
+
+} // namespace impl
+
+template <class P, auto e, auto i, std::three_way_comparable_with<P> U>
+[[nodiscard]] std::compare_three_way_result_t<P, U> operator<=>(
+    optional<P, e, i> const & lhs,
+    std::optional<U> const & rhs)
+{
+  return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
+}
+
+template <class U, std::three_way_comparable_with<U> P, auto e, auto i>
+[[nodiscard]] std::compare_three_way_result_t<U, P> operator<=>(
+    std::optional<U> const & lhs,
+    optional<P, e, i> const & rhs)
+{
+  return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
+}
+
+namespace impl
+{
+  template <class D1, class F1>
+  [[nodiscard]] std::strong_ordering operator<=>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  {
+    return lhs.has_value() <=> false;
+  }
+
+  template <class D1, class F1, class U>
+  [[nodiscard]] std::compare_three_way_result_t<typename TinyOptionalImpl<D1, F1>::value_type, U> operator<=>(
+      TinyOptionalImpl<D1, F1> const & lhs,
+      U const & rhs)
+    requires(
+        EnableComparisonWithValue<U>(nullptr)
+        && std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
+  {
+    return lhs.has_value() ? (*lhs <=> rhs) : std::strong_ordering::less;
+  }
+
+} // namespace impl
+
+#endif
 } // namespace tiny
 
 
