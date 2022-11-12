@@ -2165,17 +2165,6 @@ namespace impl
   {
     return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
   }
-
-  // TODO: Required?
-  template <class U, class D1, class F1>
-    requires(std::three_way_comparable_with<U, typename TinyOptionalImpl<D1, F1>::value_type>)
-  [[nodiscard]] std::compare_three_way_result_t<U, typename TinyOptionalImpl<D1, F1>::value_type> operator<=>(
-      std::optional<U> const & lhs,
-      TinyOptionalImpl<D1, F1> const & rhs)
-  {
-    return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
-  }
-
 } // namespace impl
 
 template <class P, auto e, auto i, std::three_way_comparable_with<P> U>
@@ -2186,6 +2175,7 @@ template <class P, auto e, auto i, std::three_way_comparable_with<P> U>
   return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
 }
 
+  #ifdef TINY_OPTIONAL_GCC_WORKAROUND_CWG2445
 template <class U, std::three_way_comparable_with<U> P, auto e, auto i>
 [[nodiscard]] std::compare_three_way_result_t<U, P> operator<=>(
     std::optional<U> const & lhs,
@@ -2193,6 +2183,7 @@ template <class U, std::three_way_comparable_with<U> P, auto e, auto i>
 {
   return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
 }
+  #endif
 
 namespace impl
 {
