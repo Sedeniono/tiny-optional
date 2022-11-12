@@ -1885,14 +1885,14 @@ TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS(
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] bool operator==(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator==(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t) noexcept
   {
     return !lhs.has_value();
   }
 
 #if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
-  [[nodiscard]] bool operator==(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator==(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs) noexcept
   {
     return !rhs.has_value();
   }
@@ -1931,13 +1931,13 @@ namespace impl
 {
 #if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
-  [[nodiscard]] bool operator!=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator!=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t) noexcept
   {
     return lhs.has_value();
   }
 
   template <class D1, class F1>
-  [[nodiscard]] bool operator!=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator!=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs) noexcept
   {
     return rhs.has_value();
   }
@@ -1975,13 +1975,13 @@ namespace impl
 {
 #if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
-  [[nodiscard]] bool operator<(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
+  [[nodiscard]] bool operator<(TinyOptionalImpl<D1, F1> const &, std::nullopt_t) noexcept
   {
     return false;
   }
 
   template <class D1, class F1>
-  [[nodiscard]] bool operator<(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator<(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs) noexcept
   {
     return rhs.has_value();
   }
@@ -2019,13 +2019,13 @@ namespace impl
 {
 #if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
-  [[nodiscard]] bool operator<=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator<=(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t) noexcept
   {
     return !lhs.has_value();
   }
 
   template <class D1, class F1>
-  [[nodiscard]] bool operator<=(std::nullopt_t, TinyOptionalImpl<D1, F1> const &)
+  [[nodiscard]] bool operator<=(std::nullopt_t, TinyOptionalImpl<D1, F1> const &) noexcept
   {
     return true;
   }
@@ -2063,13 +2063,13 @@ namespace impl
 {
 #if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
-  [[nodiscard]] bool operator>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] bool operator>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t) noexcept
   {
     return lhs.has_value();
   }
 
   template <class D1, class F1>
-  [[nodiscard]] bool operator>(std::nullopt_t, TinyOptionalImpl<D1, F1> const &)
+  [[nodiscard]] bool operator>(std::nullopt_t, TinyOptionalImpl<D1, F1> const &) noexcept
   {
     return false;
   }
@@ -2107,13 +2107,13 @@ namespace impl
 {
 #if !defined(TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON) || defined(TINY_OPTIONAL_GCC_WORKAROUND_CWG2445)
   template <class D1, class F1>
-  [[nodiscard]] bool operator>=(TinyOptionalImpl<D1, F1> const &, std::nullopt_t)
+  [[nodiscard]] bool operator>=(TinyOptionalImpl<D1, F1> const &, std::nullopt_t) noexcept
   {
     return true;
   }
 
   template <class D1, class F1>
-  [[nodiscard]] bool operator>=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs)
+  [[nodiscard]] bool operator>=(std::nullopt_t, TinyOptionalImpl<D1, F1> const & rhs) noexcept
   {
     return !rhs.has_value();
   }
@@ -2197,7 +2197,7 @@ template <class U, std::three_way_comparable_with<U> P, auto e, auto i>
 namespace impl
 {
   template <class D1, class F1>
-  [[nodiscard]] std::strong_ordering operator<=>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t)
+  [[nodiscard]] std::strong_ordering operator<=>(TinyOptionalImpl<D1, F1> const & lhs, std::nullopt_t) noexcept
   {
     return lhs.has_value() <=> false;
   }
