@@ -111,11 +111,7 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<int>>(42, 42.0, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<int>>(42, 999.0, comparer), ...);
 
-    // TODO: can this be dropped?
-#ifndef __FAST_MATH__
     // Comparisons involving partially ordered values.
-    // Note: These fail with -ffast-math and C++20, probably because std::optional defines the comparison operators in
-    // terms of the spaceship operator while tiny::optional does not.
     static constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(NaN, NaN, comparer), ...);
@@ -123,7 +119,6 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<double>>(NaN, NaN, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<double>>(std::nullopt, NaN, comparer), ...);
-#endif
 
     // Comparisons for optional_empty_via_type.
     using OptionalIntViaType = tiny::optional_empty_via_type<int, std::integral_constant<int, 1>>;
