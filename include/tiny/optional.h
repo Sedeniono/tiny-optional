@@ -2141,37 +2141,37 @@ namespace impl
 // operator<=>
 
 #ifdef TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON
-// See TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS() for the reason of defining 
+// See TINY_OPTIONAL_IMPL_COMPARE_BETWEEN_OPTIONALS() for the reason of defining
 // all the operator<=>(SomeOptional, SomeOptional)
 namespace impl
 {
   template <class D1, class F1, class D2, class F2>
+    requires(std::three_way_comparable_with<
+             typename TinyOptionalImpl<D1, F1>::value_type,
+             typename TinyOptionalImpl<D2, F2>::value_type>)
   [[nodiscard]] std::compare_three_way_result_t<
       typename TinyOptionalImpl<D1, F1>::value_type,
       typename TinyOptionalImpl<D2, F2>::value_type>
       operator<=>(TinyOptionalImpl<D1, F1> const & lhs, TinyOptionalImpl<D2, F2> const & rhs)
-    requires(std::three_way_comparable_with<
-             typename TinyOptionalImpl<D1, F1>::value_type,
-             typename TinyOptionalImpl<D2, F2>::value_type>)
   {
     return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
   }
 
   template <class D1, class F1, class U>
+    requires(std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
   [[nodiscard]] std::compare_three_way_result_t<typename TinyOptionalImpl<D1, F1>::value_type, U> operator<=>(
       TinyOptionalImpl<D1, F1> const & lhs,
       std::optional<U> const & rhs)
-    requires(std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
   {
     return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
   }
 
   // TODO: Required?
   template <class U, class D1, class F1>
+    requires(std::three_way_comparable_with<U, typename TinyOptionalImpl<D1, F1>::value_type>)
   [[nodiscard]] std::compare_three_way_result_t<U, typename TinyOptionalImpl<D1, F1>::value_type> operator<=>(
       std::optional<U> const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
-    requires(std::three_way_comparable_with<U, typename TinyOptionalImpl<D1, F1>::value_type>)
   {
     return (lhs && rhs) ? (*lhs <=> *rhs) : (lhs.has_value() <=> rhs.has_value());
   }
@@ -2203,12 +2203,12 @@ namespace impl
   }
 
   template <class D1, class F1, class U>
-  [[nodiscard]] std::compare_three_way_result_t<typename TinyOptionalImpl<D1, F1>::value_type, U> operator<=>(
-      TinyOptionalImpl<D1, F1> const & lhs,
-      U const & rhs)
     requires(
         EnableComparisonWithValue<U>(nullptr)
         && std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
+  [[nodiscard]] std::compare_three_way_result_t<typename TinyOptionalImpl<D1, F1>::value_type, U> operator<=>(
+      TinyOptionalImpl<D1, F1> const & lhs,
+      U const & rhs)
   {
     return lhs.has_value() ? (*lhs <=> rhs) : std::strong_ordering::less;
   }
