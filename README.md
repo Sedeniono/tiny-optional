@@ -101,8 +101,7 @@ Currently, the following components of the interface of `std::optional` are not 
 * No converting constructors and assignment operators implemented. The major issue here is to decide what to do with conversions like `tiny::optional<int, -1>` to `tiny::optional<unsigned, 42>`: What if the source contains a `42`? Should an exception be thrown?
 * Methods and types are not `constexpr`. This will probably not be possible in C++17 because some of the tricks rely on `std::memcpy`, which is not `constexpr`. `std::bit_cast` should help here for C++20. 
 * Constructors and destructors are not trivial, even if the payload type `T` would allow it.
-* C++20 monadic operations (`and_then` etc.) are not yet implemented.
-* The C++20 spaceship operator `operator<=>` is not yet implemented.
+* C++23 monadic operations (`and_then` etc.) are not yet implemented.
 
 Moreover, this library exploits **platform specific behavior**. So if your own code also uses platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained.
 
