@@ -56,6 +56,15 @@ void TestCompareOptWithValue(Val1 val1, Val2 val2, Comparer comparer)
 
 
 
+// Some comparison tests involving NaNs fail with -ffast-math, C++20, gcc <=10 and optimizations enabled. fast-math is
+// quite problematic for reproducible results, so there does not seem to be a defect in the tiny::optional library, and
+// certainly not with the sentinel used within tiny::optional. Instead, the optimizer is giving inconsistent results.
+// Thus, simply disable the tests for these cases.
+#if !defined(TINY_OPTIONAL_GCC_BUILD) || __GNUC__ >= 11 || (!defined(__FAST_MATH__) && !defined(TINY_OPTIONAL_CPP20))
+  #define TINY_OPTIONAL_ENABLE_NAN_COMPARISON_TESTS
+#endif
+
+
 void test_Comparisons()
 {
   auto const runAllComparisons = [](auto &&... comparer) {
@@ -112,10 +121,7 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<int>>(42, 999.0, comparer), ...);
 
     // Comparisons involving partially ordered values.
-#if !defined(TINY_OPTIONAL_GCC_BUILD) || __GNUC__ >= 11 || (!defined(__FAST_MATH__) && !defined(TINY_OPTIONAL_CPP20))
-    // Note: These fail with -ffast-math, C++20, gcc <=10 and optimizations enabled. fast-math is quite problematic for
-    // reproducible results, so there does not seem to be a defect in the tiny::optional library. Thus, simply disable
-    // the tests for these cases.
+#ifdef TINY_OPTIONAL_ENABLE_NAN_COMPARISON_TESTS
     static constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(NaN, NaN, comparer), ...);
@@ -144,7 +150,7 @@ void test_Comparisons()
     (TestCompareOptWithValue<std::optional<int>>(std::nullopt, 42, comparer), ...);
     (TestCompareOptWithValue<std::optional<int>>(42, std::nullopt, comparer), ...);
 
-#ifndef __FAST_MATH__ // As above
+#ifdef TINY_OPTIONAL_ENABLE_NAN_COMPARISON_TESTS
     (TestCompareOptWithOpt<std::optional<int>, std::optional<double>>(42, NaN, comparer), ...);
 #endif
   };
