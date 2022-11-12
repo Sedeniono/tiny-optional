@@ -112,6 +112,10 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<int>>(42, 999.0, comparer), ...);
 
     // Comparisons involving partially ordered values.
+#if !defined(TINY_OPTIONAL_GCC_BUILD) || __GNUC__ >= 11 || (!defined(__FAST_MATH__) && !defined(TINY_OPTIONAL_CPP20))
+    // Note: These fail with -ffast-math, C++20, gcc <=10 and optimizations enabled. fast-math is quite problematic for
+    // reproducible results, so there does not seem to be a defect in the tiny::optional library. Thus, simply disable
+    // the tests for these cases.
     static constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithOpt<tiny::optional<double>, tiny::optional<double>>(NaN, NaN, comparer), ...);
@@ -119,6 +123,7 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<double>>(42, NaN, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<double>>(NaN, NaN, comparer), ...);
     (TestCompareOptWithValue<tiny::optional<double>>(std::nullopt, NaN, comparer), ...);
+#endif
 
     // Comparisons for optional_empty_via_type.
     using OptionalIntViaType = tiny::optional_empty_via_type<int, std::integral_constant<int, 1>>;
