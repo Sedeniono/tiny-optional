@@ -37,5 +37,5 @@ jobs:
       working-directory: ${{env.TEST_DIR}}
       env:
         CXX: g++
-        ADDITIONAL_FLAGS: ${{ format('-std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
+        ADDITIONAL_FLAGS: ${{ format('-Wa,-mbig-obj  -std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
       run: make generic
