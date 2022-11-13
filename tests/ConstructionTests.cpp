@@ -3,7 +3,8 @@
 #include "TestTypes.h"
 
 #ifdef TINY_OPTIONAL_MSVC_BUILD
-  // Disable "unreachable code" because it is triggered by exception tests.
+  // Disable "unreachable code" because it is triggered by exception tests. Because, due to the exceptions, certain code
+  // is simply unreachable within the tiny optional.
   #pragma warning(disable : 4702)
 #endif
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TestUtilities.h"
+#include "tiny/optional.h"
 
 #include <iostream>
 #include <optional>
@@ -14,6 +15,14 @@
   // It is a false positive.
   #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
+
+
+// The tiny optional library implements monadic operations always, but std::optional only with C++23.
+// This template checks whether the monadic operation should be available for the given optional type.
+template <class OptionalType>
+inline constexpr bool MonadicsAvailable = tiny::impl::IsTinyOptional<OptionalType>
+                                          || (__cpp_lib_optional >= 202110L && tiny::impl::IsStdOptional<OptionalType>);
+
 
 
 enum InPlaceExpectation
