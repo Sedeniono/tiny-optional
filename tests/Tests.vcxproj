@@ -421,7 +421,8 @@
     <ClCompile Include="ExerciseOptionalEmptyViaType.cpp" />
     <ClCompile Include="ExerciseOptionalInplace.cpp" />
     <ClCompile Include="ExerciseStdOptional.cpp" />
-    <ClCompile Include="ExerciseTinyOptionalPayload.cpp" />
+    <ClCompile Include="ExerciseTinyOptionalPayload1.cpp" />
+    <ClCompile Include="ExerciseTinyOptionalPayload2.cpp" />
     <ClCompile Include="IntermediateTests.cpp" />
     <ClCompile Include="CompilationBase.cpp" />
     <ClCompile Include="GccLikeCompilation.cpp" />

@@ -33,7 +33,7 @@
     <ClCompile Include="ExerciseOptionalEmptyViaType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ExerciseTinyOptionalPayload.cpp">
+    <ClCompile Include="ExerciseTinyOptionalPayload1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ExerciseOptionalInplace.cpp">
@@ -55,6 +55,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SpecialMonadicTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExerciseTinyOptionalPayload2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
