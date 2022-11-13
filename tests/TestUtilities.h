@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tiny/optional.h"
+
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -107,13 +109,13 @@ bool MatchingFloat(Float1T lhs, Float2T rhs)
 
 
 template <class Val1T, class Val2T>
-bool AreEqual(Val1T const & lhs, Val2T const & rhs)
+bool AreEqual(Val1T && lhs, Val2T && rhs)
 {
-  if constexpr (std::is_floating_point_v<Val1T>) {
-    return MatchingFloat(lhs, rhs);
+  if constexpr (std::is_floating_point_v<tiny::impl::my_remove_cvref_t<Val1T>>) {
+    return MatchingFloat(std::forward<Val1T>(lhs), std::forward<Val2T>(rhs));
   }
   else {
-    return lhs == rhs;
+    return std::forward<Val1T>(lhs) == std::forward<Val2T>(rhs);
   }
 }
 
@@ -143,6 +145,13 @@ constexpr bool IsDisabledHash
   && !std::is_copy_assignable_v<std::hash<T>> 
   && !std::is_move_assignable_v<std::hash<T>>;
 // clang-format on
+
+
+// The tiny optional library implements monadic operations always, but std::optional only with C++23.
+template <class OptionalType>
+inline constexpr bool MonadicsAvailable = tiny::impl::IsTinyOptional<OptionalType>
+                                          || (__cpp_lib_optional >= 202110L && tiny::impl::IsStdOptional<OptionalType>);
+
 
 
 // From boost

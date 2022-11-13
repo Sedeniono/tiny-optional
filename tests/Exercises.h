@@ -23,8 +23,19 @@ enum InPlaceExpectation
 };
 
 
-// validValueToAssign1 and validValueToAssign2 should be two different test values, i.e. values
-// that the tests can assign to the optional to test various things.
+// The function ExerciseOptional() below is called with all sorts of optional types (including std::optional) and
+// payloads. For each one, ExerciseOptional() tests most of the operations provided by the optional.
+// The macro here mainly exists to stringify the arguments for readable test outputs.
+// 
+// validValueToAssign1 and validValueToAssign2 should be two different test values, i.e. values that the tests can
+// assign to the optional to test various things for non-empty optionals. They should be different so that the tests can
+// check whether e.g. an optional that initially contains validValueToAssign1 and then assigns validValueToAssign2
+// afterwards indeed contains validValueToAssign2.
+//
+// What we want as first argument "o" is the optional type, e.g. tiny::optional<int, 42>. Unfortunately, the
+// preprocessor treates "tiny::optional<int" and "42>" as separate arguments, since there are no parantheses around the
+// type. But simply using (tiny::optional<int, 42>) does not compile. Thus, at the calling side, we pass in a full
+// expression such as (tiny::optional<int, 42>{}) and then use decltype to extract the type.
 #define EXERCISE_OPTIONAL(o, inPlaceExpectation, validValueToAssign1, validValueToAssign2)                             \
   ExerciseOptional<decltype(o), inPlaceExpectation>(                                                                   \
       #o,                                                                                                              \
@@ -34,6 +45,10 @@ enum InPlaceExpectation
       validValueToAssign1,                                                                                             \
       validValueToAssign2)
 
+// Some of the tests below call operations such as emplace() that accept the constructor arguments of the payload.
+// EXERCISE_OPTIONAL() above does not allow to pass in such arguments, in which case e.g. emplace() simply
+// default-constructs an object. But we also want to have some tests where we do pass in the constructor arguments
+// separately. This can be done using this macro.
 #define EXERCISE_OPTIONAL_WITH_CONSTRUCTOR_ARGS(o, inPlaceExpectation, validValueToAssign1, validValueToAssign2, ...)  \
   ExerciseOptional<decltype(o), inPlaceExpectation>(                                                                   \
       #o,                                                                                                              \
@@ -45,6 +60,7 @@ enum InPlaceExpectation
       __VA_ARGS__)
 
 
+// See macros above.
 template <
     class Optional,
     InPlaceExpectation inPlaceExpectation,
@@ -71,7 +87,6 @@ void ExerciseOptional(
         "Test failure: Expected the tiny::optional to be the same size as std::optional.");
   }
 
-  static_assert(noexcept(Optional{}.reset()));
   static_assert(noexcept(Optional{}.has_value()));
 
   std::cout << "\tExercising " << optionalStr << " with validValueToAssign1='" << validValueToAssign1Str
@@ -358,6 +373,7 @@ void ExerciseOptional(
     }}
     ,
     {"ResetOfEmpty", [] (TEST_PARAMS) {
+      static_assert(noexcept(Optional{}.reset()));
       Optional o;
       o.reset();
       ASSERT_FALSE(o.has_value());
@@ -466,15 +482,15 @@ void ExerciseOptional(
     }}
     ,
     {"valueForEmpty", [] (TEST_PARAMS) {
-      Optional empty;
-      EXPECT_EXCEPTION([[maybe_unused]] auto const & v = empty.value(), std::bad_optional_access);
+      Optional empty_lvalue;
+      EXPECT_EXCEPTION([[maybe_unused]] auto const & v = empty_lvalue.value(), std::bad_optional_access);
 
       Optional const empty_const_lvalue;
       EXPECT_EXCEPTION([[maybe_unused]] auto const & v = empty_const_lvalue.value(), std::bad_optional_access);
 
       EXPECT_EXCEPTION([[maybe_unused]] auto const v = Optional{}.value(), std::bad_optional_access);
 
-      EXPECT_EXCEPTION([[maybe_unused]] auto const v = static_cast<Optional const &&>(empty).value(), 
+      EXPECT_EXCEPTION([[maybe_unused]] auto const v = static_cast<Optional const &&>(empty_lvalue).value(), 
                        std::bad_optional_access);
     }}
     ,
@@ -548,6 +564,82 @@ void ExerciseOptional(
         swap(o1, o2);
         ASSERT_FALSE(o1.has_value());
         ASSERT_TRUE(AreEqual(o2.value(), validValueToAssign1));
+      }
+    }}
+    ,
+    {"and_then_ForEmpty", [] (TEST_PARAMS) {
+      if constexpr (MonadicsAvailable<Optional>) {
+        using vt = typename Optional::value_type;
+
+        Optional empty_lvalue;
+        ASSERT_FALSE(empty_lvalue.and_then([](vt &) -> Optional { FAIL(); }).has_value());
+
+        Optional empty_const_lvalue;
+        ASSERT_FALSE(empty_const_lvalue.and_then([](vt const &) -> Optional { FAIL(); }).has_value());
+
+        ASSERT_FALSE(Optional{}.and_then([](vt &&) -> Optional { FAIL(); }).has_value());
+
+        ASSERT_FALSE(static_cast<Optional const &&>(empty_lvalue).and_then([](vt const &&) -> Optional { FAIL(); }).has_value());
+      }
+    }}
+    ,
+    {"and_then_ForNonEmpty", [] (TEST_PARAMS) {
+      if constexpr (MonadicsAvailable<Optional>) {
+        using vt = typename Optional::value_type;
+        enum class Dummy{ d };
+
+        {
+          Optional lvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(lvalue.and_then([&](vt & v) -> Optional { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return Optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          ASSERT_TRUE(AreEqual(lvalue.and_then([&](vt & v) -> std::optional<vt> { // tiny optional also supports return values of type std::optional
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return std::optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          ASSERT_TRUE(AreEqual(lvalue.and_then([&](vt &) { // The returned optional may contain some other type.
+            return std::optional{Dummy::d}; 
+          }).value(), Dummy::d));
+        }
+        {
+          Optional const const_lvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(const_lvalue.and_then([&](vt const & v) -> Optional { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return Optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          ASSERT_TRUE(AreEqual(const_lvalue.and_then([&](vt const & v) -> std::optional<vt> { // tiny optional also supports return values of type std::optional
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return std::optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          ASSERT_TRUE(AreEqual(const_lvalue.and_then([&](vt const &) { // The returned optional may contain some other type.
+            return std::optional{Dummy::d}; 
+          }).value(), Dummy::d));
+        }
+        {
+          Optional rvalue1{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(std::move(rvalue1).and_then([&](vt && v) -> Optional { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return Optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          Optional rvalue2{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(std::move(rvalue2).and_then([&](vt && v) -> std::optional<vt> { // tiny optional also supports return values of type std::optional
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return std::optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          Optional rvalue3{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(std::move(rvalue3).and_then([&](vt &&) { // The returned optional may contain some other type.
+            return std::optional{Dummy::d}; 
+          }).value(), Dummy::d));
+        }
+        {
+          Optional const const_rvalue1{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue1).and_then([&](vt const && v) -> Optional { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return Optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          Optional const const_rvalue2{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue2).and_then([&](vt const && v) -> std::optional<vt> { // tiny optional also supports return values of type std::optional
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return std::optional{validValueToAssign2}; 
+          }).value(), validValueToAssign2));
+          Optional const const_rvalue3{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue3).and_then([&](vt const &&) { // The returned optional may contain some other type.
+            return std::optional{Dummy::d}; 
+          }).value(), Dummy::d));
+        }
       }
     }}
   };

@@ -9,7 +9,7 @@ SANITIZE_FLAGS =
 WARNING_FLAGS = -Wall -Wextra -pedantic -Wconversion -Werror
 TINY_OPTIONAL_INCLUDE_DIR = $(PWD)/../include
 
-CPP_FILES = ComparisonTests.cpp CompilationBase.cpp CompilationErrorTests.cpp ConstructionTests.cpp ExerciseOptionalEmptyViaType.cpp ExerciseOptionalInplace.cpp ExerciseStdOptional.cpp ExerciseTinyOptionalPayload.cpp GccLikeCompilation.cpp IntermediateTests.cpp MsvcCompilation.cpp Tests.cpp TestUtilities.cpp
+CPP_FILES = ComparisonTests.cpp CompilationBase.cpp CompilationErrorTests.cpp ConstructionTests.cpp ExerciseOptionalEmptyViaType.cpp ExerciseOptionalInplace.cpp ExerciseStdOptional.cpp ExerciseTinyOptionalPayload.cpp GccLikeCompilation.cpp IntermediateTests.cpp MsvcCompilation.cpp SpecialMonadicTests.cpp Tests.cpp TestUtilities.cpp
 
 
 CXX_AND_RUN_COMMAND = \
@@ -23,10 +23,6 @@ CXX_AND_RUN_COMMAND = \
 # clang
 #---------------------------------------------------------------------
 
-clang_x64_cpp20_libcpp_debug: $(CPP_FILES)
-	$(eval CXX = $(CXX_CLANG))
-	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -stdlib=libc++)
-	$(CXX_AND_RUN_COMMAND)
 	
 clang_x64_cpp17_libcpp_debug: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
@@ -38,9 +34,19 @@ clang_x64_cpp17_libcpp_release: $(CPP_FILES)
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -O3 -DNDEBUG -stdlib=libc++)
 	$(CXX_AND_RUN_COMMAND)
 
+clang_x64_cpp20_libcpp_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -stdlib=libc++)
+	$(CXX_AND_RUN_COMMAND)
+
 clang_x64_cpp20_libcpp_release: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -O3 -DNDEBUG -stdlib=libc++)
+	$(CXX_AND_RUN_COMMAND)
+
+clang_x64_cpp23_libcpp_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++2b -stdlib=libc++)
 	$(CXX_AND_RUN_COMMAND)
 
 

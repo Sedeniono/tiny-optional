@@ -6,6 +6,7 @@
 #include "ExerciseStdOptional.h"
 #include "ExerciseTinyOptionalPayload.h"
 #include "IntermediateTests.h"
+#include "SpecialMonadicTests.h"
 #include "TestUtilities.h"
 #include "tiny/optional.h"
 
@@ -50,6 +51,7 @@ void RunTests()
          ADD_TEST(test_Exceptions),
          ADD_TEST(test_MakeOptional),
          ADD_TEST(test_Comparisons),
+         ADD_TEST(test_SpecialTestsFor_and_then),
          ADD_TEST(test_ExpressionsThatShouldNotCompile)};
 
   for (size_t testIdx = 0; testIdx < tests.size(); ++testIdx) {

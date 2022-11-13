@@ -426,6 +426,7 @@
     <ClCompile Include="CompilationBase.cpp" />
     <ClCompile Include="GccLikeCompilation.cpp" />
     <ClCompile Include="MsvcCompilation.cpp" />
+    <ClCompile Include="SpecialMonadicTests.cpp" />
     <ClCompile Include="Tests.cpp" />
     <ClCompile Include="TestUtilities.cpp" />
   </ItemGroup>
@@ -442,6 +443,7 @@
     <ClInclude Include="ExerciseTinyOptionalPayload.h" />
     <ClInclude Include="GccLikeCompilation.h" />
     <ClInclude Include="IntermediateTests.h" />
+    <ClInclude Include="SpecialMonadicTests.h" />
     <ClInclude Include="TestTypes.h" />
     <ClInclude Include="MsvcCompilation.h" />
     <ClInclude Include="TestUtilities.h" />

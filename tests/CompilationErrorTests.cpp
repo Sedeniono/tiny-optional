@@ -123,6 +123,15 @@ void test_ExpressionsThatShouldNotCompile()
     {/*code*/ "tiny::optional<int []> o;",
      /*expected regex*/ "The payload type must meet the C\\+\\+ requirement 'Destructible'"}
 
+    ,
+
+    // Monadic operations
+    {/*code*/ R"(
+        tiny::optional<int> o = 42;
+        o.and_then([](int) { return 43; });
+     )",
+     /*expected regex*/ "The standard requires 'f' to return an optional"}
+
   };
   // clang-format on
 
