@@ -423,6 +423,7 @@
     <ClCompile Include="ExerciseStdOptional.cpp" />
     <ClCompile Include="ExerciseTinyOptionalPayload1.cpp" />
     <ClCompile Include="ExerciseTinyOptionalPayload2.cpp" />
+    <ClCompile Include="ExerciseTinyOptionalPayload3.cpp" />
     <ClCompile Include="IntermediateTests.cpp" />
     <ClCompile Include="CompilationBase.cpp" />
     <ClCompile Include="GccLikeCompilation.cpp" />

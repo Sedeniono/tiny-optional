@@ -57,6 +57,9 @@
     <ClCompile Include="SpecialMonadicTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ExerciseTinyOptionalPayload3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="ExerciseTinyOptionalPayload2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
