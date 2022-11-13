@@ -651,6 +651,62 @@ void ExerciseOptional(
         }
       }
     }}
+    ,
+    {"transform_ForEmpty", [] (TEST_PARAMS) {
+      if constexpr (MonadicsAvailable<Optional>) {
+        using vt = typename Optional::value_type;
+
+        Optional empty_lvalue;
+        ASSERT_FALSE(empty_lvalue.transform([](vt &) -> int { FAIL(); }).has_value());
+
+        Optional empty_const_lvalue;
+        ASSERT_FALSE(empty_const_lvalue.transform([](vt const &) -> int { FAIL(); }).has_value());
+
+        ASSERT_FALSE(Optional{}.transform([](vt &&) -> int { FAIL(); }).has_value());
+
+        ASSERT_FALSE(static_cast<Optional const &&>(empty_lvalue).transform([](vt const &&) -> int { FAIL(); }).has_value());
+      }
+    }}
+    ,
+    {"transform_ForNonEmpty", [] (TEST_PARAMS) {
+      if constexpr (MonadicsAvailable<Optional>) {
+        using vt = typename Optional::value_type;
+        enum class Dummy{ d };
+
+        {
+          Optional lvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(lvalue.transform([&](vt & v) { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return validValueToAssign2; 
+          }).value(), validValueToAssign2));
+          ASSERT_TRUE(AreEqual(lvalue.transform([&](vt &) { return Dummy::d; }).value(), Dummy::d));
+        }
+        {
+          Optional const const_lvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(const_lvalue.transform([&](vt const & v) { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return validValueToAssign2; 
+          }).value(), validValueToAssign2));
+          ASSERT_TRUE(AreEqual(const_lvalue.transform([&](vt const &) { return Dummy::d; }).value(), Dummy::d));
+        }
+        {
+          Optional rvalue1{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(std::move(rvalue1).transform([&](vt && v) { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return validValueToAssign2; 
+          }).value(), validValueToAssign2));
+          Optional rvalue2{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(std::move(rvalue2).transform([&](vt &&) { return Dummy::d; }).value(), Dummy::d));
+        }
+        {
+          Optional const const_rvalue1{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue1).transform([&](vt const && v) { 
+            ASSERT_TRUE(AreEqual(v, validValueToAssign1)); return validValueToAssign2; 
+          }).value(), validValueToAssign2));
+          Optional const const_rvalue2{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue2).transform([&](vt const &&) { return Dummy::d; }).value(), Dummy::d));
+        }
+
+      }
+    }}
+
   };
   // clang-format on
 

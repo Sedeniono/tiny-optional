@@ -131,6 +131,12 @@ void test_ExpressionsThatShouldNotCompile()
         o.and_then([](int) { return 43; });
      )",
      /*expected regex*/ "The standard requires 'f' to return an optional"}
+    ,
+    {/*code*/ R"(
+        tiny::optional<int> o = 42;
+        o.transform([](int) { return std::nullopt; });
+     )",
+     /*expected regex*/ "The standard requires 'f' to not return a std::nullopt_t"}
 
   };
   // clang-format on

@@ -169,4 +169,8 @@ void test_Comparisons()
 #endif
   );
   // clang-format on
+
+
+  //tiny::optional<int> o = 42;
+  //o.transform([](int v) { return v+1; });
 }

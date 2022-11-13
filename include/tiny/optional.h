@@ -83,6 +83,12 @@ enum UseDefaultType
 {
   UseDefaultValue
 };
+
+
+// Forward declaration (required for transform()).
+template <class PayloadType_, auto emptyValueOrMemPtr = UseDefaultValue, auto irrelevantOrEmptyValue = UseDefaultValue>
+class optional;
+
 } // namespace tiny
 
 
@@ -210,6 +216,13 @@ namespace impl
     }
   }
 
+
+  // Helper tag for optional::transform(func). The problem is that the value returned by func() should be directly used
+  // to initialize the payload, WITHOUT any moving of the variable in-between (to support non-movable types). But this
+  // means that the user function passed to transform() needs to be handed down into the core of the optional.
+  struct DirectInitializationFromFunctionTag
+  {
+  };
 
 
 //====================================================================================
@@ -731,6 +744,14 @@ namespace impl
       ConstructPayload(std::forward<ArgsT>(args)...);
     }
 
+    template <class FuncT, class ArgT>
+    StorageBase(DirectInitializationFromFunctionTag, FuncT && func, ArgT && arg)
+    {
+      // Initialize the IsEmpty flag first since PrepareIsEmptyFlagForPayload() might depend on it.
+      FlagManipulator::InitializeIsEmptyFlag(GetIsEmptyFlag());
+      ConstructPayloadFromFunction(std::forward<FuncT>(func), std::forward<ArgT>(arg));
+    }
+
     // TODO: The standard wants a trivial destructor if possible.
     ~StorageBase()
     {
@@ -819,6 +840,34 @@ namespace impl
         InitializeIsEmptyFlagScope initScope{*this};
         ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
             PayloadType(std::forward<ArgsT>(args)...);
+        initScope.doNotInitialize = true;
+      }
+
+      // For example: A tiny optional storing an int and the special value MAX_INT indicates an empty optional.
+      // If you then try to put MAX_INT directly into the optional, this assert gets triggered.
+      // You must use reset() instead. Otherwise, we could run into inconsistencies with FlagManipulator.
+      assert(
+          has_value()
+          && "Maybe the special flag value used to indicate an empty optional was assigned. Use reset() instead.");
+    }
+
+    
+    template <class FuncT, class ArgT>
+    void ConstructPayloadFromFunction(FuncT && func, ArgT && arg) noexcept(
+        std::is_nothrow_constructible_v<PayloadType, std::invoke_result_t<FuncT, ArgT>>)
+    {
+      assert(!has_value());
+      FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
+
+      // In analogy to ConstructPayload().
+      if constexpr (std::is_nothrow_constructible_v<PayloadType, std::invoke_result_t<FuncT, ArgT>>) {
+        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+            PayloadType(std::invoke(std::forward<FuncT>(func), std::forward<ArgT>(arg)));
+      }
+      else {
+        InitializeIsEmptyFlagScope initScope{*this};
+        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+            PayloadType(std::invoke(std::forward<FuncT>(func), std::forward<ArgT>(arg)));
         initScope.doNotInitialize = true;
       }
 
@@ -1178,6 +1227,14 @@ namespace impl
     }
 
 
+    // Special constructor only to be used by transform().
+    template <class FuncT, class ArgT>
+    TinyOptionalImpl(DirectInitializationFromFunctionTag tag, FuncT && func, ArgT && arg)
+      : Base(tag, std::forward<FuncT>(func), std::forward<ArgT>(arg))
+    {
+    }
+
+
     // Non-explicit converting constructor for types U that are implicitly convertible to the payload.
     template <
         class U = PayloadType,
@@ -1444,6 +1501,86 @@ namespace impl
       }
       else {
         return ReturnTypeOfF();
+      }
+    }
+
+    template <class F>
+    constexpr auto transform(F && f) &
+    {
+      using U = std::remove_cv_t<std::invoke_result_t<F, PayloadType &>>;
+
+      static_assert(!std::is_same_v<U, std::nullopt_t>, "The standard requires 'f' to not return a std::nullopt_t.");
+      static_assert(!std::is_same_v<U, std::in_place_t>, "The standard requires 'f' to not return a std::in_place_t.");
+      static_assert(
+          std::is_object_v<U> && !std::is_array_v<U>,
+          "The standard requires 'f' to return a non-array object type.");
+
+      // We need to return some optional type. The standard does not allow the user to influence it. Nevertheless, we
+      // could probably add additional template parameters to transform() to allow some customization. But for now 
+      // we simply use the generic one of this library, i.e. tiny::optional. The user can always simply use and_then()
+      // to return a specific optional type.
+      if (has_value()) {
+        return ::tiny::optional<U>(DirectInitializationFromFunctionTag{}, std::forward<F>(f), **this);
+      }
+      else {
+        return ::tiny::optional<U>();
+      }
+    }
+
+    template <class F>
+    constexpr auto transform(F && f) const &
+    {
+      using U = std::remove_cv_t<std::invoke_result_t<F, PayloadType const &>>;
+
+      static_assert(!std::is_same_v<U, std::nullopt_t>, "The standard requires 'f' to not return a std::nullopt_t.");
+      static_assert(!std::is_same_v<U, std::in_place_t>, "The standard requires 'f' to not return a std::in_place_t.");
+      static_assert(
+          std::is_object_v<U> && !std::is_array_v<U>,
+          "The standard requires 'f' to return a non-array object type.");
+
+      if (has_value()) {
+        return ::tiny::optional<U>(DirectInitializationFromFunctionTag{}, std::forward<F>(f), **this);
+      }
+      else {
+        return ::tiny::optional<U>();
+      }
+    }
+
+    template <class F>
+    constexpr auto transform(F && f) &&
+    {
+      using U = std::remove_cv_t<std::invoke_result_t<F, PayloadType>>;
+
+      static_assert(!std::is_same_v<U, std::nullopt_t>, "The standard requires 'f' to not return a std::nullopt_t.");
+      static_assert(!std::is_same_v<U, std::in_place_t>, "The standard requires 'f' to not return a std::in_place_t.");
+      static_assert(
+          std::is_object_v<U> && !std::is_array_v<U>,
+          "The standard requires 'f' to return a non-array object type.");
+
+      if (has_value()) {
+        return ::tiny::optional<U>(DirectInitializationFromFunctionTag{}, std::forward<F>(f), std::move(**this));
+      }
+      else {
+        return ::tiny::optional<U>();
+      }
+    }
+
+    template <class F>
+    constexpr auto transform(F && f) const &&
+    {
+      using U = std::remove_cv_t<std::invoke_result_t<F, PayloadType const>>;
+
+      static_assert(!std::is_same_v<U, std::nullopt_t>, "The standard requires 'f' to not return a std::nullopt_t.");
+      static_assert(!std::is_same_v<U, std::in_place_t>, "The standard requires 'f' to not return a std::in_place_t.");
+      static_assert(
+          std::is_object_v<U> && !std::is_array_v<U>,
+          "The standard requires 'f' to return a non-array object type.");
+
+      if (has_value()) {
+        return ::tiny::optional<U>(DirectInitializationFromFunctionTag{}, std::forward<F>(f), std::move(**this));
+      }
+      else {
+        return ::tiny::optional<U>();
       }
     }
 
@@ -1789,7 +1926,10 @@ namespace impl
 // contain additional data members. In fact, as explained above, we actually would like optional to be a typedef to
 // TinyOptionalImpl, but which is not possible due to the deduction guides. Moreover, public inheritance allows to
 // re-use various functions, such as the comparison operators, without re-defining them for all possible combinations.
-template <class PayloadType_, auto emptyValueOrMemPtr = UseDefaultValue, auto irrelevantOrEmptyValue = UseDefaultValue>
+template <
+    class PayloadType_,
+    auto emptyValueOrMemPtr /*= UseDefaultValue (template default value defined at first declaration)*/,
+    auto irrelevantOrEmptyValue /*= UseDefaultValue (template default value defined at first declaration)*/>
 class optional
   : public impl::TinyOptionalFromSelection<
         impl::SelectEmptyValueAndMemPtrFromConstants<PayloadType_, emptyValueOrMemPtr, irrelevantOrEmptyValue>>
@@ -1821,6 +1961,7 @@ public:
   using Base::value;
   using Base::value_or;
   using Base::and_then;
+  using Base::transform;
 
 
   optional & operator=(std::nullopt_t) noexcept
