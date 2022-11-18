@@ -16,7 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         cpp_version: [c++17, c++20]
-        buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
+        # Note: We are never building without optimizations because mingw complains that the object
+        # files become too big.
+        buildmode: [-O2,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
 
     runs-on: windows-latest
     timeout-minutes: 10
