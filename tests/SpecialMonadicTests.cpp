@@ -92,6 +92,7 @@ void test_SpecialTestsFor_transform()
 
 void test_SpecialTestsFor_or_else() 
 {
+#ifdef TINY_OPTIONAL_ENABLE_ORELSE
   // Check that or_else moves out the payload when called on a rvalue.
   {
     tiny::optional<std::vector<int>> origOpt{{40}};
@@ -118,4 +119,5 @@ void test_SpecialTestsFor_or_else()
     ASSERT_TRUE(origOpt.has_value());
     ASSERT_TRUE(origOpt.value() == nullptr);
   }
+#endif
 }
