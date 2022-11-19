@@ -137,6 +137,18 @@ void test_ExpressionsThatShouldNotCompile()
         o.transform([](int) { return std::nullopt; });
      )",
      /*expected regex*/ "The standard requires 'f' to not return a std::nullopt_t"}
+    ,
+    {/*code*/ R"(
+        tiny::optional<int> o = 42;
+        o.or_else([]() -> std::optional<int> { return std::nullopt; });
+     )",
+     /*expected regex*/ "The function F passed to OPT::or_else\\(F&&\\) needs to return an optional of the same type OPT"}
+    ,
+    {/*code*/ R"(
+        tiny::optional_empty_via_type<int, tiny::UseDefaultType> o = 42;
+        o.or_else([]() -> tiny::optional<int> { return std::nullopt; });
+     )",
+     /*expected regex*/ "The function F passed to OPT::or_else\\(F&&\\) needs to return an optional of the same type OPT"}
 
   };
   // clang-format on

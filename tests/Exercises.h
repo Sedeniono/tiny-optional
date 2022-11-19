@@ -703,10 +703,56 @@ void ExerciseOptional(
           Optional const const_rvalue2{validValueToAssign1};
           ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue2).transform([&](vt const &&) { return Dummy::d; }).value(), Dummy::d));
         }
-
       }
     }}
-
+#ifdef TINY_OPTIONAL_ENABLE_ORELSE
+    ,
+    {"or_else_ForEmpty", [] (TEST_PARAMS) {
+      if constexpr (MonadicsAvailable<Optional>) {
+        {
+          Optional empty_lvalue;
+          ASSERT_FALSE(empty_lvalue.or_else([]() -> Optional { return std::nullopt; }).has_value());
+          ASSERT_TRUE(AreEqual(empty_lvalue.or_else([&]() -> Optional { return Optional{validValueToAssign1}; }).value(), validValueToAssign1));
+        }
+        {
+          Optional empty_const_lvalue;
+          ASSERT_FALSE(empty_const_lvalue.or_else([]() -> Optional { return std::nullopt; }).has_value());
+          ASSERT_TRUE(AreEqual(empty_const_lvalue.or_else([&]() -> Optional { return Optional{validValueToAssign1}; }).value(), validValueToAssign1));
+        }
+        {
+          ASSERT_FALSE(Optional{}.or_else([]() -> Optional { return std::nullopt; }).has_value());
+          ASSERT_TRUE(AreEqual(Optional{}.or_else([&]() -> Optional { return Optional{validValueToAssign1}; }).value(), validValueToAssign1));
+        }
+        {
+          Optional const const_rvalue1;
+          ASSERT_FALSE(static_cast<Optional const &&>(const_rvalue1).or_else([]() -> Optional { return std::nullopt; }).has_value());
+          Optional const const_rvalue2;
+          ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue2).or_else([&]() -> Optional { return Optional{validValueToAssign1}; }).value(), validValueToAssign1));
+        }
+      }
+    }}
+    ,
+    {"or_else_ForNonEmpty", [] (TEST_PARAMS) {
+      if constexpr (MonadicsAvailable<Optional>) {
+        {
+          Optional lvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(lvalue.or_else([]() -> Optional { FAIL(); }).value(), validValueToAssign1));
+        }
+        {
+          Optional const const_lvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(const_lvalue.or_else([]() -> Optional { FAIL(); }).value(), validValueToAssign1));
+        }
+        {
+          Optional rvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(std::move(rvalue).or_else([]() -> Optional { FAIL(); }).value(), validValueToAssign1));
+        }
+        {
+          Optional const const_rvalue{validValueToAssign1};
+          ASSERT_TRUE(AreEqual(static_cast<Optional const &&>(const_rvalue).or_else([]() -> Optional { FAIL(); }).value(), validValueToAssign1));
+        }
+      }
+    }}
+#endif
   };
   // clang-format on
 

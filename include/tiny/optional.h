@@ -74,6 +74,10 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #endif
 #endif
 
+#if defined(__cpp_concepts) && defined(__cpp_lib_concepts)
+  // The implementation of or_else() uses C++20 concepts.
+  #define TINY_OPTIONAL_ENABLE_ORELSE
+#endif
 
 
 namespace tiny
@@ -1162,26 +1166,26 @@ namespace impl
     template <class U>
     using EnableConvertingConstructor = std::bool_constant<
       std::is_constructible_v<PayloadType,U> 
-      && !std::is_same_v<my_remove_cvref_t<U>, std::in_place_t> 
-      // The next ensures that the copy or move constructor is called instead.
-      && !std::is_same_v<my_remove_cvref_t<U>, TinyOptionalImpl>
-      // The following is not in the standard. But we need it because we derive from TinyOptionalImpl,
-      // and the constructor where this is used is incorrectly inherited in some versions of MSVC (in which
-      // case std::is_same is not sufficient because it does not recognize if U is derived from 
-      // TinyOptionalImpl); compare https://stackoverflow.com/a/71010787.
+        && !std::is_same_v<my_remove_cvref_t<U>, std::in_place_t>
+        // The next ensures that the copy or move constructor is called instead.
+        && !std::is_same_v<my_remove_cvref_t<U>, TinyOptionalImpl>
+        // The following is not in the standard. But we need it because we derive from TinyOptionalImpl,
+        // and the constructor where this is used is incorrectly inherited in some versions of MSVC (in which
+        // case std::is_same is not sufficient because it does not recognize if U is derived from
+        // TinyOptionalImpl); compare https://stackoverflow.com/a/71010787.
       && !std::is_base_of_v<TinyOptionalImpl, my_remove_cvref_t<U>>
   >;
 
 
   protected:
     template <class TinyOptionalType, class U>
-  using EnableConvertingAssignment = std::bool_constant<            
+    using EnableConvertingAssignment = std::bool_constant<
       !std::is_same_v<my_remove_cvref_t<U>, TinyOptionalType>
       && std::is_constructible_v<PayloadType, U>
       && std::is_assignable_v<PayloadType&, U>
-      // The following ensures that, if e.g. PayloadType==int, "o = {};" does not call this assignment operator here
-      // with int initialized to 0, but instead constructs and then assigns an empty optional.
-      // Compare https://stackoverflow.com/q/33511641/3740047
+        // The following ensures that, if e.g. PayloadType==int, "o = {};" does not call this assignment operator here
+        // with int initialized to 0, but instead constructs and then assigns an empty optional.
+        // Compare https://stackoverflow.com/q/33511641/3740047
       && (!std::is_scalar_v<PayloadType> || !std::is_same_v<std::decay_t<U>, PayloadType>)
   >;
 
@@ -1538,6 +1542,7 @@ namespace impl
           std::is_object_v<U> && !std::is_array_v<U>,
           "The standard requires 'f' to return a non-array object type.");
 
+      // Regarding the return of ::tiny::optional, see first overload.
       if (has_value()) {
         return ::tiny::optional<U>(DirectInitializationFromFunctionTag{}, std::forward<F>(f), **this);
       }
@@ -1557,6 +1562,7 @@ namespace impl
           std::is_object_v<U> && !std::is_array_v<U>,
           "The standard requires 'f' to return a non-array object type.");
 
+      // Regarding the return of ::tiny::optional, see first overload.
       if (has_value()) {
         return ::tiny::optional<U>(DirectInitializationFromFunctionTag{}, std::forward<F>(f), std::move(**this));
       }
@@ -1576,6 +1582,7 @@ namespace impl
           std::is_object_v<U> && !std::is_array_v<U>,
           "The standard requires 'f' to return a non-array object type.");
 
+      // Regarding the return of ::tiny::optional, see first overload.
       if (has_value()) {
         return ::tiny::optional<U>(DirectInitializationFromFunctionTag{}, std::forward<F>(f), std::move(**this));
       }
@@ -1584,6 +1591,28 @@ namespace impl
       }
     }
 
+
+#ifdef TINY_OPTIONAL_ENABLE_ORELSE
+    template <class F>
+      requires(std::invocable<F> && std::copy_constructible<value_type>)
+    constexpr TinyOptionalImpl or_else(F && f) const &
+    {
+      static_assert(
+          std::is_same_v<my_remove_cvref_t<std::invoke_result_t<F>>, TinyOptionalImpl>,
+          "The function F passed to OPT::or_else(F&&) needs to return an optional of the same type OPT.");
+      return has_value() ? *this : std::forward<F>(f)();
+    }
+
+    template <class F>
+      requires(std::invocable<F> && std::move_constructible<value_type>)
+    constexpr TinyOptionalImpl or_else(F && f) &&
+    {
+      static_assert(
+          std::is_same_v<my_remove_cvref_t<std::invoke_result_t<F>>, TinyOptionalImpl>,
+          "The function F passed to OPT::or_else(F&&) needs to return an optional of the same type OPT.");
+      return has_value() ? std::move(*this) : std::forward<F>(f)();
+    }
+#endif
   };
 
 
@@ -1979,6 +2008,29 @@ public:
     Base::operator=(std::forward<U>(v));
     return *this;
   }
+
+
+#ifdef TINY_OPTIONAL_ENABLE_ORELSE
+  template <class F>
+    requires(std::invocable<F> && std::copy_constructible<value_type>)
+  constexpr optional or_else(F && f) const &
+  {
+    static_assert(
+        std::is_same_v<impl::my_remove_cvref_t<std::invoke_result_t<F>>, optional>,
+        "The function F passed to OPT::or_else(F&&) needs to return an optional of the same type OPT.");
+    return has_value() ? *this : std::forward<F>(f)();
+  }
+
+  template <class F>
+    requires(std::invocable<F> && std::move_constructible<value_type>)
+  constexpr optional or_else(F && f) &&
+  {
+    static_assert(
+        std::is_same_v<impl::my_remove_cvref_t<std::invoke_result_t<F>>, optional>,
+        "The function F passed to OPT::or_else(F&&) needs to return an optional of the same type OPT.");
+    return has_value() ? std::move(*this) : std::forward<F>(f)();
+  }
+#endif
 };
 
 

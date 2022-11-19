@@ -53,6 +53,7 @@ void RunTests()
          ADD_TEST(test_Comparisons),
          ADD_TEST(test_SpecialTestsFor_and_then),
          ADD_TEST(test_SpecialTestsFor_transform),
+         ADD_TEST(test_SpecialTestsFor_or_else),
          ADD_TEST(test_ExpressionsThatShouldNotCompile)};
 
   for (size_t testIdx = 0; testIdx < tests.size(); ++testIdx) {

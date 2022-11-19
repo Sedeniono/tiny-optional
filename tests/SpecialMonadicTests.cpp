@@ -88,3 +88,34 @@ void test_SpecialTestsFor_transform()
     ASSERT_TRUE(transformed.value().value == 42);
   }
 }
+
+
+void test_SpecialTestsFor_or_else() 
+{
+  // Check that or_else moves out the payload when called on a rvalue.
+  {
+    tiny::optional<std::vector<int>> origOpt{{40}};
+    ASSERT_TRUE(origOpt.value().size() == 1);
+
+    tiny::optional<std::vector<int>> newOpt = std::move(origOpt).or_else([]() -> decltype(origOpt) { FAIL(); });
+    ASSERT_TRUE(newOpt.value().size() == 1);
+    ASSERT_TRUE(newOpt->at(0) == 40);
+
+    // Core check: The original optional should contain an empty vector because it was moved out.
+    ASSERT_TRUE(origOpt.has_value());
+    ASSERT_TRUE(origOpt->empty());
+  }
+  // Similar test, but with a move-only type.
+  {
+    tiny::optional<std::unique_ptr<int>> origOpt{std::make_unique<int>(42)};
+    ASSERT_TRUE(origOpt.value() != nullptr);
+
+    tiny::optional<std::unique_ptr<int>> newOpt = std::move(origOpt).or_else([]() -> decltype(origOpt) { FAIL(); });
+    ASSERT_TRUE(newOpt.value() != nullptr);
+    ASSERT_TRUE(*newOpt.value() == 42);
+
+    // Core check: The original optional should contain an pointer because it was moved out.
+    ASSERT_TRUE(origOpt.has_value());
+    ASSERT_TRUE(origOpt.value() == nullptr);
+  }
+}
