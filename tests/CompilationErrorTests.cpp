@@ -2,6 +2,7 @@
 
 #include "CompilationBase.h"
 #include "TestUtilities.h"
+#include "tiny/optional.h"
 
 #include <future>
 #include <iostream>
@@ -137,6 +138,7 @@ void test_ExpressionsThatShouldNotCompile()
         o.transform([](int) { return std::nullopt; });
      )",
      /*expected regex*/ "The standard requires 'f' to not return a std::nullopt_t"}
+#ifdef TINY_OPTIONAL_ENABLE_ORELSE
     ,
     {/*code*/ R"(
         tiny::optional<int> o = 42;
@@ -149,7 +151,7 @@ void test_ExpressionsThatShouldNotCompile()
         o.or_else([]() -> tiny::optional<int> { return std::nullopt; });
      )",
      /*expected regex*/ "The function F passed to OPT::or_else\\(F&&\\) needs to return an optional of the same type OPT"}
-
+#endif
   };
   // clang-format on
 
