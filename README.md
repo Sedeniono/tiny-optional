@@ -93,17 +93,20 @@ The present library can be used to provide more semantics: `tiny::optional<int, 
 
 
 # Requirements
-The library currently supports x64 and x86 architectures on Windows, Linux and Mac. It is tested on MSVC, clang and gcc (see the github actions). It requires at least C++17. Besides the C++ standard library, there are no external dependencies.
+The library currently supports x64 and x86 architectures on Windows, Linux and Mac. It is tested on MSVC, clang and gcc (see the github actions). Besides the C++ standard library, there are no external dependencies.
+
+The library requires at least C++17. The monadic operations `and_then()` and `transform()` are always defined (although the C++ standard introduced them starting only with C++23). When C++20 is enabled, the three-way comparison operator `operator<=>()` and the monadic operation `or_else()` are additionally implemented.
 
 
 # Limitations
-Currently, the following components of the interface of `std::optional` are not yet supported:
-* No converting constructors and assignment operators implemented. The major issue here is to decide what to do with conversions like `tiny::optional<int, -1>` to `tiny::optional<unsigned, 42>`: What if the source contains a `42`? Should an exception be thrown?
-* Methods and types are not `constexpr`. This will probably not be possible in C++17 because some of the tricks rely on `std::memcpy`, which is not `constexpr`. `std::bit_cast` should help here for C++20. 
-* Constructors and destructors are not trivial, even if the payload type `T` would allow it.
-* C++23 monadic operations (`and_then` etc.) are not yet implemented.
+This library exploits **platform specific behavior** (i.e. undefined behavior). So if your own code also uses platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained.
 
-Moreover, this library exploits **platform specific behavior**. So if your own code also uses platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained.
+Currently, the following components of the interface of `std::optional` are not yet supported:
+* No converting constructors and assignment operators implemented. The major issue here is to decide what to do with conversions such as `tiny::optional<int, -1>` to `tiny::optional<unsigned, 42>`: What if the source contains a `42`? Should an exception be thrown? Should this be asserted in debug? Should this specific conversion be forbidden?
+* Constructors and destructors are not trivial, even if the payload type `T` would allow it.
+* Methods and types are not `constexpr`. This will probably not be possible in C++17 because some of the tricks rely on `std::memcpy`, which is not `constexpr`. `std::bit_cast` might help here for C++20. Since the whole purpose of the library is to safe memory during runtime, a viable workaround is to simply use `std::optional` in `consteval` contexts.
+
+Moreover, the monadic operation `transform()` always returns a `tiny::optional<T>`, i.e. specification of a sentinel or some other optional as return type (`tiny::optional_empty_via_type` etc.) is not possible. As a workaround, you can use `and_then()`.
 
 
 # Usage
