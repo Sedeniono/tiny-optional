@@ -152,6 +152,19 @@ void test_ExpressionsThatShouldNotCompile()
      )",
      /*expected regex*/ "The function F passed to OPT::or_else\\(F&&\\) needs to return an optional of the same type OPT"}
 #endif
+
+    ,
+
+    {/*code*/ R"(
+        tiny::optional_aip<char> o;
+     )",
+     /*expected regex*/ "optional_aip: No automatic sentinel for the PayloadType available"}
+    ,
+    {/*code*/ R"(
+        struct Foo{};
+        tiny::optional_aip<Foo> o;
+     )",
+     /*expected regex*/ "optional_aip: No automatic sentinel for the PayloadType available"}
   };
   // clang-format on
 

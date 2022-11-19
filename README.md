@@ -20,6 +20,7 @@
   - [The full signature of `tiny::optional`](#the-full-signature-of-tinyoptional)
   - [Non-member definitions](#non-member-definitions)
   - [Specifying a sentinel value via a type](#specifying-a-sentinel-value-via-a-type)
+  - [An optional type with automatic sentinels for integers and guarantee of in-place](#an-optional-type-with-automatic-sentinels-for-integers-and-guarantee-of-in-place)
   - [Using custom emptiness logic](#using-custom-emptiness-logic)
 - [Performance results](#performance-results)
   - [Runtime](#runtime)
@@ -215,6 +216,20 @@ Note that this second template parameter is not optional. If you do not need a s
 The third parameter is optional and can be a member pointer to instruct the library to store the sentinel value in that member, similar to `tiny::optional`. I.e. the `SentinelValue::value` gets stored in `memPtr`.
 Contrary to `tiny::optional`, it has to be the third and not the second parameter.
 This is for technical reasons (you cannot mix type and non-type template parameters, and having an optional parameter second and a mandatory third parameter makes no sense).
+
+
+## An optional type with automatic sentinels for integers and guarantee of in-place
+The type `tiny::optional_aip` ("aip" for "always in-place") is similar to `tiny::optional` but with automatic "swallowing" of a value for integers to provide a sentinel, and a compilation error if no sentinel is automatically found. Hence, its size is always the same as the size of the payload.
+
+Its deceleration is basically `tiny::optional_aip<PayloadType, SentinelValue = ...>`. If you omit the `SentinelValue`, then:
+* If the `PayloadType` has unused bits, those get exploited. So for example `tiny::optional_aip<double>` behaves the same as `tiny::optional<double>`.
+* If the `PayloadType` is an **unsigned integer**, the **maximal** integer value is used as sentinel. For example, `tiny::optional_aip<unsigned>` will use `UINT_MAX` as sentinel. This also means that it is no longer legal to attempt and store the value `UINT_MAX` in that optional!
+* Similar, if the `PayloadType` is a **signed integer**, the **minimum** integer value is used as sentinel. E.g. `tiny::optional_aip<int>` uses `INT_MIN`.
+* Note that for characters (`char`, `signed char` and `unsigned char`) and enumerations no automatic sentinel is provided.
+
+In all other cases, you have to specify a sentinel yourself, e.g. `tiny::optional_aip<char, 'a'>`. If you do not, then a compilation error occurs. Hence, `tiny::optional_aip` is guaranteed to have the same size as the payload.
+
+Such a type was suggested in [this issue](https://github.com/Sedeniono/tiny-optional/issues/1).
 
 
 ## Using custom emptiness logic

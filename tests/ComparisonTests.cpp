@@ -103,9 +103,13 @@ void test_Comparisons()
 
     // Comparison between tiny/std::optional and tiny::optional_sentinel_via_type.
     // clang-format off
-    (TestCompareOptWithOpt<tiny::optional<int>, tiny::optional_sentinel_via_type<int, std::integral_constant<int, 1>>>(42, 42, comparer), ...);
-    (TestCompareOptWithOpt<std::optional<int>, tiny::optional_sentinel_via_type<int, std::integral_constant<int, 1>>>(42, 42, comparer), ...);
+    (TestCompareOptWithOpt<tiny::optional<int>, tiny::optional_sentinel_via_type<int, std::integral_constant<int, 1>>>(42, 43, comparer), ...);
+    (TestCompareOptWithOpt<std::optional<int>, tiny::optional_sentinel_via_type<int, std::integral_constant<int, 1>>>(42, 43, comparer), ...);
     // clang-format on
+
+    // Comparison between tiny/std::optional and tiny::optional_aip.
+    (TestCompareOptWithOpt<tiny::optional<int>, tiny::optional_aip<int>>(42, 43, comparer), ...);
+    (TestCompareOptWithOpt<std::optional<int>, tiny::optional_aip<int>>(42, 43, comparer), ...);
 
     // Comparisons with std::nullopt
     (TestCompareOptWithValue<tiny::optional<int>>(42, std::nullopt, comparer), ...);
@@ -169,8 +173,4 @@ void test_Comparisons()
 #endif
   );
   // clang-format on
-
-
-  //tiny::optional<int> o = 42;
-  //o.transform([](int v) { return v+1; });
 }

@@ -60,6 +60,9 @@
     <ClCompile Include="ExerciseTinyOptionalPayload2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ExerciseOptionalAIP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TestTypes.h">
@@ -108,6 +111,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SpecialMonadicTests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExerciseOptionalAIP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

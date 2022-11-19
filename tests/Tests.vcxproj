@@ -493,6 +493,7 @@
     <ClCompile Include="ComparisonTests.cpp" />
     <ClCompile Include="CompilationErrorTests.cpp" />
     <ClCompile Include="ConstructionTests.cpp" />
+    <ClCompile Include="ExerciseOptionalAIP.cpp" />
     <ClCompile Include="ExerciseOptionalEmptyViaType.cpp" />
     <ClCompile Include="ExerciseOptionalInplace.cpp" />
     <ClCompile Include="ExerciseStdOptional.cpp" />
@@ -511,6 +512,7 @@
     <ClInclude Include="ComparisonTests.h" />
     <ClInclude Include="CompilationErrorTests.h" />
     <ClInclude Include="ConstructionTests.h" />
+    <ClInclude Include="ExerciseOptionalAIP.h" />
     <ClInclude Include="ExerciseOptionalEmptyViaType.h" />
     <ClInclude Include="ExerciseOptionalInplace.h" />
     <ClInclude Include="Exercises.h" />

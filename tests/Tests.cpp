@@ -1,6 +1,7 @@
 #include "ComparisonTests.h"
 #include "CompilationErrorTests.h"
 #include "ConstructionTests.h"
+#include "ExerciseOptionalAIP.h"
 #include "ExerciseOptionalEmptyViaType.h"
 #include "ExerciseOptionalInplace.h"
 #include "ExerciseStdOptional.h"
@@ -47,6 +48,7 @@ void RunTests()
          ADD_TEST(test_TinyOptionalConversions),
          ADD_TEST(test_OptionalEmptyViaType),
          ADD_TEST(test_OptionalInplace),
+         ADD_TEST(test_OptionalAIP),
          ADD_TEST(test_CrosscheckStdOptional),
          ADD_TEST(test_Exceptions),
          ADD_TEST(test_MakeOptional),
