@@ -23,6 +23,9 @@ jobs:
         - cpp_version: "C++17 permissive"
           platform: x64
           buildmode: Debug
+        - cpp_version: "C++20 permissive"
+          platform: x64
+          buildmode: Debug
 
 
     runs-on: windows-latest
