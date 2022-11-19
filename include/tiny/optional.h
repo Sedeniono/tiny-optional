@@ -41,10 +41,10 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // In principle the following headers are required, but we rely on the standard header <optional> to include the
 // necessary pieces from the omitted headers. This is a build performance optimization, especially when using gcc's
 // libstdc++, which includes certain internal smaller headers directly.
-//#include <compare> // For operator<=>
-//#include <initializer_list>
-//#include <memory> // Required for std::addressof
-//#include <utility> // Required for std::move, std::swap, etc.
+// #include <compare> // For operator<=>
+// #include <initializer_list>
+// #include <memory> // Required for std::addressof
+// #include <utility> // Required for std::move, std::swap, etc.
 
 
 #if (!defined(__cplusplus) || __cplusplus < 201703L) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
@@ -319,7 +319,7 @@ namespace impl
     //   appear to be empty.
     // - A sensible idea at first sight seems to be to use the highest possible value (i.e. 0xffff'ffff for 32 bit).
     //   The problem is that on Windows there is the HANDLE type as well as similar types such as HINSTANCE or HWND.
-    //   They are just typedefs to void*. In case of errors, some WinAPIs return INVALID_HANDLE_VALUE as value, which 
+    //   They are just typedefs to void*. In case of errors, some WinAPIs return INVALID_HANDLE_VALUE as value, which
     //   is defined as -1 (i.e. 0xffff'ffff on 32 bit). Moreover, Windows defines so called 'pseudo handles' which can
     //   be returned by various WinAPI functions. The known values are -1, -2, -3, -4, -5 and -6. See
     //   https://github.com/winsiderss/systeminformer/blob/c19d69317a8eedcce773eb7317462eac8dfebf66/phnt/include/ntpsapi.h#L1294
@@ -349,7 +349,7 @@ namespace impl
     // 0xffff'ffff-8. The value 0xffff'ffff-7 is not used to satisfy the note about alignment above.
     static constexpr std::uintptr_t value = 0xffff'ffff - 8;
 #else
-    #error Unknown architecture.
+  #error Unknown architecture.
 #endif
 
     static_assert(sizeof(value) == sizeof(T *));
@@ -679,7 +679,7 @@ namespace impl
 
     static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
     {
-      // Destroy the object that was previously created in InitializeIsEmptyFlag() (but do not free the 
+      // Destroy the object that was previously created in InitializeIsEmptyFlag() (but do not free the
       // associated memory!).
       isEmptyFlag.~FlagType();
     }
@@ -855,7 +855,7 @@ namespace impl
           && "Maybe the special flag value used to indicate an empty optional was assigned. Use reset() instead.");
     }
 
-    
+
     template <class FuncT, class ArgT>
     void ConstructPayloadFromFunction(FuncT && func, ArgT && arg) noexcept(
         std::is_nothrow_constructible_v<PayloadType, std::invoke_result_t<FuncT, ArgT>>)
@@ -1165,7 +1165,7 @@ namespace impl
     // Compare the std::optional standard for the conditions.
     template <class U>
     using EnableConvertingConstructor = std::bool_constant<
-      std::is_constructible_v<PayloadType,U> 
+        std::is_constructible_v<PayloadType, U>
         && !std::is_same_v<my_remove_cvref_t<U>, std::in_place_t>
         // The next ensures that the copy or move constructor is called instead.
         && !std::is_same_v<my_remove_cvref_t<U>, TinyOptionalImpl>
@@ -1173,21 +1173,18 @@ namespace impl
         // and the constructor where this is used is incorrectly inherited in some versions of MSVC (in which
         // case std::is_same is not sufficient because it does not recognize if U is derived from
         // TinyOptionalImpl); compare https://stackoverflow.com/a/71010787.
-      && !std::is_base_of_v<TinyOptionalImpl, my_remove_cvref_t<U>>
-  >;
+        && !std::is_base_of_v<TinyOptionalImpl, my_remove_cvref_t<U>>>;
 
 
   protected:
     template <class TinyOptionalType, class U>
     using EnableConvertingAssignment = std::bool_constant<
-      !std::is_same_v<my_remove_cvref_t<U>, TinyOptionalType>
-      && std::is_constructible_v<PayloadType, U>
-      && std::is_assignable_v<PayloadType&, U>
+        !std::is_same_v<my_remove_cvref_t<U>, TinyOptionalType> && std::is_constructible_v<PayloadType, U>
+        && std::is_assignable_v<PayloadType &, U>
         // The following ensures that, if e.g. PayloadType==int, "o = {};" does not call this assignment operator here
         // with int initialized to 0, but instead constructs and then assigns an empty optional.
         // Compare https://stackoverflow.com/q/33511641/3740047
-      && (!std::is_scalar_v<PayloadType> || !std::is_same_v<std::decay_t<U>, PayloadType>)
-  >;
+        && (!std::is_scalar_v<PayloadType> || !std::is_same_v<std::decay_t<U>, PayloadType>)>;
 
 
   public:
@@ -1520,7 +1517,7 @@ namespace impl
           "The standard requires 'f' to return a non-array object type.");
 
       // We need to return some optional type. The standard does not allow the user to influence it. Nevertheless, we
-      // could probably add additional template parameters to transform() to allow some customization. But for now 
+      // could probably add additional template parameters to transform() to allow some customization. But for now
       // we simply use the generic one of this library, i.e. tiny::optional. The user can always simply use and_then()
       // to return a specific optional type.
       if (has_value()) {
@@ -1983,14 +1980,14 @@ public:
   using Base::operator->;
   using Base::operator*;
   using Base::operator bool;
+  using Base::and_then;
   using Base::emplace;
   using Base::has_value;
   using Base::reset;
   using Base::swap;
+  using Base::transform;
   using Base::value;
   using Base::value_or;
-  using Base::and_then;
-  using Base::transform;
 
 
   optional & operator=(std::nullopt_t) noexcept
@@ -2052,8 +2049,7 @@ template <
     auto emptyValueOrMemPtr = UseDefaultValue,
     auto irrelevantOrEmptyValue = UseDefaultValue,
     class... ArgsT>
-[[nodiscard]] optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
-    ArgsT &&... args)
+[[nodiscard]] optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(ArgsT &&... args)
 {
   return optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue>{std::in_place, std::forward<ArgsT>(args)...};
 }
@@ -2454,9 +2450,7 @@ namespace impl
   }
 
   template <class D1, class F1, class U>
-    requires(
-        !IsTinyOptional<U>
-        && std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
+    requires(!IsTinyOptional<U> && std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
   [[nodiscard]] std::compare_three_way_result_t<typename TinyOptionalImpl<D1, F1>::value_type, U> operator<=>(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
