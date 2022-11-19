@@ -47,26 +47,26 @@ void test_NanExploit()
   {
 #ifndef __FAST_MATH__ // std::isnan is broken with -ffast-math
     float testValue;
-    std::memcpy(&testValue, &EmptyValueExploitingUnusedBits<float>::value, sizeof(float));
+    std::memcpy(&testValue, &SentinelForExploitingUnusedBits<float>::value, sizeof(float));
     ASSERT_TRUE(std::isnan(testValue));
 #endif
 
     constexpr float sNaN = std::numeric_limits<float>::signaling_NaN();
-    ASSERT_TRUE(std::memcmp(&EmptyValueExploitingUnusedBits<float>::value, &sNaN, sizeof(float)) != 0);
+    ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<float>::value, &sNaN, sizeof(float)) != 0);
     constexpr float qNaN = std::numeric_limits<float>::quiet_NaN();
-    ASSERT_TRUE(std::memcmp(&EmptyValueExploitingUnusedBits<float>::value, &qNaN, sizeof(float)) != 0);
+    ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<float>::value, &qNaN, sizeof(float)) != 0);
   }
   {
 #ifndef __FAST_MATH__ // std::isnan is broken with -ffast-math
     double testValue;
-    std::memcpy(&testValue, &EmptyValueExploitingUnusedBits<double>::value, sizeof(double));
+    std::memcpy(&testValue, &SentinelForExploitingUnusedBits<double>::value, sizeof(double));
     ASSERT_TRUE(std::isnan(testValue));
 #endif
 
     constexpr double sNaN = std::numeric_limits<double>::signaling_NaN();
-    ASSERT_TRUE(std::memcmp(&EmptyValueExploitingUnusedBits<double>::value, &sNaN, sizeof(double)) != 0);
+    ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<double>::value, &sNaN, sizeof(double)) != 0);
     constexpr double qNaN = std::numeric_limits<double>::quiet_NaN();
-    ASSERT_TRUE(std::memcmp(&EmptyValueExploitingUnusedBits<double>::value, &qNaN, sizeof(double)) != 0);
+    ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<double>::value, &qNaN, sizeof(double)) != 0);
   }
 }
 
@@ -80,11 +80,11 @@ void test_SelectDecomposition()
   static_assert(NoArgsAndBehavesAsStdOptional == SelectDecomposition<int, tiny::UseDefaultType, UseDefaultValue>::test);
   static_assert(NoArgsAndBehavesAsStdOptional == SelectDecomposition<TestClass, tiny::UseDefaultType, UseDefaultValue>::test);
   static_assert(NoArgsButExploitUnusedBits == SelectDecomposition<double, tiny::UseDefaultType, UseDefaultValue>::test);
-  static_assert(EmptyValueSpecifiedForInplaceSwallowing == SelectDecomposition<int, std::integral_constant<int, 42>, UseDefaultValue>::test);
-  static_assert(EmptyValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits == SelectDecomposition<double, TestDoubleValue, UseDefaultValue>::test);
+  static_assert(SentinelValueSpecifiedForInplaceSwallowing == SelectDecomposition<int, std::integral_constant<int, 42>, UseDefaultValue>::test);
+  static_assert(SentinelValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits == SelectDecomposition<double, TestDoubleValue, UseDefaultValue>::test);
   static_assert(MemPtrSpecifiedToVariableWithUnusedBits == SelectDecomposition<TestClassForInplace, tiny::UseDefaultType, &TestClassForInplace::someValue2>::test);
-  static_assert(EmptyValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits == SelectDecomposition<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someValue2>::test);
-  static_assert(EmptyValueAndMemPtrSpecifiedForInplaceSwallowing == SelectDecomposition<TestClassForInplace, std::integral_constant<int, 42>, &TestClassForInplace::someValue1>::test);
+  static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits == SelectDecomposition<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someValue2>::test);
+  static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowing == SelectDecomposition<TestClassForInplace, std::integral_constant<int, 42>, &TestClassForInplace::someValue1>::test);
   
   // Should not compile:
   //static_assert(3 == SelectDecomposition<TestClass, std::integral_constant<int, 42>, UseDefaultValue>::test);

@@ -24,20 +24,20 @@ void test_ExpressionsThatShouldNotCompile()
 
     {/*code*/ "struct TestClassForInplace { int someValue1 = -1; };\n"
               "tiny::optional<TestClassForInplace, &TestClassForInplace::someValue1> o;",
-     /*expected regex*/ "The type of the member variable given by the member-pointer cannot be used as flag if you do not specify a custom EmptyValue"}
+     /*expected regex*/ "The type of the member variable given by the member-pointer cannot be used as flag if you do not specify a custom SentinelValue"}
     
     ,
 
     {/*code*/ "struct TestClassForInplace { double someValue1 = 0.0; };\n"
               "struct TestClass{};\n"
-              "tiny::optional_empty_via_type<TestClass, tiny::UseDefaultType, &TestClassForInplace::someValue1> o;",
+              "tiny::optional_sentinel_via_type<TestClass, tiny::UseDefaultType, &TestClassForInplace::someValue1> o;",
      /*expected regex*/ "The flag given by the member-pointer is not a member of the payload type"}
     
     ,
 
     {/*code*/ "struct TestClassForInplace { int someValue1 = -1; };\n"
               "struct TestClass{};\n"
-              "tiny::optional_empty_via_type<TestClass, std::integral_constant<int, 42>, &TestClassForInplace::someValue1> o;",
+              "tiny::optional_sentinel_via_type<TestClass, std::integral_constant<int, 42>, &TestClassForInplace::someValue1> o;",
      /*expected regex*/ "The flag given by the member-pointer is not a member of the payload type"}
     
     ,
@@ -147,7 +147,7 @@ void test_ExpressionsThatShouldNotCompile()
      /*expected regex*/ "The function F passed to OPT::or_else\\(F&&\\) needs to return an optional of the same type OPT"}
     ,
     {/*code*/ R"(
-        tiny::optional_empty_via_type<int, tiny::UseDefaultType> o = 42;
+        tiny::optional_sentinel_via_type<int, tiny::UseDefaultType> o = 42;
         o.or_else([]() -> tiny::optional<int> { return std::nullopt; });
      )",
      /*expected regex*/ "The function F passed to OPT::or_else\\(F&&\\) needs to return an optional of the same type OPT"}

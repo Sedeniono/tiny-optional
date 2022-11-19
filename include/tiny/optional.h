@@ -90,7 +90,7 @@ enum UseDefaultType
 
 
 // Forward declaration (required for transform()).
-template <class PayloadType_, auto emptyValueOrMemPtr = UseDefaultValue, auto irrelevantOrEmptyValue = UseDefaultValue>
+template <class PayloadType_, auto sentinelOrMemPtr = UseDefaultValue, auto irrelevantOrSentinel = UseDefaultValue>
 class optional;
 
 } // namespace tiny
@@ -230,7 +230,7 @@ namespace impl
 
 
 //====================================================================================
-// IsTypeWithUnusedBits and EmptyValueExploitingUnusedBits
+// IsTypeWithUnusedBits and SentinelForExploitingUnusedBits
 //====================================================================================
 
 // So far the implementation defined exploits are only implemented and tested for x64 and x86.
@@ -241,7 +241,7 @@ namespace impl
 
   // optional is storing the 'IsEmpty'-flag within the payload itself automatically for certain types.
   // These types are identified by this constant.
-  // Each of these types must have a corresponding EmptyValueExploitingUnusedBits specialization.
+  // Each of these types must have a corresponding SentinelForExploitingUnusedBits specialization.
   // clang-format off
   template <class T>
   struct IsTypeWithUnusedBits
@@ -254,23 +254,22 @@ namespace impl
   // clang-format on
 
 
-  // The specializations of EmptyValueExploitingUnusedBits define the bit pattern to use to indicate an empty value when
-  // the 'IsEmpty'-flag is stored inplace for various standard types, as indicated by IsTypeWithUnusedBits.
-  // By construction, we exploit implementation-defined behavior here, and use type punning.
-  // Thus, the EmptyValueExploitingUnusedBits::value is not required to be of the same type as the
-  // IsEmpty-flag-variable.
+  // The specializations of SentinelForExploitingUnusedBits define the bit pattern to use to indicate an empty value
+  // when the 'IsEmpty'-flag is stored inplace for various standard types, as indicated by IsTypeWithUnusedBits. By
+  // construction, we exploit implementation-defined behavior here, and use type punning. Thus, the
+  // SentinelForExploitingUnusedBits::value is not required to be of the same type as the IsEmpty-flag-variable.
   template <typename T>
-  struct EmptyValueExploitingUnusedBits
+  struct SentinelForExploitingUnusedBits
   {
     static_assert(
         always_false<T>,
-        "Instantiation of EmptyValueExploitingUnusedBits with unknown type. Either an explicit specialization of "
-        "EmptyValueExploitingUnusedBits is missing, or it should not have been instantiated in the first place. Bug.");
+        "Instantiation of SentinelForExploitingUnusedBits with unknown type. Either an explicit specialization of "
+        "SentinelForExploitingUnusedBits is missing, or it should not have been instantiated in the first place. Bug.");
   };
 
 
   template <>
-  struct EmptyValueExploitingUnusedBits<bool>
+  struct SentinelForExploitingUnusedBits<bool>
   {
     // We could use any value besides 0x00 and 0x01.
     // If a bool contains any other numerical value than 0 or 1, the bool can be true and false 'at the same time', i.e.
@@ -282,7 +281,7 @@ namespace impl
 
 
   template <>
-  struct EmptyValueExploitingUnusedBits<double>
+  struct SentinelForExploitingUnusedBits<double>
   {
     // Compare https://cwiki.apache.org/confluence/display/stdcxx/FloatingPoint
     // We use a NaN value that is not used by default as signaling or quiet NaN on any platform.
@@ -294,7 +293,7 @@ namespace impl
 
 
   template <>
-  struct EmptyValueExploitingUnusedBits<float>
+  struct SentinelForExploitingUnusedBits<float>
   {
     // Compare https://cwiki.apache.org/confluence/display/stdcxx/FloatingPoint
     // and https://www.doc.ic.ac.uk/~eedwards/compsys/float/nan.html
@@ -310,7 +309,7 @@ namespace impl
   // Ordinary pointer or function pointer (but not a member pointer or member function pointer; those are rather
   // special, so we do not support to place the flag inplace for them).
   template <class T>
-  struct EmptyValueExploitingUnusedBits<T *>
+  struct SentinelForExploitingUnusedBits<T *>
   {
     // We support a compressed optional<T*> especially because it allows compressed optionals of structs/classes that
     // contain a pointer. I.e. the 'IsEmpty'-flag can then be stored in a member variable which is a pointer.
@@ -373,7 +372,7 @@ namespace impl
       std::remove_const_t<PayloadType> payload;
     };
 
-    bool isEmptyFlag;
+    bool isEmptyFlag; // True if the optional is empty, false otherwise.
 
     SeparateFlagWrapper() { }
     ~SeparateFlagWrapper() { }
@@ -407,7 +406,7 @@ namespace impl
    * - The payload type, i.e. the type that the user actually wanted to store in the optional.
    *
    * - The StoredType indicates the type that the optional is actually storing internally. So
-   *   this is bascially the type containing both the PayloadType and the IsEmptyFlagType.
+   *   this is basically the type containing both the PayloadType and the IsEmptyFlagType.
    *   Note that they might be identical.
    *
    * - The type of the IsEmptyFlagType, i.e. the type of the variable storing the IsEmpty-flag.
@@ -542,15 +541,15 @@ namespace impl
 
 
   // Used when we exploit that the payload (or a member variable within the payload) has unused bit patterns.
-  // In this case we use type punning and set the flag's bits directly to IsEmptyValue::value, which is typically
-  // given by EmptyValueExploitingUnusedBits.
-  // Note that FlagType and the type of the given IsEmptyValue::value can have different types. They are compared
+  // In this case we use type punning and set the flag's bits directly to SentinelValue::value, which is typically
+  // given by SentinelForExploitingUnusedBits.
+  // Note that FlagType and the type of the given SentinelValue::value can have different types. They are compared
   // and copied 'raw' (in the sense of std::memcmp and std::memcpy).
-  template <class FlagType, class IsEmptyValue>
+  template <class FlagType, class SentinelValue>
   struct MemcpyAndCmpFlagManipulator
   {
   private:
-    static constexpr auto valueToIndicateEmpty = IsEmptyValue::value;
+    static constexpr auto valueToIndicateEmpty = SentinelValue::value;
     static_assert(sizeof(valueToIndicateEmpty) <= sizeof(FlagType));
 
     // Required so that we can use std::memcpy in a way that is covered by the C++ standard.
@@ -602,63 +601,63 @@ namespace impl
   // Used when the user specified a specific value to 'swallow' and use to indicate the empty state.
   // For example, if the payload is an integer, the user might specify to use MAX_INT to indicate
   // the empty state. No need to use hacky memcpy and memcmp operations in this case.
-  template <class FlagType, class IsEmptyValue>
+  template <class FlagType, class SentinelValue>
   struct AssignmentFlagManipulator
   {
   private:
-    // The empty value given by the user (IsEmptyValue) might have a different type than the flag variable.
+    // The empty value given by the user (SentinelValue) might have a different type than the flag variable.
     // This can happen very easily if the user e.g. specify the literal 42 as empty value (which is an 'int'),
     // but the optional stores an 'unsigned int'. It would be annoying for the user to always specify the
     // literals with the 'correct' postfix (e.g. 42u). Thus, we cast the value here. But before this we
     // check that the literal is not changed in the process. For example, specifying -1 for an optional
     // storing an 'unsigned' results in a compiler error.
-    [[nodiscard]] static constexpr std::remove_cv_t<FlagType> ConvertEmptyValueToFlagType() noexcept
+    [[nodiscard]] static constexpr std::remove_cv_t<FlagType> ConvertSentinelToFlagType() noexcept
     {
-      using ValueType = std::remove_cv_t<decltype(IsEmptyValue::value)>;
+      using ValueType = std::remove_cv_t<decltype(SentinelValue::value)>;
       using FlagTypeNoCV = std::remove_cv_t<FlagType>;
 
       if constexpr (std::is_same_v<FlagTypeNoCV, bool> || std::is_same_v<ValueType, bool>) {
         static_assert(
             std::is_same_v<FlagTypeNoCV, ValueType>,
             "Either the variable used by the optional as IsEmpty flag or the specified compile-time constant "
-            "for the empty value is a bool, but not both. If one is a bool, both should be a bool.");
-        return IsEmptyValue::value;
+            "for the sentinel is a bool, but not both. If one is a bool, both should be a bool.");
+        return SentinelValue::value;
       }
       else if constexpr (std::is_integral_v<FlagTypeNoCV> && std::is_integral_v<ValueType>) {
         // The static_cast prevents compiler warnings.
         // That we do not change the numeric value is ensured by the static_assert.
         static_assert(
-            IsIntegralInRange<FlagTypeNoCV>(IsEmptyValue::value),
+            IsIntegralInRange<FlagTypeNoCV>(SentinelValue::value),
             "The specified compile-time constant for the empty value is outside of the range supported "
             "by the type of the variable used by the optional as IsEmpty-flag. Just as an example: "
             "'optional<unsigned, -1>' triggers this because the value -1 cannot be held by an 'unsigned'.");
-        return static_cast<FlagTypeNoCV>(IsEmptyValue::value);
+        return static_cast<FlagTypeNoCV>(SentinelValue::value);
       }
       else if constexpr (std::is_floating_point_v<FlagTypeNoCV> || std::is_floating_point_v<ValueType>) {
         // Compile-time floating point values are fiddly, so for safety we require the types to be the same in this
         // case.
         static_assert(
             std::is_same_v<FlagTypeNoCV, ValueType>,
-            "The IsEmpty-flag or the specified literal which indicates the empty state is a floating point type. "
+            "The IsEmpty-flag or the specified sentinel (the literal which indicates the empty state) is a floating point type. "
             "Please ensure that they both have the exact same type. For example, if the IsEmpty-flag is a float, "
-            "ensure that the IsEmpty-value is also a float and not e.g. a double.");
-        return IsEmptyValue::value;
+            "ensure that the sentinel value is also a float and not e.g. a double.");
+        return SentinelValue::value;
       }
       else {
         // If you get a compiler error here, then the specified compile-time constant for the empty value has a type
         // that is not compatible with the type used by the optional as IsEmpty-flag.
-        return IsEmptyValue::value;
+        return SentinelValue::value;
       }
     }
 
-    static constexpr FlagType valueToIndicateEmpty = ConvertEmptyValueToFlagType();
+    static constexpr FlagType valueToIndicateEmpty = ConvertSentinelToFlagType();
 
 
   public:
     [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
     {
       // Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same noexcept
-      // specification as std::optional.
+      // guarantees as std::optional.
       static_assert(
           noexcept(isEmptyFlag == valueToIndicateEmpty),
           "The comparison operator of the flag type must be noexcept.");
@@ -668,7 +667,7 @@ namespace impl
     static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
     {
       // static_assert: Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same
-      // noexcept specification as std::optional.
+      // noexcept guarantees as std::optional.
       static_assert(
           noexcept(*const_cast<std::remove_cv_t<FlagType> *>(&uninitializedIsEmptyFlagMemory) = valueToIndicateEmpty),
           "The assignment operator of the flag type must be noexcept.");
@@ -852,7 +851,7 @@ namespace impl
       // You must use reset() instead. Otherwise, we could run into inconsistencies with FlagManipulator.
       assert(
           has_value()
-          && "Maybe the special flag value used to indicate an empty optional was assigned. Use reset() instead.");
+          && "Maybe the special sentinel value used to indicate an empty optional was assigned. Use reset() instead.");
     }
 
 
@@ -880,7 +879,7 @@ namespace impl
       // You must use reset() instead. Otherwise, we could run into inconsistencies with FlagManipulator.
       assert(
           has_value()
-          && "Maybe the special flag value used to indicate an empty optional was assigned. Use reset() instead.");
+          && "Maybe the special sentinel value used to indicate an empty optional was assigned. Use reset() instead.");
     }
 
 
@@ -899,7 +898,7 @@ namespace impl
       // You must use reset() instead. Otherwise, we could run into inconsistencies with FlagManipulator.
       assert(
           has_value()
-          && "Maybe the special flag value used to indicate an empty optional was assigned. Use reset() instead.");
+          && "Maybe the special sentinel value used to indicate an empty optional was assigned. Use reset() instead.");
     }
 
 
@@ -1644,11 +1643,11 @@ namespace impl
   {
     NoArgsAndBehavesAsStdOptional,
     NoArgsButExploitUnusedBits,
-    EmptyValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits,
-    EmptyValueSpecifiedForInplaceSwallowing,
+    SentinelValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits,
+    SentinelValueSpecifiedForInplaceSwallowing,
     MemPtrSpecifiedToVariableWithUnusedBits,
-    EmptyValueAndMemPtrSpecifiedForInplaceSwallowing,
-    EmptyValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits
+    SentinelValueAndMemPtrSpecifiedForInplaceSwallowing,
+    SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits
   };
 
 
@@ -1665,12 +1664,12 @@ namespace impl
   // flag should be stored inplace or out-of-place, and how it should be manipulated.
   //
   // PayloadType: The actual value that the user wants to store in the optional.
-  // EmptyValue: Either UseDefaultType to let the implementation here choose the most suitable value to indicate an
-  //             empty state. Otherwise, EmptyValue::value must be the value to use to indicate an empty state.
+  // SentinelValue: Either UseDefaultType to let the implementation here choose the most suitable value to indicate an
+  //             empty state. Otherwise, SentinelValue::value must be the value to use to indicate the empty state.
   // memPtrToFlag: Either UseDefaultValue if the 'IsEmpty'-flag should not be stored in a member variable of the
   //             payload. Otherwise, this must be a member pointer to the member variable where to store the
   //             'IsEmpty'-flag in-place.
-  template <class PayloadType, class EmptyValue, auto memPtrToFlag, class = void>
+  template <class PayloadType, class SentinelValue, auto memPtrToFlag, class = void>
   struct SelectDecomposition
   {
     static_assert(
@@ -1704,58 +1703,58 @@ namespace impl
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
     using FlagManipulator
-        = MemcpyAndCmpFlagManipulator<PayloadType, EmptyValueExploitingUnusedBits<std::remove_cv_t<PayloadType>>>;
+        = MemcpyAndCmpFlagManipulator<PayloadType, SentinelForExploitingUnusedBits<std::remove_cv_t<PayloadType>>>;
   };
 
 
-  template <class PayloadType, class EmptyValue>
+  template <class PayloadType, class SentinelValue>
   struct SelectDecomposition<
       PayloadType,
-      EmptyValue,
+      SentinelValue,
       UseDefaultValue,
       std::enable_if_t<
           !TypeSupportsInplaceWithSwallowing<PayloadType>::value && !IsTypeWithUnusedBits<PayloadType>::value
-          && !std::is_same_v<EmptyValue, UseDefaultType>>>
+          && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
     static_assert(
         always_false<PayloadType>,
         "The payload type does not support an inplace flag, and you also did not specify that the flag should be stored in a member of the payload. "
-        "That means a separate bool needs to be used to store the flag (meaning the optional is no longer tiny). However, you specified an EmptyValue, "
-        "which is inconistent and unnecessary. Remove the EmptyValue.");
+        "That means a separate bool needs to be used to store the flag (meaning the optional is no longer tiny). However, you specified an SentinelValue, "
+        "which is inconistent and unnecessary. Remove the SentinelValue.");
   };
 
 
-  template <class PayloadType, class EmptyValue>
+  template <class PayloadType, class SentinelValue>
   struct SelectDecomposition<
       PayloadType,
-      EmptyValue,
+      SentinelValue,
       UseDefaultValue,
-      std::enable_if_t<IsTypeWithUnusedBits<PayloadType>::value && !std::is_same_v<EmptyValue, UseDefaultType>>>
+      std::enable_if_t<IsTypeWithUnusedBits<PayloadType>::value && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
     // The user specified a value to swallow for a type that has unused bits.
     // So the swallowing is in principle unnecessary. But maybe the user deliberately wants to mark
     // the value as 'invalid', so we do not static_assert this but instead support it.
 
     static constexpr auto test
-        = SelectedDecompositionTest::EmptyValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits;
+        = SelectedDecompositionTest::SentinelValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits;
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
-    using FlagManipulator = AssignmentFlagManipulator<PayloadType, EmptyValue>;
+    using FlagManipulator = AssignmentFlagManipulator<PayloadType, SentinelValue>;
   };
 
 
-  template <class PayloadType, class EmptyValue>
+  template <class PayloadType, class SentinelValue>
   struct SelectDecomposition<
       PayloadType,
-      EmptyValue,
+      SentinelValue,
       UseDefaultValue,
       std::enable_if_t<
-          TypeSupportsInplaceWithSwallowing<PayloadType>::value && !std::is_same_v<EmptyValue, UseDefaultType>>>
+          TypeSupportsInplaceWithSwallowing<PayloadType>::value && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
-    static constexpr auto test = SelectedDecompositionTest::EmptyValueSpecifiedForInplaceSwallowing;
+    static constexpr auto test = SelectedDecompositionTest::SentinelValueSpecifiedForInplaceSwallowing;
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
-    using FlagManipulator = AssignmentFlagManipulator<PayloadType, EmptyValue>;
+    using FlagManipulator = AssignmentFlagManipulator<PayloadType, SentinelValue>;
   };
 
 
@@ -1779,7 +1778,7 @@ namespace impl
 
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
     using FlagManipulator
-        = MemcpyAndCmpFlagManipulator<MemVarType, EmptyValueExploitingUnusedBits<std::remove_cv_t<MemVarType>>>;
+        = MemcpyAndCmpFlagManipulator<MemVarType, SentinelForExploitingUnusedBits<std::remove_cv_t<MemVarType>>>;
   };
 
 
@@ -1796,18 +1795,18 @@ namespace impl
   {
     static_assert(
         always_false<PayloadType>,
-        "The type of the member variable given by the member-pointer cannot be used as flag if you do not specify a custom EmptyValue.");
+        "The type of the member variable given by the member-pointer cannot be used as flag if you do not specify a custom SentinelValue.");
   };
 
 
   // clang-format off
-  template <class PayloadType, class EmptyValue, auto memPtrToFlag>
+  template <class PayloadType, class SentinelValue, auto memPtrToFlag>
   struct SelectDecomposition<
       PayloadType,
-      EmptyValue,
+      SentinelValue,
       memPtrToFlag,
       std::enable_if_t<
-          !std::is_same_v<EmptyValue, UseDefaultType> 
+          !std::is_same_v<SentinelValue, UseDefaultType> 
           && std::is_member_object_pointer_v<decltype(memPtrToFlag)>
           && IsTypeWithUnusedBits<typename MemberPointerFragments<memPtrToFlag>::VariableType>::value>>
   // clang-format on
@@ -1817,7 +1816,7 @@ namespace impl
     // the value as 'invalid', so we do not static_assert this but instead support it.
 
     static constexpr auto test
-        = SelectedDecompositionTest::EmptyValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits;
+        = SelectedDecompositionTest::SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits;
 
     static_assert(
         std::is_same_v<PayloadType, typename MemberPointerFragments<memPtrToFlag>::ClassType>,
@@ -1825,23 +1824,23 @@ namespace impl
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
-    using FlagManipulator = MemcpyAndCmpFlagManipulator<MemVarType, EmptyValue>;
+    using FlagManipulator = MemcpyAndCmpFlagManipulator<MemVarType, SentinelValue>;
   };
 
 
   // clang-format off
-  template <class PayloadType, class EmptyValue, auto memPtrToFlag>
+  template <class PayloadType, class SentinelValue, auto memPtrToFlag>
   struct SelectDecomposition<
       PayloadType,
-      EmptyValue,
+      SentinelValue,
       memPtrToFlag,
       std::enable_if_t<
-          !std::is_same_v<EmptyValue, UseDefaultType> 
+          !std::is_same_v<SentinelValue, UseDefaultType> 
           && std::is_member_object_pointer_v<decltype(memPtrToFlag)> 
           && TypeSupportsInplaceWithSwallowing<typename MemberPointerFragments<memPtrToFlag>::VariableType>::value>>
   // clang-format on
   {
-    static constexpr auto test = SelectedDecompositionTest::EmptyValueAndMemPtrSpecifiedForInplaceSwallowing;
+    static constexpr auto test = SelectedDecompositionTest::SentinelValueAndMemPtrSpecifiedForInplaceSwallowing;
 
     static_assert(
         std::is_same_v<PayloadType, typename MemberPointerFragments<memPtrToFlag>::ClassType>,
@@ -1849,57 +1848,56 @@ namespace impl
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
-    using FlagManipulator = AssignmentFlagManipulator<MemVarType, EmptyValue>;
+    using FlagManipulator = AssignmentFlagManipulator<MemVarType, SentinelValue>;
   };
 
 
   //====================================================================================
-  // SelectEmptyValueAndMemPtrFromConstants
+  // SelectSentinelValueAndMemPtrFromConstants
   //====================================================================================
 
   // If the second template parameter of optional is a member-pointer, it indicates the position of the
-  // 'IsEmpty'-flag, and the third parameter might contain the specific empty value.
-  // However, if the second parameter is no a member-pointer, it contains the specific empty value (or UseDefaultValue).
-  // Figuring out the member-pointer (if any) and the empty value (if any) is performed here.
-  template <class PayloadType_, auto emptyValueOrMemPtr, auto irrelevantOrEmptyValue>
-  struct SelectEmptyValueAndMemPtrFromConstants
+  // 'IsEmpty'-flag, and the third parameter might contain the specific sentinel value.
+  // However, if the second parameter is no a member-pointer, it contains the specific sentinel value (or
+  // UseDefaultValue). Figuring out the member-pointer (if any) and the sentinel value (if any) is performed here.
+  template <class PayloadType_, auto sentinelOrMemPtr, auto irrelevantOrSentinel>
+  struct SelectSentinelValueAndMemPtrFromConstants
   {
     using PayloadType = PayloadType_;
 
-    using emptyValueOrMemPtrType = decltype(emptyValueOrMemPtr);
-    using irrelevantOrEmptyValueType = decltype(irrelevantOrEmptyValue);
+    using sentinelOrMemPtrType = decltype(sentinelOrMemPtr);
+    using irrelevantOrSentinelType = decltype(irrelevantOrSentinel);
 
-    // if (emptyValueOrMemPtr is a memPtr)
-    //    if (irrelevantOrEmptyValue == UseDefaultValue)
-    //        EmptyValue = UseDefaultType
+    // if (sentinelOrMemPtr is a memPtr)
+    //    if (irrelevantOrSentinel == UseDefaultValue)
+    //        SentinelValue = UseDefaultType
     //    else
-    //        EmptyValue = irrelevantOrEmptyValue
+    //        SentinelValue = irrelevantOrSentinel
     // else
-    //    if (emptyValueOrMemPtr == UseDefaultValue)
-    //        EmptyValue = UseDefaultType
+    //    if (sentinelOrMemPtr == UseDefaultValue)
+    //        SentinelValue = UseDefaultType
     //    else
-    //        EmptyValue = emptyValueOrMemPtr
-    using EmptyValue = std::conditional_t<
-        std::is_member_object_pointer_v<emptyValueOrMemPtrType>,
+    //        SentinelValue = sentinelOrMemPtr
+    using SentinelValue = std::conditional_t<
+        std::is_member_object_pointer_v<sentinelOrMemPtrType>,
         std::conditional_t<
-            std::is_same_v<irrelevantOrEmptyValueType, UseDefaultType>,
+            std::is_same_v<irrelevantOrSentinelType, UseDefaultType>,
             UseDefaultType,
-            std::integral_constant<irrelevantOrEmptyValueType, irrelevantOrEmptyValue>>,
+            std::integral_constant<irrelevantOrSentinelType, irrelevantOrSentinel>>,
         std::conditional_t<
-            std::is_same_v<emptyValueOrMemPtrType, UseDefaultType>,
+            std::is_same_v<sentinelOrMemPtrType, UseDefaultType>,
             UseDefaultType,
-            std::integral_constant<emptyValueOrMemPtrType, emptyValueOrMemPtr>>>;
+            std::integral_constant<sentinelOrMemPtrType, sentinelOrMemPtr>>>;
 
-    static constexpr auto memPtr = value_conditional<
-        std::is_member_object_pointer_v<emptyValueOrMemPtrType>,
-        emptyValueOrMemPtr,
-        UseDefaultValue>::value;
+    static constexpr auto memPtr
+        = value_conditional<std::is_member_object_pointer_v<sentinelOrMemPtrType>, sentinelOrMemPtr, UseDefaultValue>::
+            value;
   };
 } // namespace impl
 
 
 //====================================================================================
-// optional_empty_via_type
+// optional_sentinel_via_type
 //====================================================================================
 
 namespace impl
@@ -1912,11 +1910,11 @@ namespace impl
       = TinyOptionalImpl<typename Options::StoredTypeDecomposition, typename Options::FlagManipulator>;
 } // namespace impl
 
-// Basically the same as optional, except that the value for the 'IsEmpty'-flag needs to be specified via a type
-// (i.e. EmptyValue::value).
-template <class PayloadType, class EmptyValue, auto memPtr = UseDefaultValue>
-using optional_empty_via_type
-    = impl::TinyOptionalImplCombined<impl::SelectDecomposition<PayloadType, EmptyValue, memPtr>>;
+// Basically the same as optional, except that the value for the sentinel flag needs to be specified via a type
+// (i.e. SentinelValue::value must be the sentinel).
+template <class PayloadType, class SentinelValue, auto memPtr = UseDefaultValue>
+using optional_sentinel_via_type
+    = impl::TinyOptionalImplCombined<impl::SelectDecomposition<PayloadType, SentinelValue, memPtr>>;
 
 
 //====================================================================================
@@ -1926,17 +1924,19 @@ using optional_empty_via_type
 namespace impl
 {
 
-  // Shortcut for optional definition below so that the SelectEmptyValueAndMemPtrFromConstants
+  // Shortcut for optional definition below so that the SelectSentinelValueAndMemPtrFromConstants
   // needs to be specified only once.
   template <class Selection>
-  using TinyOptionalFromSelection
-      = optional_empty_via_type<typename Selection::PayloadType, typename Selection::EmptyValue, Selection::memPtr>;
+  using TinyOptionalFromSelection = optional_sentinel_via_type<
+      typename Selection::PayloadType,
+      typename Selection::SentinelValue,
+      Selection::memPtr>;
 } // namespace impl
 
 
 // Main tiny optional type to be used by users of the library.
-// Optionally allows to specify the value for the 'IsEmpty'-flag via a literal, and a member-pointer to indicate the
-// 'IsEmpty'-flag.
+// Optionally allows to specify the value for the 'IsEmpty'-flag (called 'sentinel') via a literal, and a member-pointer
+// to indicate where the 'IsEmpty'-flag should be stored.
 //
 // Implementation note: Unfortunately, we cannot use a simple 'using optional = TinyOptionalFromSelection<...>'
 // because such a optional would have no usable deduction guides. I.e. an expression such as
@@ -1947,22 +1947,22 @@ namespace impl
 //
 // Moreover, we deliberately use public rather than private inheritance. Assigning a optional to a TinyOptionalImpl
 // (which might happen because of the other typedefs for TinyOptionalImpl that the user is supposed to use, such as
-// optional_empty_via_type) makes sense, especially since it only works if the template parameter of
+// optional_sentinel_via_type) makes sense, especially since it only works if the template parameter of
 // optional::Base and the other TinyOptionalImpl are the same. Splicing is irrelevant because optional does not
 // contain additional data members. In fact, as explained above, we actually would like optional to be a typedef to
 // TinyOptionalImpl, but which is not possible due to the deduction guides. Moreover, public inheritance allows to
 // re-use various functions, such as the comparison operators, without re-defining them for all possible combinations.
 template <
     class PayloadType_,
-    auto emptyValueOrMemPtr /*= UseDefaultValue (template default value defined at first declaration)*/,
-    auto irrelevantOrEmptyValue /*= UseDefaultValue (template default value defined at first declaration)*/>
+    auto sentinelOrMemPtr /*= UseDefaultValue (template default value defined at first declaration)*/,
+    auto irrelevantOrSentinel /*= UseDefaultValue (template default value defined at first declaration)*/>
 class optional
   : public impl::TinyOptionalFromSelection<
-        impl::SelectEmptyValueAndMemPtrFromConstants<PayloadType_, emptyValueOrMemPtr, irrelevantOrEmptyValue>>
+        impl::SelectSentinelValueAndMemPtrFromConstants<PayloadType_, sentinelOrMemPtr, irrelevantOrSentinel>>
 {
 private:
   using Base = impl::TinyOptionalFromSelection<
-      impl::SelectEmptyValueAndMemPtrFromConstants<PayloadType_, emptyValueOrMemPtr, irrelevantOrEmptyValue>>;
+      impl::SelectSentinelValueAndMemPtrFromConstants<PayloadType_, sentinelOrMemPtr, irrelevantOrSentinel>>;
 
 public:
   using typename Base::value_type;
@@ -2036,39 +2036,36 @@ template <class T>
 optional(T) -> optional<T, UseDefaultValue, UseDefaultValue>;
 
 
-template <class PayloadType, auto emptyValueOrMemPtr = UseDefaultValue, auto irrelevantOrEmptyValue = UseDefaultValue>
-[[nodiscard]] optional<std::decay_t<PayloadType>, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
+template <class PayloadType, auto sentinelOrMemPtr = UseDefaultValue, auto irrelevantOrSentinel = UseDefaultValue>
+[[nodiscard]] optional<std::decay_t<PayloadType>, sentinelOrMemPtr, irrelevantOrSentinel> make_optional(
     PayloadType && v)
 {
-  return optional<std::decay_t<PayloadType>, emptyValueOrMemPtr, irrelevantOrEmptyValue>{std::forward<PayloadType>(v)};
+  return optional<std::decay_t<PayloadType>, sentinelOrMemPtr, irrelevantOrSentinel>{std::forward<PayloadType>(v)};
 }
 
 
 template <
     class PayloadType,
-    auto emptyValueOrMemPtr = UseDefaultValue,
-    auto irrelevantOrEmptyValue = UseDefaultValue,
+    auto sentinelOrMemPtr = UseDefaultValue,
+    auto irrelevantOrSentinel = UseDefaultValue,
     class... ArgsT>
-[[nodiscard]] optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(ArgsT &&... args)
+[[nodiscard]] optional<PayloadType, sentinelOrMemPtr, irrelevantOrSentinel> make_optional(ArgsT &&... args)
 {
-  return optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue>{std::in_place, std::forward<ArgsT>(args)...};
+  return optional<PayloadType, sentinelOrMemPtr, irrelevantOrSentinel>{std::in_place, std::forward<ArgsT>(args)...};
 }
 
 
 template <
     class PayloadType,
-    auto emptyValueOrMemPtr = UseDefaultValue,
-    auto irrelevantOrEmptyValue = UseDefaultValue,
+    auto sentinelOrMemPtr = UseDefaultValue,
+    auto irrelevantOrSentinel = UseDefaultValue,
     class U,
     class... ArgsT>
-[[nodiscard]] optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> make_optional(
+[[nodiscard]] optional<PayloadType, sentinelOrMemPtr, irrelevantOrSentinel> make_optional(
     std::initializer_list<U> il,
     ArgsT &&... args)
 {
-  return optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue>{
-      std::in_place,
-      il,
-      std::forward<ArgsT>(args)...};
+  return optional<PayloadType, sentinelOrMemPtr, irrelevantOrSentinel>{std::in_place, il, std::forward<ArgsT>(args)...};
 }
 
 
@@ -2486,15 +2483,15 @@ struct hash<
 };
 
   
-template <class PayloadType, auto emptyValueOrMemPtr, auto irrelevantOrEmptyValue>
+template <class PayloadType, auto sentinelOrMemPtr, auto irrelevantOrSentinel>
 struct hash<
   tiny::impl::EnableHashHelper<
-    tiny::optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue>,
+    tiny::optional<PayloadType, sentinelOrMemPtr, irrelevantOrSentinel>,
     PayloadType
   >
 >
 {
-  size_t operator()(tiny::optional<PayloadType, emptyValueOrMemPtr, irrelevantOrEmptyValue> const & o) const
+  size_t operator()(tiny::optional<PayloadType, sentinelOrMemPtr, irrelevantOrSentinel> const & o) const
   {
     return o.has_value() ? hash<std::remove_const_t<PayloadType>>{}(*o) : 0;
   }

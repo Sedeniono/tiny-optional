@@ -101,10 +101,10 @@ void test_Comparisons()
     (TestCompareOptWithOpt<tiny::optional<int>, std::optional<int>>(42, std::nullopt, comparer), ...);
     (TestCompareOptWithOpt<tiny::optional<int>, std::optional<int>>(std::nullopt, 42, comparer), ...);
 
-    // Comparison between tiny/std::optional and tiny::optional_empty_via_type.
+    // Comparison between tiny/std::optional and tiny::optional_sentinel_via_type.
     // clang-format off
-    (TestCompareOptWithOpt<tiny::optional<int>, tiny::optional_empty_via_type<int, std::integral_constant<int, 1>>>(42, 42, comparer), ...);
-    (TestCompareOptWithOpt<std::optional<int>, tiny::optional_empty_via_type<int, std::integral_constant<int, 1>>>(42, 42, comparer), ...);
+    (TestCompareOptWithOpt<tiny::optional<int>, tiny::optional_sentinel_via_type<int, std::integral_constant<int, 1>>>(42, 42, comparer), ...);
+    (TestCompareOptWithOpt<std::optional<int>, tiny::optional_sentinel_via_type<int, std::integral_constant<int, 1>>>(42, 42, comparer), ...);
     // clang-format on
 
     // Comparisons with std::nullopt
@@ -131,10 +131,10 @@ void test_Comparisons()
     (TestCompareOptWithValue<tiny::optional<double>>(std::nullopt, NaN, comparer), ...);
 #endif
 
-    // Comparisons for optional_empty_via_type.
-    using OptionalIntViaType = tiny::optional_empty_via_type<int, std::integral_constant<int, 1>>;
+    // Comparisons for optional_sentinel_via_type.
+    using OptionalIntViaType = tiny::optional_sentinel_via_type<int, std::integral_constant<int, 1>>;
     (TestCompareOptWithOpt<OptionalIntViaType, OptionalIntViaType>(42, 43, comparer), ...);
-    (TestCompareOptWithOpt<OptionalIntViaType, tiny::optional_empty_via_type<double, TestDoubleValue>>(
+    (TestCompareOptWithOpt<OptionalIntViaType, tiny::optional_sentinel_via_type<double, TestDoubleValue>>(
          42,
          43,
          comparer),

@@ -89,7 +89,7 @@ This optimization is similar to what Rust is doing for [booleans](https://stacko
 ## Use case 2  <!-- omit in toc -->
 Moreover, sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about a raw integer `int index` that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. 
 
-The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`), in contrast to `std::optional<int>`.
+The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that the "sentinel" `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`), in contrast to `std::optional<int>`.
 
 
 # Requirements
@@ -106,7 +106,7 @@ Currently, the following components of the interface of `std::optional` are not 
 * Constructors and destructors are not trivial, even if the payload type `T` would allow it.
 * Methods and types are not `constexpr`. This will probably not be possible in C++17 because some of the tricks rely on `std::memcpy`, which is not `constexpr`. `std::bit_cast` might help here for C++20. Since the whole purpose of the library is to safe memory during runtime, a viable workaround is to simply use `std::optional` in `consteval` contexts.
 
-Moreover, the monadic operation `transform()` always returns a `tiny::optional<T>`, i.e. specification of a sentinel or some other optional as return type (`tiny::optional_empty_via_type` etc.) is not possible. As a workaround, you can use `and_then()`.
+Moreover, the monadic operation `transform()` always returns a `tiny::optional<T>`, i.e. specification of a sentinel or some other optional as return type (`tiny::optional_sentinel_via_type` etc.) is not possible. As a workaround, you can use `and_then()`.
 
 
 # Usage
@@ -151,7 +151,7 @@ struct Data
 ```
 and you need an optional variable of `Data`. Writing `tiny::optional<Data>` works but the optional requires an additional internal `bool`, so the size of `tiny::optional<Data>` will be the same as `std::optional<Data>`. 
 This is unnecessary since some members of `Data` have unused bit patterns, namely `var2` and `var3`.
-The library allows to exploit this by specifying an accessible member where the emptiness flag can be stored by writing `tiny::optional<Data, &Data::var2>`. The resulting optional has the same size as `Data`. Using `tiny::optional<Data, &Data::var3>` works as well here. In fact, all the types mentioned above where the library stores the empty flag in place can be specified.
+The library allows to exploit this by specifying an accessible member where the emptiness flag can be stored by writing `tiny::optional<Data, &Data::var2>`. The resulting optional has the same size as `Data`. Using `tiny::optional<Data, &Data::var3>` works as well here. In fact, all the types mentioned above where the library stores the empty flag in-place can be specified.
 
 Additionally, there is the option to use a sentinel value for the empty state and instruct the library to store it in one of the members. The sentinel value is specified as the third template parameter. For example, if you know that `Data::var1` can never be negative, you can instruct the library to use the value `-1` as sentinel: `tiny::optional<Data, &Data::var1, -1>`. Again the resulting `tiny::optional` will not require additional memory compared to a plain `Data`.
 
@@ -162,8 +162,8 @@ Given the explanations above, the full signature of `tiny::optional` is:
 namespace tiny {
     template <
         class PayloadType, 
-        auto emptyValueOrMemPtr = UseDefaultValue, 
-        auto irrelevantOrEmptyValue = UseDefaultValue>
+        auto sentinelOrMemPtr = UseDefaultValue, 
+        auto irrelevantOrSentinel = UseDefaultValue>
     class optional;
 }
 ```
@@ -174,7 +174,7 @@ If the second parameter is a member pointer, it has to point to a member of `Pay
 
 
 ## Non-member definitions
-The template function `tiny::make_optional()` can be used to create a `tiny::optional`. [Contrary to `std::make_optional()`](https://en.cppreference.com/w/cpp/utility/optional/make_optional), it can accept two additional optional template parameters corresponding to `emptyValueOrMemPtr` and `irrelevantOrEmptyValue` explained above.
+The template function `tiny::make_optional()` can be used to create a `tiny::optional`. [Contrary to `std::make_optional()`](https://en.cppreference.com/w/cpp/utility/optional/make_optional), it can accept two additional optional template parameters corresponding to `sentinelOrMemPtr` and `irrelevantOrSentinel` explained above.
 Examples:
 ```C++
 tiny::make_optional(42.0); // Constructs tiny::optional<double>(42.0)
@@ -207,7 +207,7 @@ namespace tiny {
         class PayloadType, 
         class SentinelValue, 
         auto memPtr = UseDefaultValue>
-    class optional_empty_via_type;
+    class optional_sentinel_via_type;
 }
 ```
 where the sentinel value is expected to be given by `SentinelValue::value`.
@@ -449,7 +449,7 @@ The library exploits **platform specific behavior** (that is not guaranteed by t
 * Floating point types (`float` and `double`): There are two types of "not a numbers" (NaNs) defined by the IEEE754 standard: Quiet and signaling NaNs. However, there is a wide range of bit patterns that represent a quite or a signaling NaN. For example, for `float` **any** bit pattern in `[0x7f800001, 0x7fbfffff]` and `[0xff800001, 0xffbfffff]` represents a signaling NaN, and **any** bit pattern in `[0x7fc00000, 0x7fffffff]` and `[0xffc00000, 0xffffffff]` represents a quiet NaN. However, on the supported platforms only one specific quiet NaN and one specific signaling NaN bit pattern is used by the supported compilers and standard libraries (e.g. for linux clang x64: `0x7fc00000` for quiet and `0x7fa00000` for signaling NaNs). This holds of course only as long as a program does not do any tricks by itself. This library exploits this assumption and uses the quiet NaN `0x7fedcba9` as sentinel value for `float` and `0x7ff8fedcba987654` for `double`.
 Note: `long double` is not (yet) supported and a `tiny::optional<long double>` instead uses a separate `bool`.
 
-* Pointers: For pointers the library uses the sentinel values `0xffff'ffff - 8` (32 bit) and `0xffff'8000'0000'0000 - 1` (64 bit) to indicate an empty state. In short, these values avoid [pseudo-handles on Windows](https://devblogs.microsoft.com/oldnewthing/20210105-00/?p=104667), and for 64 bit lies in the gap of [non-canonical addresses](https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/). See the explanation in the source code at `EmptyValueExploitingUnusedBits<T*>` for more details. Thanks to the reddit users "compiling" and "ra-zor" for [pointing this out](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itjvkmc/?utm_source=share&utm_medium=web2x&context=3).\
+* Pointers: For pointers the library uses the sentinel values `0xffff'ffff - 8` (32 bit) and `0xffff'8000'0000'0000 - 1` (64 bit) to indicate an empty state. In short, these values avoid [pseudo-handles on Windows](https://devblogs.microsoft.com/oldnewthing/20210105-00/?p=104667), and for 64 bit lies in the gap of [non-canonical addresses](https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/). See the explanation in the source code at `SentinelForExploitingUnusedBits<T*>` for more details. Thanks to the reddit users "compiling" and "ra-zor" for [pointing this out](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itjvkmc/?utm_source=share&utm_medium=web2x&context=3).\
 Note 1: Only pointers in the sense of `std::is_pointer` are supported that way; member or member function pointers require an additional `bool` since they are not "ordinary" pointers).\
 Note 2: Having a `tiny::optional<T*>` is probably not that often useful. But if you have a POD like type with a pointer in it as member, you can instruct `tiny::optional` to use that member as storage for the sentinel value (see above) and save the memory of the additional `bool`. To this end, the library implements the trick for pointers.
 
