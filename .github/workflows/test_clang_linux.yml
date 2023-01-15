@@ -21,7 +21,7 @@ jobs:
         arch: [m64, m32] # 64 and 32 bit
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
     
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 10
 
     steps:

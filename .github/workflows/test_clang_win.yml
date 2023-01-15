@@ -18,7 +18,7 @@ jobs:
         cpp_version: [c++17, c++20]
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
 
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 10
 
     steps:

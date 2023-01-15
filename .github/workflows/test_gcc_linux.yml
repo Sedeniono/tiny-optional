@@ -24,7 +24,7 @@ jobs:
           - gcc_version: 9
             cpp_version: c++20
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 10
 
     steps:
