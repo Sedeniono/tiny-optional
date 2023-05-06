@@ -86,7 +86,7 @@ void test_ExpressionsThatShouldNotCompile()
         };
         tiny::optional<ExplicitConversion> o = 42;
      )",
-     // First for MSVC, second for clang, third for gcc.
+     // First for MSVC, second for clang, fourth for gcc.
      /*expected regex*/ "(cannot.*convert)|(no.*viable.*conversion)|(error.*conversion.*from)"}
     
     ,
@@ -99,8 +99,8 @@ void test_ExpressionsThatShouldNotCompile()
         };
         tiny::optional<ExplicitConversion> o = {42};
      )",
-     // First for MSVC, second for clang, third for gcc.
-     /*expected regex*/ "(copy-list-initialization.*cannot.*use.*an.*explicit.*constructor)|(constructor.*is.*explicit.*in.*copy-initialization)|(error.*could.*not.*convert)"}
+     // First for MSVC, second for clang, third for gcc < 13, fourth for gcc >= 13.
+     /*expected regex*/ "(copy-list-initialization.*cannot.*use.*an.*explicit.*constructor)|(constructor.*is.*explicit.*in.*copy-initialization)|(error.*could.*not.*convert)|(error.*would.*use.*explicit.*constructor)"}
     
     ,
 
