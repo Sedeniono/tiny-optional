@@ -18,23 +18,27 @@
   - [Using a sentinel value](#using-a-sentinel-value)
   - [Storing the empty state in a member variable](#storing-the-empty-state-in-a-member-variable)
   - [The full signature of `tiny::optional`](#the-full-signature-of-tinyoptional)
-  - [Non-member definitions](#non-member-definitions)
+  - [Available non-member definitions](#available-non-member-definitions)
   - [Specifying a sentinel value via a type](#specifying-a-sentinel-value-via-a-type)
   - [An optional type with automatic sentinels for integers and guarantee of in-place](#an-optional-type-with-automatic-sentinels-for-integers-and-guarantee-of-in-place)
-  - [Using custom emptiness logic](#using-custom-emptiness-logic)
+  - [Teaching `tiny::optional` about custom types (`tiny::optional_flag_manipulator`)](#teaching-tinyoptional-about-custom-types-tinyoptional_flag_manipulator)
+    - [Introduction](#introduction-1)
+    - [Example](#example)
+    - [Enumerations](#enumerations)
+    - [Types that you have not authored](#types-that-you-have-not-authored)
 - [Performance results](#performance-results)
   - [Runtime](#runtime)
   - [Build time](#build-time)
-- [How it works](#how-it-works)
+- [How the library exploits platform specific behavior](#how-the-library-exploits-platform-specific-behavior)
 - [Related work](#related-work)
 
 
 # Introduction
 The goal of this library is to provide the functionality of [`std::optional`](https://en.cppreference.com/w/cpp/utility/optional) while not wasting any memory unnecessarily for 
-* types with unused bits in practice (`double`, `float`, `bool`, raw pointers), or 
+* types with unused bits (currently `double`, `float`, `bool`, raw pointers) or custom types with unused states, or 
 * where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
 
-**Warning:** This library exploits undefined/platform specific behavior on x86/x64 architectures. See below for more details.
+> ⚠️ **Warning:** This library exploits undefined/platform specific behavior on x86/x64 architectures. See below for more details.
 
 For a quick start, see the following example, also available [live on godbolt](https://godbolt.org/z/83xo9hdxT):
 ```C++
@@ -82,13 +86,16 @@ static_assert(sizeof(tiny::optional<int>) == sizeof(std::optional<int>));
 
 # Motivation
 ## Use case 1  <!-- omit in toc -->
-`std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes afterwards. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes after the internal `bool`. But for several types this is unnecessary, just wastes memory and is less cache-friendly. In the case of IEEE-754 floating point values, a wide range of bit patterns indicate quiet or signaling NaNs, but typically only one specific bit pattern for each is used in practice. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. For example, we have `sizeof(tiny::optional<double>) == sizeof(double)`.
+`std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes afterwards. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes after the internal `bool`. But for several types this is unnecessary, just wastes memory and is not very cache-friendly. In the case of IEEE-754 floating point values, a wide range of bit patterns indicate quiet or signaling NaNs, but typically only one specific bit pattern for each NaN is used in practice. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. Thus, we have `sizeof(tiny::optional<double>) == sizeof(double)`.
+
+`tiny::optional` can be "taught" how it may store a custom payload type with an unused state without requiring an additional internal `bool`. See chapter about `tiny::optional_flag_manipulator`.
 
 The results below show that in memory bound applications this can result in a significant performance improvement.
 This optimization is similar to what Rust is doing for [booleans](https://stackoverflow.com/a/73181003/3740047) and [references](https://stackoverflow.com/a/16515488/3740047).
 
+
 ## Use case 2  <!-- omit in toc -->
-Moreover, sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about a raw integer `int index` that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. 
+Sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about a raw integer `int index` that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. 
 
 The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that the "sentinel" `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`), in contrast to `std::optional<int>`.
 
@@ -113,30 +120,32 @@ Moreover, the monadic operation `transform()` always returns a `tiny::optional<T
 # Usage
 
 ## Installation
-This is a header-only library. Just copy the folder from the include directory containing the single header to your project. Include it via `#include <tiny/optional>`.
+This is a header-only library. Just copy the folder from the include directory containing the header to your project. Include it via `#include <tiny/optional>`.
 
-The library uses the standard [`assert()` macro](https://en.cppreference.com/w/cpp/error/assert) in a few places, which can be disabled as usual by defining `NDEBUG`.
+The library uses the standard [`assert()` macro](https://en.cppreference.com/w/cpp/error/assert) in a few places, which can be disabled as usual by defining `NDEBUG` for release builds.
 
 
 ## Using `tiny::optional` as `std::optional` replacement
 Instead of writing `std::optional<T>`, use `tiny::optional<T>` in your code.
-If `T` is a `float`, `double`, `bool` or a pointer (in the sense of `std::is_pointer`), the optional will not require additional space. E.g.: `sizeof(tiny::optional<double>) == sizeof(double)`.
-Note: The type `long double` requires additional space at the moment, simply because the differing characteristics on the various supported platforms are not yet implemented.
+If the payload `T` is a `float`, `double`, `bool` or a pointer/function pointer (in the sense of `std::is_pointer`), the optional will not require additional space. E.g.: `sizeof(tiny::optional<double>) == sizeof(double)`.  
+**Note:** For pointers, `nullptr` remains a valid value! I.e. the optional `tiny::optional<int*> o = nullptr;` is **not** empty!  
+**Note:** The type `long double` requires additional space at the moment, simply because the differing characteristics on the various supported platforms are not yet implemented.
 
-For other types (where the automatic "tiny" state is not possible), the size of `tiny::optional` is equal to that of `std::optional`. E.g. `sizeof(tiny::optional<int>) == sizeof(std::optional<int>)`, or `sizeof(tiny::optional<SomeStruct>) == sizeof(std::optional<SomeStruct>)`. 
+For other types (where the automatic "tiny" state is not possible), the size of `tiny::optional` is equal to that of `std::optional`. E.g. `sizeof(tiny::optional<int>) == sizeof(std::optional<int>)`, or `sizeof(tiny::optional<SomeStruct>) == sizeof(std::optional<SomeStruct>)`.  
+But note that you can **teach** the library about custom types, see the chapter about `tiny::optional_flag_manipulator` below.
 
 Besides this, all standard operations such as assignment of `std::nullopt` are supported (with the exceptions listed above).
 
 ## Using a sentinel value
 `tiny::optional` has a second optional template parameter: `tiny::optional<T, sentinel>`. 
-`sentinel` is not a type but rather a non-type template parameter.
-Setting this `sentinel` value instructs the library to assume that the value `sentinel` cannot occur as a valid value of `T` and thus allows the library to use it to indicate the empty state. As a result: `sizeof(tiny::optional<T, sentinel>) == sizeof(T)`.
+`sentinel` is not a type but rather a [non-type template parameter ("NTTP")](https://en.cppreference.com/w/cpp/language/template_parameters).
+Setting this `sentinel` value instructs the library to assume that the value `sentinel` cannot occur as a valid value of the payload `T` and thus allows the library to use it to indicate the empty state. As a result: `sizeof(tiny::optional<T, sentinel>) == sizeof(T)`.
 
 The `sentinel` should be of type `T`. Any value is possible that is supported by the compiler as a non-type template parameter. That means integers, and since C++20 also floating point types and literal class types (i.e. POD like types) that are equipped with an `operator==`.
 
 Examples: `tiny::optional<unsigned int, MAX_UINT>` and `tiny::optional<int, -1>`.
 
-Note: Attempting to store the sentinel value in the optional is illegal. If `NDEBUG` is **not** defined, an appropriate `assert()` gets triggered. For example, if you define `tiny::optional<int, -1> o;`, setting `o = -1;` is not allowed.
+Note: Attempting to store the sentinel value in the optional is illegal. If `NDEBUG` is **not** defined, an appropriate `assert()` gets triggered. For example, if you define `tiny::optional<int, -1> o;`, setting `o = -1;` is not allowed and triggers the assert.
 
 
 ## Storing the empty state in a member variable
@@ -152,7 +161,8 @@ struct Data
 ```
 and you need an optional variable of `Data`. Writing `tiny::optional<Data>` works but the optional requires an additional internal `bool`, so the size of `tiny::optional<Data>` will be the same as `std::optional<Data>`. 
 This is unnecessary since some members of `Data` have unused bit patterns, namely `var2` and `var3`.
-The library allows to exploit this by specifying an accessible member where the emptiness flag can be stored by writing `tiny::optional<Data, &Data::var2>`. The resulting optional has the same size as `Data`. Using `tiny::optional<Data, &Data::var3>` works as well here. In fact, all the types mentioned above where the library stores the empty flag in-place can be specified.
+The library allows to exploit this by specifying an accessible member where the emptiness flag can be stored: `tiny::optional<Data, &Data::var2>`. The resulting optional has the same size as `Data`. Using `tiny::optional<Data, &Data::var3>` works as well here. In fact, all the types mentioned above where the library stores the empty flag in-place can be specified.
+Moreover, all members for which a specialization of `tiny::optional_flag_manipulator` exist (see chapter below), work too.
 
 Additionally, there is the option to use a sentinel value for the empty state and instruct the library to store it in one of the members. The sentinel value is specified as the third template parameter. For example, if you know that `Data::var1` can never be negative, you can instruct the library to use the value `-1` as sentinel: `tiny::optional<Data, &Data::var1, -1>`. Again the resulting `tiny::optional` will not require additional memory compared to a plain `Data`.
 
@@ -174,7 +184,7 @@ If the second parameter is **not** a member pointer, the value is used as sentin
 If the second parameter is a member pointer, it has to point to a member of `PayloadType` in which case the emptiness flag is stored in that member. Only in this case the third parameter may be optionally specified to indicate a sentinel value to store in that member.
 
 
-## Non-member definitions
+## Available non-member definitions
 The template function `tiny::make_optional()` can be used to create a `tiny::optional`. [Contrary to `std::make_optional()`](https://en.cppreference.com/w/cpp/utility/optional/make_optional), it can accept two additional optional template parameters corresponding to `sentinelOrMemPtr` and `irrelevantOrSentinel` explained above.
 Examples:
 ```C++
@@ -190,11 +200,11 @@ tiny::make_optional<Foo>(2, 3.0); // tiny::optional<Foo>(2, 3.0), has size of st
 tiny::make_optional<Foo, &Foo::v1, -1>(2, 3.0); // tiny::optional<Foo, &Foo::v1, -1>(2, 3.0)
 ```
 
-All the comparison operators `operator==`, `operator<=`, etc. are provided, [similar to the ones for `std::optional`](https://en.cppreference.com/w/cpp/utility/optional/operator_cmp). However, the C++20 spaceship operator `operator<=>` is not yet implemented.
+All the comparison operators `operator==`, `operator<=`, etc. are provided, including the spaceship `operator<=>` [similar to the ones for `std::optional`](https://en.cppreference.com/w/cpp/utility/optional/operator_cmp).
 
-Additionally, `std::hash` is specialized ([similar to `std::optional`](https://en.cppreference.com/w/cpp/utility/optional/hash)) for the optional types defined by this library.
+Additionally, `std::hash` is specialized ([as for `std::optional`](https://en.cppreference.com/w/cpp/utility/optional/hash)) for the optional types defined by this library.
 
-An appropriate deduction guide is also defined, allowing to write e.g. `tiny::optional{42}` to construct a `tiny::optional<int>{42}`. Note that this does not allow to specify a sentinel.
+An appropriate deduction guide is also defined, allowing to write e.g. `tiny::optional{42}` to construct a `tiny::optional<int>{42}`. Note that this does not allow you to specify a sentinel.
 
 
 ## Specifying a sentinel value via a type
@@ -219,70 +229,211 @@ This is for technical reasons (you cannot mix type and non-type template paramet
 
 
 ## An optional type with automatic sentinels for integers and guarantee of in-place
-The type `tiny::optional_aip` ("aip" for "always in-place") is similar to `tiny::optional` but with automatic "swallowing" of a value for integers to provide a sentinel, and a compilation error if no sentinel is automatically found. Hence, its size is always the same as the size of the payload.
+The type `tiny::optional_aip` ("aip" for "always in-place") is similar to `tiny::optional` but with automatic "swallowing" of a value for integers to provide a sentinel, and a compilation error if no sentinel is automatically found. Hence, its size is **ALWAYS** the same as the size of the payload.
 
-Its deceleration is basically `tiny::optional_aip<PayloadType, SentinelValue = ...>`. If you omit the `SentinelValue`, then:
+Its declaration is basically `tiny::optional_aip<PayloadType, SentinelValue = ...>`. If you omit the `SentinelValue`, then:
 * If the `PayloadType` has unused bits, those get exploited. So for example `tiny::optional_aip<double>` behaves the same as `tiny::optional<double>`.
+* If `tiny::optional_flag_manipulator` (see chapter below) is specialized for `PayloadType`, then it is used.
 * If the `PayloadType` is an **unsigned integer**, the **maximal** integer value is used as sentinel. For example, `tiny::optional_aip<unsigned>` will use `UINT_MAX` as sentinel. This also means that it is no longer legal to attempt and store the value `UINT_MAX` in that optional!
 * Similar, if the `PayloadType` is a **signed integer**, the **minimum** integer value is used as sentinel. E.g. `tiny::optional_aip<int>` uses `INT_MIN`.
 * Note that for characters (`char`, `signed char` and `unsigned char`) and enumerations no automatic sentinel is provided.
 
 In all other cases, you have to specify a sentinel yourself, e.g. `tiny::optional_aip<char, 'a'>`. If you do not, then a compilation error occurs. Hence, `tiny::optional_aip` is guaranteed to have the same size as the payload.
 
-Such a type was suggested in [this issue](https://github.com/Sedeniono/tiny-optional/issues/1).
+The type has been suggested in [this issue](https://github.com/Sedeniono/tiny-optional/issues/1).
 
 
-## Using custom emptiness logic
+## Teaching `tiny::optional` about custom types (`tiny::optional_flag_manipulator`)
 
-The whole point of the library is to create optional types that do not require more space than the payload.
-This relies on using values from the value range of the payload type that are actually unused.
-If the built-in logic (for integral types and members) is insufficient, you can use
+### Introduction
+
+The library provides a customization point: By specializing `tiny::optional_flag_manipulator` for a custom type, you instruct the library to always place the emptiness flag within the payload type, and how to do that.
+The method of customization is the same as used by e.g. [`std::hash`](https://en.cppreference.com/w/cpp/utility/hash) and [`fmt::formatter`](https://fmt.dev/latest/api.html#formatting-user-defined-types).
+
+
+### Example
+
+For example, assume you have some custom type `MyNamespace::IndexPair` defined as
 ```C++
-namespace tiny {
-    template <class PayloadType, class EmptinessManipulator>
-    class optional_inplace;
+namespace MyNamespace
+{
+    class IndexPair
+    {
+        // ...
+        // Both can never be negative at the same time.
+        int mIndex1;
+        int mIndex2;
+    };
 }
 ```
-As before, `PayloadType` is the type to store in the optional.
-`EmptinessManipulator` must be a type providing the following members:
+You, as the author of `IndexPair`, know that not the whole theoretical range of values is used, i.e. there is some combination of values of member variables that are unused in your application: Both indices can never be negative simultaneously.
+Therefore, you want to exploit this, so that a `tiny::optional<IndexPair>` should always be in the "tiny" state (`sizeof(tiny::optional<IndexPair>) == sizeof(IndexPair)`).
+This can be achieved by specializing `tiny::optional_flag_manipulator` as follows:
 ```C++
-template <class PayloadType>
-struct EmptinessManipulator
+#include <tiny/optional_flag_manipulator_fwd.h>
+#include <new> // for placement new
+
+namespace MyNamespace
 {
-    static bool IsEmpty(PayloadType const & payload) noexcept
+    class IndexPair
+    {
+    public:
+        void SetIndices(int idx1, int idx2)
+        {
+            mIndex1 = idx1;
+            mIndex2 = idx2;
+        }
+       
+        int GetIndex1() const { return mIndex1; }
+        int GetIndex2() const { return mIndex2; }
+    
+    private:
+        // Both can never be negative at the same time.
+        int mIndex1;
+        int mIndex2;
+    };
+}
+
+template <>
+struct tiny::optional_flag_manipulator<MyNamespace::IndexPair>
+{
+    static bool IsEmpty(MyNamespace::IndexPair const & payload) noexcept
     {
         // Needs to return true if the optional should be considered empty.
-        // I.e. if the given "payload" state indicates emptiness.
-        // It can be called after InitializeIsEmptyFlag() or PrepareIsEmptyFlagForPayload().
+        // I.e. if the given "payload" state indicates emptiness. It can be called after 
+        // InitializeIsEmptyFlag() or PrepareIsEmptyFlagForPayload() by the library.
+        return payload.GetIndex1() < 0 && payload.GetIndex2() < 0;
     }
-
-    static void InitializeIsEmptyFlag(PayloadType & uninitializedPayloadMemory) noexcept
+    
+    static void InitializeIsEmptyFlag(MyNamespace::IndexPair & uninitializedPayloadMemory) noexcept
     {
         // uninitializedPayloadMemory is a reference to an **uninitialized** payload (i.e. 
-        // the constructor of PayloadType has not been called, but the memory has been
+        // the constructor of the payload has not been called, but the memory has been
         // already allocated).
         // This function is called when the optional is constructed in an empty state or
         // once it should become empty. The function must initialize the memory such that 
         // the optional is considered empty, i.e. IsEmpty(uninitializedPayloadMemory) must
         // return true afterwards.
+        ::new (&uninitializedPayloadMemory) MyNamespace::IndexPair(); // Placement new
+        uninitializedPayloadMemory.SetIndices(-1, -1);
     }
-
-    static void PrepareIsEmptyFlagForPayload(PayloadType & emptyPayload) noexcept
+    
+    static void PrepareIsEmptyFlagForPayload(MyNamespace::IndexPair & emptyPayload) noexcept
     {
         // This function is called just before a (non-empty) value is stored in the
         // optional. The given "emptyPayload" is currently indicating the empty state,
         // i.e. IsEmpty(emptyPayload) returns true.
-        // The function must deconstruct the sentinel value in "emptyPayload" which was 
+        // The function must deconstruct the flag value in "emptyPayload" which was 
         // previously constructed by InitializeIsEmptyFlag(). After this function returns,
         // the library constructs the payload. After that, IsEmpty() must return false.
         // Note: The memory pointed to by "emptyPayload" must not be freed. It is handled
         // by the library.
+        emptyPayload.~IndexPair();
     }
 };
 ```
-The functions must be `noexcept`. This is necessary to satisfy the same exception guarantees as `std::optional` and also because otherwise the optional could be left in a weird in-between state if they could throw exceptions.
+You first need to include `<tiny/optional_flag_manipulator_fwd.h>` to make the primary `tiny::optional_flag_manipulator` template known to the compiler. 
+Additionally, the `<new>` header is required to be able to use [placement new](https://en.cppreference.com/w/cpp/language/new).
 
-Example: Assume you have an iterator class that knows if the iterator is still valid:
+> ⚠️ It is quite crucial to place the definition of the specialization as close as possible below the definition of the payload type `IndexPair`, i.e. in the same header file:
+You need to ensure that every time an instantiation of `tiny::optional<IndexPair>` happens, the compiler sees the specialization.
+If the compiler sometimes sees it and sometimes it does not see it, [you have undefined behavior](https://stackoverflow.com/q/21112148/3740047). In practice, the result can be that it appears to work sometimes and sometimes not (see e.g. [this](https://stackoverflow.com/q/57614188/3740047) post), or that you have two `tiny::optional<IndexPair>` instances with different sizes, possibly causing access violations and other hard to track bugs because of mismatching memory layouts.
+This is nothing special with the library: You have the exact same issues when specializing e.g. [`std::hash`](https://en.cppreference.com/w/cpp/utility/hash) or [`fmt::formatter`](https://fmt.dev/latest/api.html#formatting-user-defined-types).
+If you put the specialization into a dedicated header file and forget to include it somewhere where `tiny::optional<IndexPair>` is used, you most likely already have undefined behavior.
+So the best way to avoid all of this is to put the specialization right next to your type, in the same file.  
+Side note: Forward declaring `IndexPair` and using `tiny::optional<IndexPair>` as function parameter or return type is ok, since these [do not represent instantiation points](https://stackoverflow.com/q/76148731/3740047).
+
+The `tiny::optional_flag_manipulator` specialization needs to happen in the `tiny` namespace. So if the `IndexPair` is in a namespace (like `MyNamespace` in the example), ensure that the specialization is not in the namespace `::MyNamespace::tiny`.
+
+There are 3 functions that the specialization needs to define:
+* `IsEmpty()`: It receives a reference to the memory stored in the optional. The function must return `true` if that memory indicates that the optional is in the empty state, and false otherwise.
+* `InitializeIsEmptyFlag()`: This function receives a reference to already allocated "raw" memory, but without any "object" created in that memory. (After all, the whole point of an optional compared to e.g. a `std::unique_ptr` is to have the memory allocated statically, it never gets deleted or created after the initial creation of the optional.)
+It must initialize the given memory such that afterwards `IsEmpty()` returns true.
+In this example, we simply construct a complete `IndexPair` in the given memory via [placement new](https://en.cppreference.com/w/cpp/language/new). Roughly speaking, this is just like the ordinary `operator new` except that it does not perform dynamic memory allocation and instead constructs the object in the given memory.
+Afterwards, we set both indices to `-1`, which we **define** to indicate the empty state.
+* `PrepareIsEmptyFlagForPayload()`: This function must destroy the object that was created in `InitializeIsEmptyFlag()`, but it must not free the associated memory! (As noted before, the whole point of an optional is to have the memory allocated statically and bound to the lifetime of the optional.) In C++ this means to call the destructor manually.
+
+
+In other words, the tasks of the 3 functions are:
+* `IsEmpty()` must decide whether the current state represents the empty state.
+* `InitializeIsEmptyFlag()` has 2 tasks: First, it must create an object that is used for the emptiness flag, and second it must set the value of that created emptiness flag so that the optional is seen as empty.
+* `PrepareIsEmptyFlagForPayload()` must destroy the emptiness flag that was created by `InitializeIsEmptyFlag()`.
+
+All three functions must be `noexcept`. 
+This is necessary to satisfy the same exception guarantees as `std::optional`. Setting the optional into the empty state should always be possible. 
+If exceptions could be thrown from `InitializeIsEmptyFlag()`, the optional could be left in a weird in-between state. (So, requiring  `noexcept` avoids complications such as [`std::variant::valueless_by_exception`](https://en.cppreference.com/w/cpp/utility/variant/valueless_by_exception).)
+Especially note that the constructor that you usually call in `InitializeIsEmptyFlag()` must therefore not throw exceptions.
+
+The above example used the whole memory given in `InitializeIsEmptyFlag()` to initialize a full instance of the payload.
+We just defined that a specific state of the full payload is to be handled as invalid.
+In principle, one can also use just a part of the memory, e.g. the part where `IndexPair::mIndex2` is located, and to not initialize all the other members.
+This works in practice but it is actually undefined behavior.
+
+
+### Enumerations
+Enumerations typically do not exhaust their full value range, so they are an obvious choice for saving memory.
+Unfortunately, C++ does not provide any reflection mechanism with which the library could automatically figure out unused numeric values.
+Instead, the user of the library needs to specify the sentinel.
+
+Assume you have an enumeration
+```C++
+enum class MyEnum
+{
+    Value1,
+    Value2,
+    Max // Does not represent a valid value.
+};
+```
+The `Max` element was introduced "artificially"; it is not used as a valid enumeration value by the application, but instead can be used to automatically deduce the number of values in the enumeration and, in our case, to get a nice named representation of a sentinel that can be used by `tiny::optional`.
+
+There are now two options:
+1. Explicitly specify the sentinel value always: `tiny::optional<MyEnum, MyEnum::Max>` (also compare the chapters above).
+2. Specialize `tiny::optional_flag_manipulator` for `MyEnum` and then use `tiny::optional<MyEnum>`. ⚠️ BUT: USE WITH CARE! SEE THE WARNING BELOW!
+
+Since the second case might be quite common and the three functions required in the specialization always look the same, the library provides a helper `tiny::sentinel_flag_manipulator` which can be used to specialize `tiny::optional_flag_manipulator`.
+Simply inherit publicly from `tiny::sentinel_flag_manipulator` and specify the enumeration type as first template argument and the sentinel as second:
+```C++
+template <> 
+struct tiny::optional_flag_manipulator<MyEnum>
+    : tiny::sentinel_flag_manipulator<MyEnum, MyEnum::Max>
+{ };
+```
+This "registers" `MyEnum::Max` as sentinel for the empty state whenever you write `tiny::optional<MyEnum>`.
+
+> ⚠️ As noted above, you need to ensure that the specialization is consistently seen by instantiations of `tiny::optional`.
+For enumerations, there is a pitfall regarding forward declarations.  
+First, consider what happens if you attempt to instantiate `tiny::optional` with a class type that is just forward declared: you get a compiler error (since `tiny::optional` requires a complete type). So by putting the specialization into the same file as the payload type, you guarantee that at every instantiation with your class type `tiny::optional` sees the specialization.  
+Problem for enumerations: C++ allows to [forward declare (most) enumerations](https://stackoverflow.com/a/1280969/3740047), and forward declared enumerations are complete since the forward declaration contains the underlying type.
+So if you use `tiny::optional` with a forward declared enumeration `MyEnum`, you will not get a compiler error. 
+That by itself is nice and fine.
+But if somewhere in your code you have the `tiny::optional_flag_manipulator` specialization for `MyEnum`, but the specialization is not seen everywhere where a forward declared `MyEnum` is used to instantiate `tiny::optional`, you get undefined behavior, as explained already above.
+
+So, what to do?
+Forbidding forward declarations of specific enumerations by convention is brittle and most likely futile.
+My advice would be to use the `tiny::optional_flag_manipulator` specialization method only for enumerations defined in structs/classes, since [those cannot be forward declared](https://stackoverflow.com/q/27019292/3740047).
+This forces users of the enumeration to include the header where the enumeration is defined, together with the `tiny::optional_flag_manipulator` specialization (which of course should be defined in the same header).
+
+
+### Types that you have not authored
+As explained above, the `tiny::optional_flag_manipulator` specialization should be placed right next to the targeted payload type.
+So, what about types from other libraries such as the standard library (`std::vector`,...), boost, etc, where you cannot modify the header files which define these types?
+In this case there is no sensible places to specialize `tiny::optional_flag_manipulator`: The only two valid places are the header file of the type, or the `tiny/optional.h` file, both of which you should not change.
+Thus, there is simply no good way to achieve what you want.
+A hacky workaround would be to create a dedicated header file, say `my_vector.h`, that includes e.g. `<vector>` and specializes `tiny::optional_flag_manipulator` for `std::vector`, and then to always include `my_vector.h` everywhere instead of `<vector>`. 
+Or the other way around, create a custom `my_tiny_optional.h` header file, and always include it.
+I really do not recommend either of these solutions.
+
+Instead of relying on the automatism of `tiny::optional`, you can instead use `tiny::optional_inplace` which accepts a `FlagManipulator`:
+```C++
+namespace tiny {
+    template <class PayloadType, class FlagManipulator>
+    class optional_inplace;
+}
+```
+As before, `PayloadType` is the type to store in the optional.
+The expected interface of `FlagManipulator` is identical to the one expected from the `tiny::optional_flag_manipulator` specialization.
+
+**Example:** Assume you have an iterator class from some library, and that iterator knows if it is still valid:
 ```C++
 class Iterator
 {
@@ -312,9 +463,9 @@ You could define that an invalid iterator indicates "no iterator", but this migh
 You could also return a `std::optional<Iterator>` or `tiny::optional<Iterator>` and guarantee that the iterator is always valid if the optional is not empty. But this will waste some space.
 In principle, you would like to write `tiny::optional<Iterator, &Iterator::mIsValid, false>` (which would cause the library to store the emptiness by means of a `mIsValid=false` value).
 But the members are private, so this does not work.
-Instead you can use `tiny::optional_inplace<Iterator, EmptinessManipulator>` with a custom manipulator definition:
+Instead you can use `tiny::optional_inplace<Iterator, FlagManipulator>` with a custom manipulator definition:
 ```C++
-struct EmptinessManipulator
+struct FlagManipulator
 {
     static bool IsEmpty(Iterator const & iter) noexcept
     {
@@ -343,7 +494,7 @@ Usage example:
 ```C++
 int main()
 {
-    tiny::optional_inplace<Iterator, EmptinessManipulator> o;
+    tiny::optional_inplace<Iterator, FlagManipulator> o;
     static_assert(sizeof(o) == sizeof(Iterator));
     assert(o.empty());
     
@@ -455,7 +606,7 @@ In larger real world projects (where build times actually matter) one would expe
 Indeed, replacing all occurrences of `std::optional` in a commercial application with several million lines of code did not result in a measurable slowdown of the build.
 
 
-# How it works
+# How the library exploits platform specific behavior
 
 The library exploits **platform specific behavior** (that is not guaranteed by the C++ standard) to construct optionals that have the same size as the payload. Specifically:
 
@@ -465,9 +616,10 @@ The library exploits **platform specific behavior** (that is not guaranteed by t
 Also see e.g. the paper ["Floating point exception tracking and NAN propagation" by Agner Fog](https://www.agner.org/optimize/nan_propagation.pdf). This holds of course only as long as a program does not do any tricks by itself. This library exploits this assumption and uses the quiet NaN `0x7fedcba9` as sentinel value for `float` and `0x7ff8fedcba987654` for `double`.
 Note: `long double` is not (yet) supported and a `tiny::optional<long double>` instead uses a separate `bool`.
 
-* Pointers: For pointers the library uses the sentinel values `0xffff'ffff - 8` (32 bit) and `0xffff'8000'0000'0000 - 1` (64 bit) to indicate an empty state. In short, these values avoid [pseudo-handles on Windows](https://devblogs.microsoft.com/oldnewthing/20210105-00/?p=104667), and for 64 bit lies in the gap of [non-canonical addresses](https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/). See the explanation in the source code at `SentinelForExploitingUnusedBits<T*>` for more details. Thanks to the reddit users "compiling" and "ra-zor" for [pointing this out](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itjvkmc/?utm_source=share&utm_medium=web2x&context=3).\
-Note 1: Only pointers in the sense of `std::is_pointer` are supported that way; member or member function pointers require an additional `bool` since they are not "ordinary" pointers).\
-Note 2: Having a `tiny::optional<T*>` is probably not that often useful. But if you have a POD like type with a pointer in it as member, you can instruct `tiny::optional` to use that member as storage for the sentinel value (see above) and save the memory of the additional `bool`. To this end, the library implements the trick for pointers.
+* Pointers: For pointers the library uses the sentinel values `0xffff'ffff - 8` (32 bit) and `0xffff'8000'0000'0000 - 1` (64 bit) to indicate an empty state. In short, these values avoid [pseudo-handles on Windows](https://devblogs.microsoft.com/oldnewthing/20210105-00/?p=104667), and for 64 bit lies in the gap of [non-canonical addresses](https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/). See the explanation in the source code at `SentinelForExploitingUnusedBits<T*>` for more details. Thanks to the reddit users "compiling" and "ra-zor" for [pointing this out](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itjvkmc/?utm_source=share&utm_medium=web2x&context=3).  
+**Note 1:** Only pointers in the sense of `std::is_pointer` (i.e. ordinary pointers and function pointers) are supported that way; member pointers and member function pointers require an additional `bool` since they are not "ordinary" pointers).  
+**Note 2:** Having a `tiny::optional<T*>` is probably not that often useful. But if you have a POD like type with a pointer in it as member, you can instruct `tiny::optional` to use that member as storage for the sentinel value (see above) and save the memory of the additional `bool`. To this end, the library implements the trick for pointers.  
+**Note 3:** The `nullptr` is not used as sentinel, and thus remains a valid value.
 
 
 
