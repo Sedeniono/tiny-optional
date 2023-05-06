@@ -193,6 +193,68 @@ struct tiny::optional_flag_manipulator<OutermostClass>
 
 
 //====================================================================
+// Example enums
+//====================================================================
+
+namespace
+{
+namespace EnumNamespace
+{
+  enum TestUnscopedEnum
+  {
+    INVALID = -1,
+    UNSCOPED_VALUE1,
+    UNSCOPED_VALUE2
+  };
+}
+}
+
+template <>
+struct tiny::optional_flag_manipulator<EnumNamespace::TestUnscopedEnum>
+{
+  static bool IsEmpty(EnumNamespace::TestUnscopedEnum const & payload) noexcept
+  {
+    return payload == EnumNamespace::INVALID;
+  }
+
+  static void InitializeIsEmptyFlag(EnumNamespace::TestUnscopedEnum & uninitializedPayloadMemory) noexcept
+  {
+    ::new (&uninitializedPayloadMemory) EnumNamespace::TestUnscopedEnum(EnumNamespace::INVALID);
+  }
+
+  static void PrepareIsEmptyFlagForPayload(EnumNamespace::TestUnscopedEnum & /*emptyPayload*/) noexcept { }
+};
+
+
+namespace
+{
+enum class TestScopedEnum
+{
+  VALUE1,
+  VALUE2,
+  MAX_NUM
+};
+}
+
+
+template <>
+struct tiny::optional_flag_manipulator<TestScopedEnum>
+{
+  static bool IsEmpty(TestScopedEnum const & payload) noexcept
+  {
+    return payload == TestScopedEnum::MAX_NUM;
+  }
+
+  static void InitializeIsEmptyFlag(TestScopedEnum & uninitializedPayloadMemory) noexcept
+  {
+    ::new (&uninitializedPayloadMemory) TestScopedEnum(TestScopedEnum::MAX_NUM);
+  }
+
+  static void PrepareIsEmptyFlagForPayload(TestScopedEnum & /*emptyPayload*/) noexcept { }
+};
+
+
+//====================================================================
 // Tests of the types
 //====================================================================
 
@@ -263,5 +325,19 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
   // Version where, at the point of definition, the "tiny/optional.h" header is not included.
   {
     EXERCISE_OPTIONAL((tiny::optional<ClassInHeader>{}), EXPECT_INPLACE, ClassInHeader{}, ClassInHeader{});
+  }
+
+  // Enums
+  {
+    EXERCISE_OPTIONAL(
+        (tiny::optional<EnumNamespace::TestUnscopedEnum>{}),
+        EXPECT_INPLACE,
+        EnumNamespace::UNSCOPED_VALUE1,
+        EnumNamespace::UNSCOPED_VALUE2);
+    EXERCISE_OPTIONAL(
+        (tiny::optional<TestScopedEnum>{}),
+        EXPECT_INPLACE,
+        TestScopedEnum::VALUE1,
+        TestScopedEnum::VALUE2);
   }
 }
