@@ -86,11 +86,15 @@ void test_TinyOptionalPayload_IsEmptyFlagInMember()
 
 void test_TinyOptionalPayload_Pointers()
 {
+  // Ordinary pointers
   {
     TestClass c1, c2;
     EXERCISE_OPTIONAL((tiny::optional<TestClass *>{}), EXPECT_INPLACE, &c1, &c2);
     EXERCISE_OPTIONAL((tiny::optional<TestClass *>{}), EXPECT_INPLACE, nullptr, &c1);
     EXERCISE_OPTIONAL((tiny::optional{&c1}), EXPECT_INPLACE, &c1, &c2); // Uses deduction guide
+    EXERCISE_OPTIONAL((tiny::optional<TestClass const *>{}), EXPECT_INPLACE, nullptr, &c1);
+    EXERCISE_OPTIONAL((tiny::optional<TestClass const volatile *>{}), EXPECT_INPLACE, nullptr, &c1);
+    EXERCISE_OPTIONAL((tiny::optional<TestClass volatile *>{}), EXPECT_INPLACE, nullptr, &c1);
   }
 
   {
@@ -100,6 +104,7 @@ void test_TinyOptionalPayload_Pointers()
     // ExerciseOptional<TestClass*>(o, nullptr);
   }
 
+  // Also test void*, just for the sake of it.
   {
     int i = 0;
     int j = 42;
@@ -111,6 +116,34 @@ void test_TinyOptionalPayload_Pointers()
   {
     EXERCISE_OPTIONAL((tiny::optional<TestFuncPtr>{}), EXPECT_INPLACE, &TestFunc1, &TestFunc2);
     EXERCISE_OPTIONAL((tiny::optional<TestFuncPtr>{}), EXPECT_INPLACE, nullptr, &TestFunc2);
+  }
+
+  // Member pointers
+  {
+    // MSVC has a bug here: https://stackoverflow.com/q/76182002/3740047. The expression 'new MemberPointer()' (which
+    // appears in the form of a placement new internally) is not zero initialized if the list of arguments to the '()'
+    // is empty.
+#ifndef TINY_OPTIONAL_MSVC_BUILD
+    EXERCISE_OPTIONAL((tiny::optional<double TestClass::*>{}), EXPECT_SEPARATE, &TestClass::someValue, nullptr);
+#endif
+
+    // Version where we pass nullptr explicitly to the constructors instead of an empty argument list, to work around
+    // the above mentioned compiler bug.
+    EXERCISE_OPTIONAL_WITH_CONSTRUCTOR_ARGS(
+        (tiny::optional<double TestClass::*>{}),
+        EXPECT_SEPARATE,
+        &TestClass::someValue,
+        nullptr,
+        nullptr);
+  }
+
+  // Member function pointers
+  {
+    EXERCISE_OPTIONAL(
+        (tiny::optional<bool (TestClass::*)() const noexcept>{}),
+        EXPECT_SEPARATE,
+        &TestClass::IsValid,
+        nullptr);
   }
 }
 
