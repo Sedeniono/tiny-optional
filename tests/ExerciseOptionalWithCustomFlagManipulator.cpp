@@ -7,6 +7,12 @@
 #include <memory>
 #include <string>
 
+#if defined(__GNUG__) && !defined(__clang__)
+// Disable incorrect warning for gcc.
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 
 namespace
 {
@@ -388,3 +394,7 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
     ASSERT_TRUE(opt1->someString == *opt2->someString);
   }
 }
+
+#if defined(__GNUG__) && !defined(__clang__)
+  #pragma GCC diagnostic pop
+#endif
