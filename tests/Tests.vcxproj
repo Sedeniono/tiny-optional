@@ -496,6 +496,7 @@
     <ClCompile Include="ExerciseOptionalAIP.cpp" />
     <ClCompile Include="ExerciseOptionalEmptyViaType.cpp" />
     <ClCompile Include="ExerciseOptionalInplace.cpp" />
+    <ClCompile Include="ExerciseOptionalWithCustomFlagManipulator.cpp" />
     <ClCompile Include="ExerciseStdOptional.cpp" />
     <ClCompile Include="ExerciseTinyOptionalPayload1.cpp" />
     <ClCompile Include="ExerciseTinyOptionalPayload2.cpp" />
@@ -515,6 +516,7 @@
     <ClInclude Include="ExerciseOptionalAIP.h" />
     <ClInclude Include="ExerciseOptionalEmptyViaType.h" />
     <ClInclude Include="ExerciseOptionalInplace.h" />
+    <ClInclude Include="ExerciseOptionalWithCustomFlagManipulator.h" />
     <ClInclude Include="Exercises.h" />
     <ClInclude Include="CompilationBase.h" />
     <ClInclude Include="ExerciseStdOptional.h" />

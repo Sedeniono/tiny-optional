@@ -4,6 +4,7 @@
 #include "ExerciseOptionalAIP.h"
 #include "ExerciseOptionalEmptyViaType.h"
 #include "ExerciseOptionalInplace.h"
+#include "ExerciseOptionalWithCustomFlagManipulator.h"
 #include "ExerciseStdOptional.h"
 #include "ExerciseTinyOptionalPayload.h"
 #include "IntermediateTests.h"
@@ -46,6 +47,7 @@ void RunTests()
          ADD_TEST(test_TinyOptionalCopyAssignment),
          ADD_TEST(test_TinyOptionalMoveAssignment),
          ADD_TEST(test_TinyOptionalConversions),
+         ADD_TEST(test_TinyOptionalWithRegisteredCustomFlagManipulator),
          ADD_TEST(test_OptionalEmptyViaType),
          ADD_TEST(test_OptionalInplace),
          ADD_TEST(test_OptionalAIP),

@@ -1630,6 +1630,8 @@ namespace impl
   // Combination with memPtr and sentinel.
   // transform (oder was auch immer tiny::optional zurückgibt): Geht es?
   // User overload with enable_if
+  //
+  // Better name: RegisterTinyOptionalFlagManipulator?
 
   // https://godbolt.org/z/xeGvMd65W
 

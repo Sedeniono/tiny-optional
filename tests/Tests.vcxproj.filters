@@ -63,6 +63,9 @@
     <ClCompile Include="ExerciseOptionalAIP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ExerciseOptionalWithCustomFlagManipulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TestTypes.h">
@@ -114,6 +117,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ExerciseOptionalAIP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExerciseOptionalWithCustomFlagManipulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
