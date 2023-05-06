@@ -5,6 +5,11 @@
 #include <initializer_list>
 #include <vector>
 
+#if defined(__GNUG__) && !defined(__clang__)
+// Disable incorrect warning for gcc.
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 enum class ScopedEnum
 {
@@ -285,3 +290,7 @@ inline bool operator==(TestClassWithLiteralClass const & lhs, TestClassWithLiter
 {
   return lhs.lc == rhs.lc && lhs.someInt == rhs.someInt;
 }
+
+#if defined(__GNUG__) && !defined(__clang__)
+  #pragma GCC diagnostic pop
+#endif
