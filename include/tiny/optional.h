@@ -757,12 +757,54 @@ namespace impl
       isEmptyFlag.~FlagType();
     }
   };
+} // namespace impl
 
 
-  //====================================================================================
-  // StorageBase
-  //====================================================================================
+//====================================================================================
+// optional_flag_manipulator: Library specialization and helpers
+//====================================================================================
 
+namespace impl
+{
+  // True if the tiny optional library knows a special sentinel for the given payload type that exploits the type's
+  // unused bit patterns to represent the empty state.
+  template <class PayloadType>
+  inline constexpr bool SentinelForExploitingUnusedBitsIsKnown
+      = (std::is_floating_point_v<PayloadType> && !std::is_same_v<std::remove_cv_t<PayloadType>, long double>)
+        || std::is_same_v<std::remove_cv_t<PayloadType>, bool>
+        || std::is_pointer_v<PayloadType>; // Pointers and function pointers, but not member pointers or member
+                                           // function pointers.
+} // namespace impl
+
+// Specialization of optional_flag_manipulator for floats, doubles, bools, pointers and functions pointers. The
+// library exploits unused bit patterns for these types to encode the 'IsEmpty' flag without removing any value from
+// the value's value range. long double is simply not yet supported (we would need to figure out how NaNs on different
+// platorms behave for them).
+// Note: Needs to be defined in the tiny namespace, not the tiny::impl namespace.
+template <class PayloadType>
+struct optional_flag_manipulator<
+    PayloadType,
+    std::enable_if_t<impl::SentinelForExploitingUnusedBitsIsKnown<PayloadType>>>
+  : impl::MemcpyAndCmpFlagManipulator<PayloadType, impl::SentinelForExploitingUnusedBits<std::remove_cv_t<PayloadType>>>
+{
+};
+
+
+namespace impl
+{
+  // True if there is a custom flag manipulator was 'registered' for the given payload type.
+  template <class PayloadType>
+  inline constexpr bool HasCustomInplaceFlagManipulator
+      = !std::is_base_of_v<NoCustomInplaceFlagManipulator, optional_flag_manipulator<PayloadType>>;
+} // namespace impl
+
+
+//====================================================================================
+// StorageBase
+//====================================================================================
+
+namespace impl
+{
   // This is the lowest base for TinyOptionalImpl and contains the actual data and some basic manipulation functions.
   // The stuff cannot be part TinyOptionalImpl: To properly implement the constructors of TinyOptionalImpl, we need
   // to derive from various intermediate classes that implement the proper versions of the constructors depending on the
@@ -1703,44 +1745,6 @@ namespace impl
   }
   // clang-format on
 
-} // namespace impl
-
-
-//====================================================================================
-// optional_flag_manipulator: Library specialization and helpers
-//====================================================================================
-
-namespace impl
-{
-  // True if the tiny optional library knows a special sentinel for the given payload type that exploits the type's
-  // unused bit patterns to represent the empty state.
-  template <class PayloadType>
-  inline constexpr bool SentinelForExploitingUnusedBitsIsKnown
-      = (std::is_floating_point_v<PayloadType> && !std::is_same_v<std::remove_cv_t<PayloadType>, long double>)
-        || std::is_same_v<std::remove_cv_t<PayloadType>, bool>
-        || std::is_pointer_v<PayloadType>; // Pointers and function pointers, but not member pointers or member
-                                           // function pointers.
-} // namespace impl
-
-// Specialization of optional_flag_manipulator for floats, doubles, bools, pointers and functions pointers. The
-// library exploits unused bit patterns for these types to encode the 'IsEmpty' flag without removing any value from the
-// value's value range. long double is simply not yet supported (we would need to figure out how NaNs on different
-// platorms behave for them).
-template <class PayloadType>
-struct optional_flag_manipulator<
-    PayloadType,
-    std::enable_if_t<impl::SentinelForExploitingUnusedBitsIsKnown<PayloadType>>>
-  : impl::MemcpyAndCmpFlagManipulator<PayloadType, impl::SentinelForExploitingUnusedBits<std::remove_cv_t<PayloadType>>>
-{
-};
-
-
-namespace impl
-{
-  // True if there is a custom flag manipulator was 'registered' for the given payload type.
-  template <class PayloadType>
-  inline constexpr bool HasCustomInplaceFlagManipulator
-      = !std::is_base_of_v<NoCustomInplaceFlagManipulator, optional_flag_manipulator<PayloadType>>;
 } // namespace impl
 
 
