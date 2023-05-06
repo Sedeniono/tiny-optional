@@ -81,6 +81,23 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 #endif
 
 
+// Forward declaration of optional_flag_manipulator, which is a user customization point.
+// Reason for the #ifndef: Only the **first** declaration can specify the default values for the template parameters.
+// Since the user is supposed to specialize this, he or she needs to know the forward declaration. Thus there is a
+// dedicated header that contains the forward declaration. We could simply #include the header here, but then we force
+// every user to handle 2 files, not just 1, even if the user never wants to specialize the flag manipulator. At the
+// same time, we do need the forward declaration below (because of the default argument). Solution: We forward declare
+// it only if it wasn't already declared, which is checked by the #ifndef.
+#ifndef TINY_OPTIONAL_FLAG_MANIPULATOR_ALREADY_DECLARED
+  #define TINY_OPTIONAL_FLAG_MANIPULATOR_ALREADY_DECLARED
+namespace tiny
+{
+template <class PayloadType, class Enable = void>
+struct optional_flag_manipulator;
+}
+#endif
+
+
 namespace tiny
 {
 // Special type and value to indicate that the user did not specify a certain template parameter type/value.
@@ -127,12 +144,13 @@ namespace impl
 //   throwing an exception), or disabling the warning via a #pragma. All of this seemed to rather annoying, hence we
 //   chose the specialization approach.
 //
-// This here is the original optional_flag_manipulator template, that the user can specialize. We also specialize it
-// below for e.g. floating point types.
+// This here is the definition of the original 'optional_flag_manipulator' template, that the user can specialize. We
+// also specialize it below for e.g. floating point types.
 //
 // The 'Enable' parameter can be used in conjunction with std::enable_if to provide a specialization for multiple types
-// at once satisfying a common concept. Compare the library's specialization for floating point types.
-template <class PayloadType, class Enable = void>
+// at once satisfying a common concept. Compare the library's specialization for floating point types. Note that it has
+// the default value 'void' (defined at the declaration of the template).
+template <class PayloadType, class Enable>
 struct optional_flag_manipulator : impl::NoCustomInplaceFlagManipulator
 {
 };
@@ -1672,12 +1690,14 @@ namespace impl
 // Combination with memPtr and sentinel.
 // transform (oder was auch immer tiny::optional zurückgibt): Geht es?
 // User overload with enable_if
+// 
+// Test with enums.
 //
 // Better name: RegisterTinyOptionalFlagManipulator?
 //
 // Evtl. doch besser kein ADL? Probleme wegen Compiler Warnungen über unbenutzte/undefinierte Funktionen...
 //
-// Really CamelCase or other_case?
+// InitializeIsEmptyFlag: Why is that noexcept? Constructors can throw usually?
 
 // https://godbolt.org/z/xeGvMd65W
 

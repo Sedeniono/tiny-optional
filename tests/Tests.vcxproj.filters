@@ -122,5 +122,8 @@
     <ClInclude Include="ExerciseOptionalWithCustomFlagManipulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\tiny\optional_flag_manipulator_fwd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

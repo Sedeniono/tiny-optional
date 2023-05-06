@@ -1,3 +1,5 @@
+#include "ExerciseOptionalWithCustomFlagManipulator.h"
+
 #include "Exercises.h"
 #include "TestUtilities.h"
 #include "tiny/optional.h"
@@ -256,5 +258,10 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
         EXPECT_SEPARATE,
         Test::Class1{"val1"},
         Test::Class1{"val2"});
+  }
+
+  // Version where, at the point of definition, the "tiny/optional.h" header is not included.
+  {
+    EXERCISE_OPTIONAL((tiny::optional<ClassInHeader>{}), EXPECT_INPLACE, ClassInHeader{}, ClassInHeader{});
   }
 }

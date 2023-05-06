@@ -510,6 +510,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\tiny\optional.h" />
+    <ClInclude Include="..\include\tiny\optional_flag_manipulator_fwd.h" />
     <ClInclude Include="ComparisonTests.h" />
     <ClInclude Include="CompilationErrorTests.h" />
     <ClInclude Include="ConstructionTests.h" />
