@@ -209,20 +209,11 @@ namespace EnumNamespace
 }
 }
 
+
 template <>
 struct tiny::optional_flag_manipulator<EnumNamespace::TestUnscopedEnum>
+  : tiny::sentinel_flag_manipulator<EnumNamespace::TestUnscopedEnum, EnumNamespace::INVALID>
 {
-  static bool IsEmpty(EnumNamespace::TestUnscopedEnum const & payload) noexcept
-  {
-    return payload == EnumNamespace::INVALID;
-  }
-
-  static void InitializeIsEmptyFlag(EnumNamespace::TestUnscopedEnum & uninitializedPayloadMemory) noexcept
-  {
-    ::new (&uninitializedPayloadMemory) EnumNamespace::TestUnscopedEnum(EnumNamespace::INVALID);
-  }
-
-  static void PrepareIsEmptyFlagForPayload(EnumNamespace::TestUnscopedEnum & /*emptyPayload*/) noexcept { }
 };
 
 
@@ -239,18 +230,8 @@ enum class TestScopedEnum
 
 template <>
 struct tiny::optional_flag_manipulator<TestScopedEnum>
+  : tiny::sentinel_flag_manipulator<TestScopedEnum, TestScopedEnum::MAX_NUM>
 {
-  static bool IsEmpty(TestScopedEnum const & payload) noexcept
-  {
-    return payload == TestScopedEnum::MAX_NUM;
-  }
-
-  static void InitializeIsEmptyFlag(TestScopedEnum & uninitializedPayloadMemory) noexcept
-  {
-    ::new (&uninitializedPayloadMemory) TestScopedEnum(TestScopedEnum::MAX_NUM);
-  }
-
-  static void PrepareIsEmptyFlagForPayload(TestScopedEnum & /*emptyPayload*/) noexcept { }
 };
 
 

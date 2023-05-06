@@ -156,6 +156,31 @@ struct optional_flag_manipulator : impl::NoCustomInplaceFlagManipulator
 };
 
 
+// Helper to allow the user to implement an optional_flag_manipulator specialization more easily in case it is a simple
+// comparison with a sentinel value. This can be especially useful for enumerations: Instead of writing e.g. 
+// tiny::optional<EnumType, EnumType::InvalidValue> always, the user can simply once define the specialization
+//      template <> struct tiny::optional_flag_manipulator<EnumType> 
+//       : tiny::sentinel_flag_manipulator<EnumType, EnumType::InvalidValue> { };
+// and then use tiny::optional<EnumType>.
+template <class PayloadType, auto SentinelValue>
+struct sentinel_flag_manipulator
+{
+  static bool IsEmpty(PayloadType const & payload) noexcept
+  {
+    return payload == SentinelValue;
+  }
+
+  static void InitializeIsEmptyFlag(PayloadType & uninitializedPayloadMemory) noexcept
+  {
+    ::new (&uninitializedPayloadMemory) PayloadType(SentinelValue);
+  }
+
+  static void PrepareIsEmptyFlagForPayload(PayloadType & emptyPayload) noexcept
+  {
+    emptyPayload.~PayloadType();
+  }
+};
+
 } // namespace tiny
 
 
