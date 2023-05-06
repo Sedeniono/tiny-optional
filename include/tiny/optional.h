@@ -1628,7 +1628,7 @@ namespace impl
   // Test this with: All sort of pointers. Container<T> templates. const. volatile. arrays.
   // struct of struct of struct.
   // Combination with memPtr and sentinel.
-  // transform (oder was auch immer tiny::optional zurückgibt): Geht es?
+  // transform (oder was auch immer tiny::optional zurÃ¼ckgibt): Geht es?
   // User overload with enable_if
 
   // https://godbolt.org/z/xeGvMd65W
