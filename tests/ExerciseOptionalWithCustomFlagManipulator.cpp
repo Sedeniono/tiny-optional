@@ -35,10 +35,10 @@ namespace Test
       return lhs.someString == rhs.someString && lhs.someInt == rhs.someInt && lhs.someDouble == rhs.someDouble;
     }
   };
-}
+} // namespace Test
 
 inline const std::string CLASS1_SENTINEL = "SENTINEL";
-}
+} // namespace
 
 
 template <>
@@ -59,7 +59,6 @@ struct tiny::optional_flag_manipulator<Test::Class1>
     emptyPayload.~Class1();
   }
 };
-
 
 
 //====================================================================
@@ -86,7 +85,7 @@ struct Class2
     return lhs.member1 == rhs.member1 && lhs.member2 == rhs.member2;
   }
 };
-}
+} // namespace
 
 
 //====================================================================
@@ -115,8 +114,7 @@ struct OuterClass
     return lhs.nestedClass == rhs.nestedClass;
   }
 };
-}
-
+} // namespace
 
 
 template <>
@@ -190,7 +188,6 @@ struct tiny::optional_flag_manipulator<OutermostClass>
 
   static void PrepareIsEmptyFlagForPayload(OutermostClass & /*emptyPayload*/) noexcept { }
 };
-
 
 
 //====================================================================

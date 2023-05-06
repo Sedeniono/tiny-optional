@@ -101,7 +101,7 @@ namespace impl
   struct NoCustomInplaceFlagManipulator
   {
   };
-}
+} // namespace impl
 
 // The user can specialize the optional_flag_manipulator template to 'inject' a custom FlagManipulator for some
 // payload type or types. If the user provides one, tiny::optional assumes that the 'IsEmpty' flag is stored inplace
@@ -285,8 +285,8 @@ namespace impl
 
 
   // The specializations of SentinelForExploitingUnusedBits define the bit pattern to use to indicate an empty value
-  // when the 'IsEmpty'-flag is stored inplace for various standard types. Which standard types are supported is 
-  // defined by the GetTinyOptionalInplaceFlagManipulator() overloads somewhere below. 
+  // when the 'IsEmpty'-flag is stored inplace for various standard types. Which standard types are supported is
+  // defined by the GetTinyOptionalInplaceFlagManipulator() overloads somewhere below.
   // Note: By construction, we exploit implementation-defined behavior here, and use type punning. Thus, the
   // SentinelForExploitingUnusedBits::value cannot be of the same type as the IsEmpty-flag-variable.
   template <typename T>
@@ -1660,26 +1660,26 @@ namespace impl
   }
   // clang-format on
 
-}
+} // namespace impl
 
-  //====================================================================================
-  // optional_flag_manipulator: Library specialization and helpers
-  //====================================================================================
-  
-  // TODO:
-  // Test this with: All sort of pointers. Container<T> templates. const. volatile. arrays.
-  // struct of struct of struct.
-  // Combination with memPtr and sentinel.
-  // transform (oder was auch immer tiny::optional zurückgibt): Geht es?
-  // User overload with enable_if
-  //
-  // Better name: RegisterTinyOptionalFlagManipulator?
-  //
-  // Evtl. doch besser kein ADL? Probleme wegen Compiler Warnungen über unbenutzte/undefinierte Funktionen...
-  //
-  // Really CamelCase or other_case?
+//====================================================================================
+// optional_flag_manipulator: Library specialization and helpers
+//====================================================================================
 
-  // https://godbolt.org/z/xeGvMd65W
+// TODO:
+// Test this with: All sort of pointers. Container<T> templates. const. volatile. arrays.
+// struct of struct of struct.
+// Combination with memPtr and sentinel.
+// transform (oder was auch immer tiny::optional zurückgibt): Geht es?
+// User overload with enable_if
+//
+// Better name: RegisterTinyOptionalFlagManipulator?
+//
+// Evtl. doch besser kein ADL? Probleme wegen Compiler Warnungen über unbenutzte/undefinierte Funktionen...
+//
+// Really CamelCase or other_case?
+
+// https://godbolt.org/z/xeGvMd65W
 
 
 namespace impl
@@ -1692,7 +1692,7 @@ namespace impl
         || std::is_same_v<std::remove_cv_t<PayloadType>, bool>
         || std::is_pointer_v<PayloadType>; // Pointers and function pointers, but not member pointers or member
                                            // function pointers.
-}
+} // namespace impl
 
 // Specialization of optional_flag_manipulator for floats, doubles, bools, pointers and functions pointers. The
 // library exploits unused bit patterns for these types to encode the 'IsEmpty' flag without removing any value from the
@@ -1713,13 +1713,12 @@ namespace impl
   template <class PayloadType>
   inline constexpr bool HasCustomInplaceFlagManipulator
       = !std::is_base_of_v<NoCustomInplaceFlagManipulator, optional_flag_manipulator<PayloadType>>;
-}
+} // namespace impl
 
 
-
-  //====================================================================================
-  // SelectDecomposition
-  //====================================================================================
+//====================================================================================
+// SelectDecomposition
+//====================================================================================
 
 namespace impl
 {
@@ -1738,7 +1737,6 @@ namespace impl
     SentinelValueAndMemPtrSpecifiedForInplaceSwallowing,
     SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator
   };
-
 
 
   // Given the options chosen by the user, selects the proper StoredTypeDecomposition and FlagManipulator
@@ -1814,8 +1812,7 @@ namespace impl
       PayloadType,
       SentinelValue,
       UseDefaultValue,
-      std::enable_if_t<
-          !HasCustomInplaceFlagManipulator<PayloadType> && !std::is_same_v<SentinelValue, UseDefaultType>>>
+      std::enable_if_t<!HasCustomInplaceFlagManipulator<PayloadType> && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
     static constexpr auto test = SelectedDecompositionTest::SentinelValueSpecifiedForInplaceSwallowing;
 
@@ -1882,8 +1879,8 @@ namespace impl
     // the custom flag manipulator and use ordinary assignment; we currently don't support an API to allow the
     // user to handle the sentinel value manually.
 
-    static constexpr auto test
-        = SelectedDecompositionTest::SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator;
+    static constexpr auto test = SelectedDecompositionTest::
+        SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator;
 
     static_assert(
         std::is_same_v<PayloadType, typename MemberPointerFragments<memPtrToFlag>::ClassType>,
@@ -2202,9 +2199,9 @@ namespace impl
 
 
 // optional "always in-place": Similar to tiny::optional, but:
-// - Uses some default sentinels for most integers 
-// - Types with unused bits are still exploited 
-// - If no sentinel is chosen automatically, it causes a compilation error. 
+// - Uses some default sentinels for most integers
+// - Types with unused bits are still exploited
+// - If no sentinel is chosen automatically, it causes a compilation error.
 // Hence, this type is guaranteed to have the same size as the payload type.
 template <class PayloadType, auto sentinelValue = impl::SelectSentinelValueWithSwallowing<PayloadType>>
 using optional_aip = optional<PayloadType, sentinelValue>;
