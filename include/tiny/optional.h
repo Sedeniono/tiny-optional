@@ -414,7 +414,7 @@ namespace impl
   // When optional is not doing anything special, i.e. in cases where it behaves just like std::optional, it uses
   // this wrapper to store the 'IsEmpty'-Flag outside of the payload.
   template <class PayloadType>
-  struct SeparateFlagWrapper
+  struct SeparateFlagStorage
   {
     union
     {
@@ -423,20 +423,20 @@ namespace impl
 
     bool isEmptyFlag; // True if the optional is empty, false otherwise.
 
-    SeparateFlagWrapper() { }
-    ~SeparateFlagWrapper() { }
+    SeparateFlagStorage() { }
+    ~SeparateFlagStorage() { }
   };
 
 
   // Used by the optional if the IsEmpty flag is stored within the payload.
-  template <class PayloadWithInplaceFlagType>
+  template <class PayloadType>
   struct InplaceStorage
   {
     // Union to prevent automatic initialization of mStorage. I.e. this only allocates the memory without
-    // calling the constructor of PayloadWithInplaceFlagType.
+    // calling the constructor of PayloadType.
     union
     {
-      std::remove_const_t<PayloadWithInplaceFlagType> storage;
+      std::remove_const_t<PayloadType> storage;
     };
 
     InplaceStorage() { }
@@ -468,12 +468,12 @@ namespace impl
 
 
   // Decomposition used when the optional is behaving as a std::optional, i.e. stores the
-  // 'IsEmpty'-flag in a separate bool variable. This is realized using the SeparateFlagWrapper.
+  // 'IsEmpty'-flag in a separate bool variable. This is realized using the SeparateFlagStorage.
   template <class PayloadType_>
   struct DecompositionForSeparateFlag
   {
     using PayloadType = PayloadType_;
-    using StoredType = SeparateFlagWrapper<PayloadType>;
+    using StoredType = SeparateFlagStorage<PayloadType>;
 
     [[nodiscard]] static constexpr bool & GetIsEmptyFlag(StoredType & v) noexcept
     {
@@ -565,8 +565,8 @@ namespace impl
 
 
   // Used when the optional is behaving as a std::optional, i.e. when the 'IsEmpty' flag is
-  // stored in a separate bool variable (via SeparateFlagWrapper).
-  struct OrdinaryBoolFlagManipulator
+  // stored in a separate bool variable (via SeparateFlagStorage).
+  struct SeparateFlagManipulator
   {
     [[nodiscard]] static bool IsEmpty(bool isEmptyFlag) noexcept
     {
@@ -575,7 +575,7 @@ namespace impl
 
     static void InitializeIsEmptyFlag(bool & uninitializedIsEmptyFlagMemory) noexcept
     {
-      // Using placement new would be wrong here: The constructor of SeparateFlagWrapper already pops the bool object
+      // Using placement new would be wrong here: The constructor of SeparateFlagStorage already pops the bool object
       // into existence (but with an indeterminate value).
       uninitializedIsEmptyFlagMemory = true;
     }
@@ -705,8 +705,8 @@ namespace impl
   public:
     [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
     {
-      // Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same noexcept
-      // guarantees as std::optional.
+      // static_assert: Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same
+      // noexcept guarantees as std::optional.
       static_assert(
           noexcept(isEmptyFlag == valueToIndicateEmpty),
           "The comparison operator of the flag type must be noexcept.");
@@ -715,8 +715,8 @@ namespace impl
 
     static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
     {
-      // static_assert: Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same
-      // noexcept guarantees as std::optional.
+      // static_assert: Because tiny::optional requires InitializeIsEmptyFlag() to be noexcept; otherwise, it could not
+      // give the same noexcept guarantees as std::optional.
       static_assert(
           noexcept(*const_cast<std::remove_cv_t<FlagType> *>(&uninitializedIsEmptyFlagMemory) = valueToIndicateEmpty),
           "The assignment operator of the flag type must be noexcept.");
@@ -1685,21 +1685,10 @@ namespace impl
 //====================================================================================
 
 // TODO:
-// Test this with: All sort of pointers. Container<T> templates. const. volatile. arrays.
-// struct of struct of struct.
-// Combination with memPtr and sentinel.
+// Test this with: Container<T> templates. 
 // transform (oder was auch immer tiny::optional zurückgibt): Geht es?
 // User overload with enable_if
-// 
-// Test with enums.
-//
-// Better name: RegisterTinyOptionalFlagManipulator?
-//
-// Evtl. doch besser kein ADL? Probleme wegen Compiler Warnungen über unbenutzte/undefinierte Funktionen...
-//
-// InitializeIsEmptyFlag: Why is that noexcept? Constructors can throw usually?
 
-// https://godbolt.org/z/xeGvMd65W
 
 
 namespace impl
@@ -1788,7 +1777,7 @@ namespace impl
     static constexpr auto test = SelectedDecompositionTest::NoArgsAndBehavesAsStdOptional;
 
     using StoredTypeDecomposition = DecompositionForSeparateFlag<PayloadType>;
-    using FlagManipulator = OrdinaryBoolFlagManipulator;
+    using FlagManipulator = SeparateFlagManipulator;
   };
 
 
