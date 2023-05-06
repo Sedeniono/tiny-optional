@@ -240,6 +240,8 @@ namespace impl
 #endif
 
 
+  // TODO: Can this be removed??
+  // 
   // optional is storing the 'IsEmpty'-flag within the payload itself automatically for certain types.
   // These types are identified by this constant.
   // Each of these types must have a corresponding SentinelForExploitingUnusedBits specialization.
@@ -607,7 +609,7 @@ namespace impl
   {
   private:
     // The empty value given by the user (SentinelValue) might have a different type than the flag variable.
-    // This can happen very easily if the user e.g. specify the literal 42 as empty value (which is an 'int'),
+    // This can happen very easily if the user e.g. specified the literal 42 as empty value (which is an 'int'),
     // but the optional stores an 'unsigned int'. It would be annoying for the user to always specify the
     // literals with the 'correct' postfix (e.g. 42u). Thus, we cast the value here. But before this we
     // check that the literal is not changed in the process. For example, specifying -1 for an optional
@@ -1631,6 +1633,105 @@ namespace impl
   // clang-format on
 
 
+
+  //====================================================================================
+  // CustomInplaceFlagManipulator
+  // Code to support and handle a user customization point, allowing the user to inject
+  // a custom FlagManipulator to be used by tiny::optional.
+  //====================================================================================
+  
+  // TODO:
+  // Test this with: All sort of pointers. Container<T> templates. const. volatile. arrays.
+  // struct of struct of struct.
+  // Combination with memPtr and sentinel.
+  // transform (oder was auch immer tiny::optional zurückgibt): Geht es?
+  // User overload with enable_if
+
+  // https://godbolt.org/z/xeGvMd65W
+
+  //-------------------
+  // Helper tag, used to indicate that no custom inplace flag manipulator is known for some payload.
+  struct NoCustomInplaceFlagManipulator;
+
+
+  //-------------------
+  // User customization point GetTinyOptionalInplaceFlagManipulator():
+  //
+  // The user can provide a custom overload
+  //    MyCustomFlagManipulator GetTinyOptionalInplaceFlagManipulator(MyPayloadType const &);
+  // that the library looks up to get the FlagManipulator type for some payload type. If the user provides one, 
+  // tiny::optional assumes that  the 'IsEmpty' flag is stored inplace somewhere in the payload type, and thus does 
+  // not use a separate bool flag. Instead, it will use the 'MyCustomFlagManipulator' to manipulator the 'IsEmpty' 
+  // flag. Also compare the description of the 'FlagManipulator' concept somewhere above.
+  //
+  // Notes:
+  // - There is no definition of GetTinyOptionalInplaceFlagManipulator(), only a declaration is necessary. Basically,
+  //   the declaration connects a certain payload type to a certain FlagManipulator.
+  //   The library never calls the function.
+  // - The overloads of GetTinyOptionalInplaceFlagManipulator() are found using argument dependent lookup (ADL).
+  // - The overloads should be declared right below where the custom type MyPayloadType (which is put into the optional) is
+  //   defined. If the overload is declared anywhere else, it could happen easily that some instantization of optional 
+  //   does not see the overload while other instantiations do see it. This causes undefined behavior (violation of the
+  //   one definition rule, ODR).
+  // - Instead of a function declaration and relying on ADL, we could have also used some templated struct and allow the
+  //   user to specialize that template struct. This is what the C++ standard library is doing with std::hash. Just like
+  //   with the ADL approach, the specialization should happen right where the MyPayloadType type is defined. However, the 
+  //   disadvantage with the specialization approach is that the user code then always needs to include the tiny::optional 
+  //   header in each header of the MyPayloadType type (since specializing some template requires the template's original
+  //   declaration). Or alternatively, we could allow the user for forward declare the original template struct, but this
+  //   feels wrong (just like it is wrong to forward declare std::hash). In other words, the ADL approach has the advantage
+  //   that the user code for MyPayloadType has no dependency to the tiny optional code.
+  //
+  // Implementation note:
+  // The default fallback of all GetTinyOptionalInplaceFlagManipulator() is encoded using a function with variadic 
+  // arguments (i.e. the ellipsis "..."). Why? Well, the typical first idea is to use
+  //     template <class PayloadType>
+  //     NoCustomInplaceFlagManipulator GetTinyOptionalInplaceFlagManipulator(PayloadType &&);
+  // However, if we have a custom overload anywhere that uses an std::enable_if mechanism to handle several types 
+  // simultaneously, we would get a compilation error due to an ambigous overloads. Basically, the generic and the custom
+  // overloads were equally well suited. So we would need to 'decorate' the generic version here is an std::enable_if that
+  // has as condition the negation of all the other overloads that use std::enable_if. This is impossible, since we do not
+  // know that the user will do. Hence the trick with the variadic argument: Such functions are considered always as the
+  // worst match, and thus only used if really nothing else matches (https://stackoverflow.com/a/24876671/3740047).
+
+
+  // Default fallback, if no other overload matches.
+  NoCustomInplaceFlagManipulator GetTinyOptionalInplaceFlagManipulator(...);
+
+
+  // Overload for floats, doubles, bools, pointers and functions pointers. The library exploits unused bit patterns for
+  // these types to encode the 'IsEmpty' flag without removing any value from the value's value range.
+  // long double is simply not yet supported (we would need to figure out how NaNs on different platorms behave for them).
+  // We use std::enable_if instead of ordinary overloads so that we capture the const-volatile qualifiers of the payload.
+  // If we didn't, we get mismatches between the FlagManipulator and the FlagType defined by the InplaceStoredTypeDecomposition.
+  // (Well, it seems to me that this is currently some design flaw, but we keep it like this for now for simplicity.)
+  // clang-format off
+  template <class PayloadType>
+  std::enable_if_t<
+      ( (std::is_floating_point_v<PayloadType> && !std::is_same_v<std::remove_cv_t<PayloadType>, long double>)
+        || std::is_same_v<std::remove_cv_t<PayloadType>, bool> 
+        || std::is_pointer_v<PayloadType> // Pointers and function pointers, but not member pointers or member function pointers.
+      ),
+      MemcpyAndCmpFlagManipulator<PayloadType, SentinelForExploitingUnusedBits<std::remove_cv_t<PayloadType>>>>
+    GetTinyOptionalInplaceFlagManipulator(PayloadType &&);
+  // clang-format on
+
+
+  //-------------------
+  // Helpers
+
+  // Uses argument dependent lookup (ADL) to find the user's defined FlagManipulator (or our own for float, bool etc.).
+  // The type is NoCustomInplaceFlagManipulator if no custom FlagManipulator is known.
+  template <class PayloadType>
+  using CustomInplaceFlagManipulator = decltype(GetTinyOptionalInplaceFlagManipulator(std::declval<PayloadType>()));
+
+  // True if there is a custom flag manipulator was 'registered' for the given payload type.
+  template <class PayloadType>
+  constexpr bool HasCustomInplaceFlagManipulator
+      = !std::is_same_v<CustomInplaceFlagManipulator<PayloadType>, NoCustomInplaceFlagManipulator>;
+
+
+
   //====================================================================================
   // SelectDecomposition
   //====================================================================================
@@ -1643,7 +1744,7 @@ namespace impl
   enum SelectedDecompositionTest
   {
     NoArgsAndBehavesAsStdOptional,
-    NoArgsButExploitUnusedBits,
+    NoArgsButExploitUnusedBits, // TODO: Rename
     SentinelValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits,
     SentinelValueSpecifiedForInplaceSwallowing,
     MemPtrSpecifiedToVariableWithUnusedBits,
@@ -1652,10 +1753,11 @@ namespace impl
   };
 
 
+  // TODO: Can this be removed????
   // True if T is a type where the user can choose a specific value (e.g. MAX_INT) to indicate an empty state.
   // That value is no longer considered to be in the valid value range, i.e. it is 'swallowed'.
   template <class T>
-  struct TypeSupportsInplaceWithSwallowing : std::integral_constant<bool, !IsTypeWithUnusedBits<T>::value>
+  struct TypeSupportsInplaceWithSwallowing : std::integral_constant<bool, !HasCustomInplaceFlagManipulator<T>>
   {
   };
 
@@ -1684,7 +1786,7 @@ namespace impl
       PayloadType,
       UseDefaultType,
       UseDefaultValue,
-      std::enable_if_t<!IsTypeWithUnusedBits<PayloadType>::value>>
+      std::enable_if_t<!HasCustomInplaceFlagManipulator<PayloadType>>>
   {
     static constexpr auto test = SelectedDecompositionTest::NoArgsAndBehavesAsStdOptional;
 
@@ -1698,13 +1800,12 @@ namespace impl
       PayloadType,
       UseDefaultType,
       UseDefaultValue,
-      std::enable_if_t<IsTypeWithUnusedBits<PayloadType>::value>>
+      std::enable_if_t<HasCustomInplaceFlagManipulator<PayloadType>>>
   {
     static constexpr auto test = SelectedDecompositionTest::NoArgsButExploitUnusedBits;
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
-    using FlagManipulator
-        = MemcpyAndCmpFlagManipulator<PayloadType, SentinelForExploitingUnusedBits<std::remove_cv_t<PayloadType>>>;
+    using FlagManipulator = CustomInplaceFlagManipulator<PayloadType>;
   };
 
 
@@ -1714,7 +1815,7 @@ namespace impl
       SentinelValue,
       UseDefaultValue,
       std::enable_if_t<
-          !TypeSupportsInplaceWithSwallowing<PayloadType>::value && !IsTypeWithUnusedBits<PayloadType>::value
+          !TypeSupportsInplaceWithSwallowing<PayloadType>::value && !HasCustomInplaceFlagManipulator<PayloadType>
           && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
     static_assert(
@@ -1730,7 +1831,7 @@ namespace impl
       PayloadType,
       SentinelValue,
       UseDefaultValue,
-      std::enable_if_t<IsTypeWithUnusedBits<PayloadType>::value && !std::is_same_v<SentinelValue, UseDefaultType>>>
+      std::enable_if_t<HasCustomInplaceFlagManipulator<PayloadType> && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
     // The user specified a value to swallow for a type that has unused bits.
     // So the swallowing is in principle unnecessary. But maybe the user deliberately wants to mark
@@ -1767,7 +1868,7 @@ namespace impl
       memPtrToFlag,
       std::enable_if_t<
           std::is_member_object_pointer_v<decltype(memPtrToFlag)> 
-          && IsTypeWithUnusedBits<typename MemberPointerFragments<memPtrToFlag>::VariableType>::value>>
+          && HasCustomInplaceFlagManipulator<typename MemberPointerFragments<memPtrToFlag>::VariableType>>>
   // clang-format on
   {
     static constexpr auto test = SelectedDecompositionTest::MemPtrSpecifiedToVariableWithUnusedBits;
@@ -1778,8 +1879,7 @@ namespace impl
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
-    using FlagManipulator
-        = MemcpyAndCmpFlagManipulator<MemVarType, SentinelForExploitingUnusedBits<std::remove_cv_t<MemVarType>>>;
+    using FlagManipulator = CustomInplaceFlagManipulator<MemVarType>;
   };
 
 
@@ -1791,7 +1891,7 @@ namespace impl
       memPtrToFlag,
       std::enable_if_t<
           std::is_member_object_pointer_v<decltype(memPtrToFlag)> 
-          && !IsTypeWithUnusedBits<typename MemberPointerFragments<memPtrToFlag>::VariableType>::value>>
+          && !HasCustomInplaceFlagManipulator<typename MemberPointerFragments<memPtrToFlag>::VariableType>>>
   // clang-format on
   {
     static_assert(
@@ -1809,7 +1909,7 @@ namespace impl
       std::enable_if_t<
           !std::is_same_v<SentinelValue, UseDefaultType> 
           && std::is_member_object_pointer_v<decltype(memPtrToFlag)>
-          && IsTypeWithUnusedBits<typename MemberPointerFragments<memPtrToFlag>::VariableType>::value>>
+          && HasCustomInplaceFlagManipulator<typename MemberPointerFragments<memPtrToFlag>::VariableType>>>
   // clang-format on
   {
     // The user specified a value to swallow for a type that has unused bits.
@@ -1825,7 +1925,7 @@ namespace impl
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
-    using FlagManipulator = MemcpyAndCmpFlagManipulator<MemVarType, SentinelValue>;
+    using FlagManipulator = AssignmentFlagManipulator<MemVarType, SentinelValue>;
   };
 
 
@@ -2124,7 +2224,7 @@ namespace impl
 
 
   // Case when the payload type has unused bits. In this case we rely on tiny::optional exploiting the unused bits.
-  template <class PayloadType, bool hasUnusedBits = IsTypeWithUnusedBits<PayloadType>::value>
+  template <class PayloadType, bool hasUnusedBits = HasCustomInplaceFlagManipulator<PayloadType>>
   inline constexpr auto SelectSentinelValueWithSwallowing = UseDefaultValue;
   // Case when the payload type does not have unused bits. Attempt to select some sensible default sentinel, or cause a
   // compilation error if this is not possible.
