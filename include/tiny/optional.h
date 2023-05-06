@@ -1728,12 +1728,12 @@ namespace impl
   enum SelectedDecompositionTest
   {
     NoArgsAndBehavesAsStdOptional,
-    NoArgsButExploitUnusedBits, // TODO: Rename
-    SentinelValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits,
+    NoArgsAndHasCustomFlagManipulator,
+    SentinelValueSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator,
     SentinelValueSpecifiedForInplaceSwallowing,
-    MemPtrSpecifiedToVariableWithUnusedBits,
+    MemPtrSpecifiedToVariableWithCustomFlagManipulator,
     SentinelValueAndMemPtrSpecifiedForInplaceSwallowing,
-    SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits
+    SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator
   };
 
 
@@ -1778,7 +1778,7 @@ namespace impl
       UseDefaultValue,
       std::enable_if_t<HasCustomInplaceFlagManipulator<PayloadType>>>
   {
-    static constexpr auto test = SelectedDecompositionTest::NoArgsButExploitUnusedBits;
+    static constexpr auto test = SelectedDecompositionTest::NoArgsAndHasCustomFlagManipulator;
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
     using FlagManipulator = CustomInplaceFlagManipulator<PayloadType>;
@@ -1792,12 +1792,14 @@ namespace impl
       UseDefaultValue,
       std::enable_if_t<HasCustomInplaceFlagManipulator<PayloadType> && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
-    // The user specified a value to swallow for a type that has unused bits.
+    // The user specified a sentinel value to swallow for a type that has a custom flag manipulator (e.g. unused bits).
     // So the swallowing is in principle unnecessary. But maybe the user deliberately wants to mark
-    // the value as 'invalid', so we do not static_assert this but instead support it.
+    // the value as 'invalid', so we do not static_assert this but instead support it. But we ignore
+    // the custom flag manipulator and use ordinary assignment; we currently don't support an API to allow the
+    // user to handle the sentinel value manually.
 
     static constexpr auto test
-        = SelectedDecompositionTest::SentinelValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits;
+        = SelectedDecompositionTest::SentinelValueSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator;
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
     using FlagManipulator = AssignmentFlagManipulator<PayloadType, SentinelValue>;
@@ -1830,7 +1832,7 @@ namespace impl
           && HasCustomInplaceFlagManipulator<typename MemberPointerFragments<memPtrToFlag>::VariableType>>>
   // clang-format on
   {
-    static constexpr auto test = SelectedDecompositionTest::MemPtrSpecifiedToVariableWithUnusedBits;
+    static constexpr auto test = SelectedDecompositionTest::MemPtrSpecifiedToVariableWithCustomFlagManipulator;
 
     static_assert(
         std::is_same_v<PayloadType, typename MemberPointerFragments<memPtrToFlag>::ClassType>,
@@ -1871,12 +1873,14 @@ namespace impl
           && HasCustomInplaceFlagManipulator<typename MemberPointerFragments<memPtrToFlag>::VariableType>>>
   // clang-format on
   {
-    // The user specified a value to swallow for a type that has unused bits.
+    // The user specified a sentinel value to swallow for a type that has a custom flag manipulator (e.g. unused bits).
     // So the swallowing is in principle unnecessary. But maybe the user deliberately wants to mark
-    // the value as 'invalid', so we do not static_assert this but instead support it.
+    // the value as 'invalid', so we do not static_assert this but instead support it. But we ignore
+    // the custom flag manipulator and use ordinary assignment; we currently don't support an API to allow the
+    // user to handle the sentinel value manually.
 
     static constexpr auto test
-        = SelectedDecompositionTest::SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits;
+        = SelectedDecompositionTest::SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator;
 
     static_assert(
         std::is_same_v<PayloadType, typename MemberPointerFragments<memPtrToFlag>::ClassType>,
@@ -1999,13 +2003,13 @@ namespace impl
 // to indicate where the 'IsEmpty'-flag should be stored.
 //
 // Implementation note: Unfortunately, we cannot use a simple 'using optional = TinyOptionalFromSelection<...>'
-// because such a optional would have no usable deduction guides. I.e. an expression such as
+// because such an optional would have no usable deduction guides. I.e. an expression such as
 //   optional o{5};
 // would not compile. This even holds for C++20 where certain aliases do get deduction guides, but fails here
 // because ultimately the template arguments for TinyOptionalImpl are computed via
-// SelectDecomposition<...>::StoredTypeDecomposition etc, which results in expression that prevent their generation.
+// SelectDecomposition<...>::StoredTypeDecomposition etc, which results in expressions that prevent their generation.
 //
-// Moreover, we deliberately use public rather than private inheritance. Assigning a optional to a TinyOptionalImpl
+// Moreover, we deliberately use public rather than private inheritance. Assigning an optional to a TinyOptionalImpl
 // (which might happen because of the other typedefs for TinyOptionalImpl that the user is supposed to use, such as
 // optional_sentinel_via_type) makes sense, especially since it only works if the template parameter of
 // optional::Base and the other TinyOptionalImpl are the same. Splicing is irrelevant because optional does not

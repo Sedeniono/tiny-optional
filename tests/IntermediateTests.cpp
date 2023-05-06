@@ -79,11 +79,11 @@ void test_SelectDecomposition()
   // clang-format off
   static_assert(NoArgsAndBehavesAsStdOptional == SelectDecomposition<int, tiny::UseDefaultType, UseDefaultValue>::test);
   static_assert(NoArgsAndBehavesAsStdOptional == SelectDecomposition<TestClass, tiny::UseDefaultType, UseDefaultValue>::test);
-  static_assert(NoArgsButExploitUnusedBits == SelectDecomposition<double, tiny::UseDefaultType, UseDefaultValue>::test);
+  static_assert(NoArgsAndHasCustomFlagManipulator == SelectDecomposition<double, tiny::UseDefaultType, UseDefaultValue>::test);
   static_assert(SentinelValueSpecifiedForInplaceSwallowing == SelectDecomposition<int, std::integral_constant<int, 42>, UseDefaultValue>::test);
-  static_assert(SentinelValueSpecifiedForInplaceSwallowingForTypeWithUnusedBits == SelectDecomposition<double, TestDoubleValue, UseDefaultValue>::test);
-  static_assert(MemPtrSpecifiedToVariableWithUnusedBits == SelectDecomposition<TestClassForInplace, tiny::UseDefaultType, &TestClassForInplace::someValue2>::test);
-  static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithUnusedBits == SelectDecomposition<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someValue2>::test);
+  static_assert(SentinelValueSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator == SelectDecomposition<double, TestDoubleValue, UseDefaultValue>::test);
+  static_assert(MemPtrSpecifiedToVariableWithCustomFlagManipulator == SelectDecomposition<TestClassForInplace, tiny::UseDefaultType, &TestClassForInplace::someValue2>::test);
+  static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator == SelectDecomposition<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someValue2>::test);
   static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowing == SelectDecomposition<TestClassForInplace, std::integral_constant<int, 42>, &TestClassForInplace::someValue1>::test);
   
   // Should not compile:
