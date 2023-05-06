@@ -9,13 +9,11 @@
 namespace
 {
 //====================================================================
-// Example class: Test::Class1
+// Example class in a namespace: Test::Class1
 //====================================================================
+
 namespace Test
 {
-  struct Class1FlagManipulator;
-
-
   struct Class1
   {
     std::string someString;
@@ -37,37 +35,39 @@ namespace Test
       return lhs.someString == rhs.someString && lhs.someInt == rhs.someInt && lhs.someDouble == rhs.someDouble;
     }
   };
+}
+
+inline const std::string CLASS1_SENTINEL = "SENTINEL";
+}
 
 
-  // Key line: Allows tiny::optional to find Class1FlagManipulator.
-  [[maybe_unused]] Class1FlagManipulator GetTinyOptionalInplaceFlagManipulator(Class1 const &);
-
-  struct Class1FlagManipulator
+template <>
+struct tiny::optional_flag_manipulator<Test::Class1>
+{
+  static bool IsEmpty(Test::Class1 const & payload) noexcept
   {
-    static inline const std::string SENTINEL = "SENTINEL";
+    return payload.someString == CLASS1_SENTINEL;
+  }
 
-    static bool IsEmpty(Class1 const & payload) noexcept
-    {
-      return payload.someString == SENTINEL;
-    }
+  static void InitializeIsEmptyFlag(Test::Class1 & uninitializedPayloadMemory) noexcept
+  {
+    ::new (&uninitializedPayloadMemory) Test::Class1(CLASS1_SENTINEL);
+  }
 
-    static void InitializeIsEmptyFlag(Class1 & uninitializedPayloadMemory) noexcept
-    {
-      ::new (&uninitializedPayloadMemory) Class1(SENTINEL);
-    }
+  static void PrepareIsEmptyFlagForPayload(Test::Class1 & emptyPayload) noexcept
+  {
+    emptyPayload.~Class1();
+  }
+};
 
-    static void PrepareIsEmptyFlagForPayload(Class1 & emptyPayload) noexcept
-    {
-      emptyPayload.~Class1();
-    }
-  };
-} // namespace Test
 
 
 //====================================================================
 // Example class: Class2 (contains Class1)
 //====================================================================
 
+namespace
+{
 struct Class2
 {
   int member1 = 999;
@@ -86,6 +86,7 @@ struct Class2
     return lhs.member1 == rhs.member1 && lhs.member2 == rhs.member2;
   }
 };
+}
 
 
 //====================================================================
@@ -93,16 +94,13 @@ struct Class2
 // Especially note: GetTinyOptionalInplaceFlagManipulator() is defined as friend.
 //====================================================================
 
-struct NestedClassFlagManipulator;
-
+namespace
+{
 struct OuterClass
 {
   struct NestedClass
   {
     bool isEmpty = false;
-
-    // Key line: Allows tiny::optional to find NestedClassFlagManipulator.
-    friend NestedClassFlagManipulator GetTinyOptionalInplaceFlagManipulator(NestedClass const &);
 
     friend bool operator==(NestedClass const & lhs, NestedClass const & rhs)
     {
@@ -117,15 +115,12 @@ struct OuterClass
     return lhs.nestedClass == rhs.nestedClass;
   }
 };
+}
 
 
-// Silence clang warning:
-// function 'GetTinyOptionalInplaceFlagManipulator' is not needed and will not be emitted
-// [-Wunneeded-internal-declaration]
-[[maybe_unused]] NestedClassFlagManipulator GetTinyOptionalInplaceFlagManipulator(OuterClass::NestedClass const &);
 
-
-struct NestedClassFlagManipulator
+template <>
+struct tiny::optional_flag_manipulator<OuterClass::NestedClass>
 {
   static bool IsEmpty(OuterClass::NestedClass const & payload) noexcept
   {
@@ -149,6 +144,8 @@ struct NestedClassFlagManipulator
 // Example class: OutermostClass
 //====================================================================
 
+namespace
+{
 struct OutermostClass
 {
   std::shared_ptr<std::string> someString;
@@ -173,11 +170,13 @@ struct OutermostClass
     return false;
   }
 };
+} // namespace
 
 
 // Exploiting undefined behavior: In the empty state of the optional, we do not construct a full instance of
 // OutermostClass. Instead, we only change the 'payload.outerClass.nestedClass.isEmpty'
-struct OutermostFlagManipulator
+template <>
+struct tiny::optional_flag_manipulator<OutermostClass>
 {
   static bool IsEmpty(OutermostClass const & payload) noexcept
   {
@@ -193,12 +192,6 @@ struct OutermostFlagManipulator
 };
 
 
-// Key line: Allows tiny::optional to find OutermostFlagManipulator.
-[[maybe_unused]] OutermostFlagManipulator GetTinyOptionalInplaceFlagManipulator(OutermostClass const &);
-
-
-} // namespace
-
 
 //====================================================================
 // Tests of the types
@@ -206,15 +199,13 @@ struct OutermostFlagManipulator
 
 void test_TinyOptionalWithRegisteredCustomFlagManipulator()
 {
-  // Basic test: Especially EXPECT_INPLACE, since the tiny::optional should use the Class1FlagManipulator.
+  // Basic test: Especially EXPECT_INPLACE, since the tiny::optional should use the flag manipulator.
   {
-    Test::Class1 const val1{"Value1"};
-    Test::Class1 const val2{"Value2"};
-    EXERCISE_OPTIONAL((tiny::optional<Test::Class1>{}), EXPECT_INPLACE, val1, val2);
-    EXERCISE_OPTIONAL((tiny::optional<Test::Class1 const>{}), EXPECT_INPLACE, val1, val2);
+    EXERCISE_OPTIONAL((tiny::optional<Test::Class1>{}), EXPECT_INPLACE, Test::Class1{"val1"}, Test::Class1{"val2"});
   }
 
-  // Storing the 'IsEmpty' flag in Class2::member2, which should be possible because of the Class1FlagManipulator.
+  // Storing the 'IsEmpty' flag in Class2::member2, which should be possible because of the flag manipulator for the
+  // type of member2, i.e. of Class1.
   {
     EXERCISE_OPTIONAL(
         (tiny::optional<Class2, &Class2::member2>{}),
@@ -224,24 +215,23 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
   }
 
   // We specify some member in Class1 where the IsEmpty flag should be stored. Thus, tiny::optional should actually
-  // ignore Class1FlagManipulator and use the sentinel instead. Thus, the special "SENTINEL" string is expected to be a
+  // ignore the flag manipulator and use the sentinel instead. Thus, the special "SENTINEL" string is expected to be a
   // valid value.
   {
     EXERCISE_OPTIONAL(
         (tiny::optional<Test::Class1, &Test::Class1::someDouble>{}),
         EXPECT_INPLACE,
-        Test::Class1(Test::Class1FlagManipulator::SENTINEL),
+        Test::Class1(CLASS1_SENTINEL),
         Test::Class1("val2"));
 
     EXERCISE_OPTIONAL(
         (tiny::optional<Test::Class1, &Test::Class1::someInt, -1>{}),
         EXPECT_INPLACE,
-        Test::Class1(Test::Class1FlagManipulator::SENTINEL),
+        Test::Class1(CLASS1_SENTINEL),
         Test::Class1("val2"));
   }
 
-  // Test with a NestedClass, where the FlagManipulator is defined as friend function. Despite being a friend function,
-  // ADL should find it.
+  // Test with a NestedClass.
   {
     EXERCISE_OPTIONAL(
         (tiny::optional<OuterClass::NestedClass>{}),
@@ -259,5 +249,15 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
         OutermostClass{"val1"},
         OutermostClass{"val2"},
         "val3");
+  }
+
+  // Version with a **const** payload: Since we do not provide a specialization of the flag manipulator for const
+  // payloads, we expect that the library uses a separate bool to indicate the empty state.
+  {
+    EXERCISE_OPTIONAL(
+        (tiny::optional<Test::Class1 const>{}),
+        EXPECT_SEPARATE,
+        Test::Class1{"val1"},
+        Test::Class1{"val2"});
   }
 }

@@ -94,6 +94,50 @@ enum UseDefaultType
 template <class PayloadType_, auto sentinelOrMemPtr = UseDefaultValue, auto irrelevantOrSentinel = UseDefaultValue>
 class optional;
 
+
+namespace impl
+{
+  // Helper tag to indicate that no optional_flag_manipulator specialization is known.
+  struct NoCustomInplaceFlagManipulator
+  {
+  };
+}
+
+// The user can specialize the optional_flag_manipulator template to 'inject' a custom FlagManipulator for some
+// payload type or types. If the user provides one, tiny::optional assumes that the 'IsEmpty' flag is stored inplace
+// somewhere in the payload type, and thus does not use a separate bool flag. Instead, it will use the
+// 'MyCustomFlagManipulator' to manipulator the 'IsEmpty' flag. Also compare the description of the 'FlagManipulator'
+// concept somewhere below.
+//
+// Notes:
+// - The specialization should be declared right below where the custom type payload type (i.e. the type which is put
+//   into the optional) is defined. If the specialization is declared anywhere else, it could happen easily that some
+//   instantiation of optional does not see the it while other instantiations do see it. This causes undefined behavior
+//   (violation of the one definition rule, ODR).
+// - The idea for using specializations as customization point is essentially the same as for std::hash and
+//   fmt::formatter.
+// - The original idea was to not use class specializations, but instead use function overloads and rely on ADL
+//   (argument dependent lookup). The functions would have never been called, but their return type would have defined
+//   the FlagManipulator. The advantage would have been that user code does not need to know about the original
+//   optional_flag_manipulator template (i.e. no #include or forward declaration in user code necessary). However,
+//   the major issue was that MSVC, gcc and clang (the compilers and the static analyzers) complained about either
+//   unused or undefined functions, especially when put into anonymous namespaces. The warnings about unused functions
+//   were easily fixable by prepending [[maybe_unused]], except in cases of friend functions (where the attribute is not
+//   allowed). Getting rid of the warning about undefined functions meant to provide a dummy implementation (e.g. simply
+//   throwing an exception), or disabling the warning via a #pragma. All of this seemed to rather annoying, hence we
+//   chose the specialization approach.
+//
+// This here is the original optional_flag_manipulator template, that the user can specialize. We also specialize it
+// below for e.g. floating point types.
+//
+// The 'Enable' parameter can be used in conjunction with std::enable_if to provide a specialization for multiple types
+// at once satisfying a common concept. Compare the library's specialization for floating point types.
+template <class PayloadType, class Enable = void>
+struct optional_flag_manipulator : impl::NoCustomInplaceFlagManipulator
+{
+};
+
+
 } // namespace tiny
 
 
@@ -109,7 +153,7 @@ namespace impl
   // Marked as [[maybe_unused]] since clang till version 8 emits a warning that
   // this variable is supposedly unused.
   template <class... T>
-  [[maybe_unused]] constexpr bool always_false = false;
+  [[maybe_unused]] inline constexpr bool always_false = false;
 
 
   // std::remove_cvref is only available since C++20.
@@ -1616,12 +1660,10 @@ namespace impl
   }
   // clang-format on
 
-
+}
 
   //====================================================================================
-  // CustomInplaceFlagManipulator
-  // Code to support and handle a user customization point, allowing the user to inject
-  // a custom FlagManipulator to be used by tiny::optional.
+  // optional_flag_manipulator: Library specialization and helpers
   //====================================================================================
   
   // TODO:
@@ -1632,89 +1674,46 @@ namespace impl
   // User overload with enable_if
   //
   // Better name: RegisterTinyOptionalFlagManipulator?
+  //
+  // Evtl. doch besser kein ADL? Probleme wegen Compiler Warnungen über unbenutzte/undefinierte Funktionen...
+  //
+  // Really CamelCase or other_case?
 
   // https://godbolt.org/z/xeGvMd65W
 
-  //-------------------
-  // Helper tag, used to indicate that no custom inplace flag manipulator is known for some payload.
-  struct NoCustomInplaceFlagManipulator;
 
-
-  //-------------------
-  // User customization point GetTinyOptionalInplaceFlagManipulator():
-  //
-  // The user can provide a custom overload
-  //    MyCustomFlagManipulator GetTinyOptionalInplaceFlagManipulator(MyPayloadType const &);
-  // that the library looks up to get the FlagManipulator type for some payload type. If the user provides one, 
-  // tiny::optional assumes that  the 'IsEmpty' flag is stored inplace somewhere in the payload type, and thus does 
-  // not use a separate bool flag. Instead, it will use the 'MyCustomFlagManipulator' to manipulator the 'IsEmpty' 
-  // flag. Also compare the description of the 'FlagManipulator' concept somewhere above.
-  //
-  // Notes:
-  // - There is no definition of GetTinyOptionalInplaceFlagManipulator(), only a declaration is necessary. Basically,
-  //   the declaration connects a certain payload type to a certain FlagManipulator.
-  //   The library never calls the function.
-  // - The overloads of GetTinyOptionalInplaceFlagManipulator() are found using argument dependent lookup (ADL).
-  // - The overloads should be declared right below where the custom type MyPayloadType (which is put into the optional) is
-  //   defined. If the overload is declared anywhere else, it could happen easily that some instantization of optional 
-  //   does not see the overload while other instantiations do see it. This causes undefined behavior (violation of the
-  //   one definition rule, ODR).
-  // - Instead of a function declaration and relying on ADL, we could have also used some templated struct and allow the
-  //   user to specialize that template struct. This is what the C++ standard library is doing with std::hash. Just like
-  //   with the ADL approach, the specialization should happen right where the MyPayloadType type is defined. However, the 
-  //   disadvantage with the specialization approach is that the user code then always needs to include the tiny::optional 
-  //   header in each header of the MyPayloadType type (since specializing some template requires the template's original
-  //   declaration). Or alternatively, we could allow the user for forward declare the original template struct, but this
-  //   feels wrong (just like it is wrong to forward declare std::hash). In other words, the ADL approach has the advantage
-  //   that the user code for MyPayloadType has no dependency to the tiny optional code.
-  //
-  // Implementation note:
-  // The default fallback of all GetTinyOptionalInplaceFlagManipulator() is encoded using a function with variadic 
-  // arguments (i.e. the ellipsis "..."). Why? Well, the typical first idea is to use
-  //     template <class PayloadType>
-  //     NoCustomInplaceFlagManipulator GetTinyOptionalInplaceFlagManipulator(PayloadType &&);
-  // However, if we have a custom overload anywhere that uses an std::enable_if mechanism to handle several types 
-  // simultaneously, we would get a compilation error due to an ambigous overloads. Basically, the generic and the custom
-  // overloads were equally well suited. So we would need to 'decorate' the generic version here is an std::enable_if that
-  // has as condition the negation of all the other overloads that use std::enable_if. This is impossible, since we do not
-  // know that the user will do. Hence the trick with the variadic argument: Such functions are considered always as the
-  // worst match, and thus only used if really nothing else matches (https://stackoverflow.com/a/24876671/3740047).
-
-
-  // Default fallback, if no other overload matches.
-  NoCustomInplaceFlagManipulator GetTinyOptionalInplaceFlagManipulator(...);
-
-
-  // Overload for floats, doubles, bools, pointers and functions pointers. The library exploits unused bit patterns for
-  // these types to encode the 'IsEmpty' flag without removing any value from the value's value range.
-  // long double is simply not yet supported (we would need to figure out how NaNs on different platorms behave for them).
-  // We use std::enable_if instead of ordinary overloads so that we capture the const-volatile qualifiers of the payload.
-  // If we didn't, we get mismatches between the FlagManipulator and the FlagType defined by the InplaceStoredTypeDecomposition.
-  // (Well, it seems to me that this is currently some design flaw, but we keep it like this for now for simplicity.)
-  // clang-format off
+namespace impl
+{
+  // True if the tiny optional library knows a special sentinel for the given payload type that exploits the type's
+  // unused bit patterns to represent the empty state.
   template <class PayloadType>
-  std::enable_if_t<
-      ( (std::is_floating_point_v<PayloadType> && !std::is_same_v<std::remove_cv_t<PayloadType>, long double>)
-        || std::is_same_v<std::remove_cv_t<PayloadType>, bool> 
-        || std::is_pointer_v<PayloadType> // Pointers and function pointers, but not member pointers or member function pointers.
-      ),
-      MemcpyAndCmpFlagManipulator<PayloadType, SentinelForExploitingUnusedBits<std::remove_cv_t<PayloadType>>>>
-    GetTinyOptionalInplaceFlagManipulator(PayloadType &&);
-  // clang-format on
+  inline constexpr bool SentinelForExploitingUnusedBitsIsKnown
+      = (std::is_floating_point_v<PayloadType> && !std::is_same_v<std::remove_cv_t<PayloadType>, long double>)
+        || std::is_same_v<std::remove_cv_t<PayloadType>, bool>
+        || std::is_pointer_v<PayloadType>; // Pointers and function pointers, but not member pointers or member
+                                           // function pointers.
+}
+
+// Specialization of optional_flag_manipulator for floats, doubles, bools, pointers and functions pointers. The
+// library exploits unused bit patterns for these types to encode the 'IsEmpty' flag without removing any value from the
+// value's value range. long double is simply not yet supported (we would need to figure out how NaNs on different
+// platorms behave for them).
+template <class PayloadType>
+struct optional_flag_manipulator<
+    PayloadType,
+    std::enable_if_t<impl::SentinelForExploitingUnusedBitsIsKnown<PayloadType>>>
+  : impl::MemcpyAndCmpFlagManipulator<PayloadType, impl::SentinelForExploitingUnusedBits<std::remove_cv_t<PayloadType>>>
+{
+};
 
 
-  //-------------------
-  // Helpers
-
-  // Uses argument dependent lookup (ADL) to find the user's defined FlagManipulator (or our own for float, bool etc.).
-  // The type is NoCustomInplaceFlagManipulator if no custom FlagManipulator is known.
-  template <class PayloadType>
-  using CustomInplaceFlagManipulator = decltype(GetTinyOptionalInplaceFlagManipulator(std::declval<PayloadType>()));
-
+namespace impl
+{
   // True if there is a custom flag manipulator was 'registered' for the given payload type.
   template <class PayloadType>
-  constexpr bool HasCustomInplaceFlagManipulator
-      = !std::is_same_v<CustomInplaceFlagManipulator<PayloadType>, NoCustomInplaceFlagManipulator>;
+  inline constexpr bool HasCustomInplaceFlagManipulator
+      = !std::is_base_of_v<NoCustomInplaceFlagManipulator, optional_flag_manipulator<PayloadType>>;
+}
 
 
 
@@ -1722,6 +1721,8 @@ namespace impl
   // SelectDecomposition
   //====================================================================================
 
+namespace impl
+{
 
   // Since the template specialization of SelectDecomposition are rather non-trivial, we want
   // some easy direct way of testing if the correct one was selected (i.e. while we modify
@@ -1783,7 +1784,7 @@ namespace impl
     static constexpr auto test = SelectedDecompositionTest::NoArgsAndHasCustomFlagManipulator;
 
     using StoredTypeDecomposition = InplaceStoredTypeDecomposition<PayloadType>;
-    using FlagManipulator = CustomInplaceFlagManipulator<PayloadType>;
+    using FlagManipulator = optional_flag_manipulator<PayloadType>;
   };
 
 
@@ -1842,7 +1843,7 @@ namespace impl
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
-    using FlagManipulator = CustomInplaceFlagManipulator<MemVarType>;
+    using FlagManipulator = optional_flag_manipulator<MemVarType>;
   };
 
 
