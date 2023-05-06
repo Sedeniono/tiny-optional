@@ -207,7 +207,7 @@ namespace EnumNamespace
     UNSCOPED_VALUE2
   };
 }
-}
+} // namespace
 
 
 template <>
@@ -232,6 +232,50 @@ template <>
 struct tiny::optional_flag_manipulator<TestScopedEnum>
   : tiny::sentinel_flag_manipulator<TestScopedEnum, TestScopedEnum::MAX_NUM>
 {
+};
+
+
+//====================================================================
+// Specialization via enable_if, which uses the 2nd template argument of optional_flag_manipulator.
+// For this we simply use enums since they are more convenient than creating two full blown classes.
+//====================================================================
+
+namespace
+{
+enum class SpecialEnum1 : int
+{
+  VALUE1 = 0,
+  VALUE2 = 1
+};
+
+
+enum class SpecialEnum2 : int
+{
+  VALUE1 = 0,
+  VALUE2 = 1
+};
+} // namespace
+
+
+template <class SpecialEnumType>
+struct tiny::optional_flag_manipulator<
+    SpecialEnumType,
+    std::enable_if_t<std::is_same_v<SpecialEnumType, SpecialEnum1> || std::is_same_v<SpecialEnumType, SpecialEnum2>>>
+{
+  static bool IsEmpty(SpecialEnumType const & payload) noexcept
+  {
+    return static_cast<int>(payload) == -1;
+  }
+
+  static void InitializeIsEmptyFlag(SpecialEnumType & uninitializedPayloadMemory) noexcept
+  {
+    ::new (&uninitializedPayloadMemory) SpecialEnumType(static_cast<SpecialEnumType>(-1));
+  }
+
+  static void PrepareIsEmptyFlagForPayload(SpecialEnumType & emptyPayload) noexcept
+  {
+    emptyPayload.~SpecialEnumType();
+  }
 };
 
 
@@ -305,7 +349,11 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
 
   // Version where, at the point of definition, the "tiny/optional.h" header is not included.
   {
-    EXERCISE_OPTIONAL((tiny::optional<ClassInHeader>{}), EXPECT_INPLACE, ClassInHeader{}, ClassInHeader{});
+    EXERCISE_OPTIONAL(
+        (tiny::optional<ClassInHeader<int>>{}),
+        EXPECT_INPLACE,
+        ClassInHeader<int>{},
+        ClassInHeader<int>{});
   }
 
   // Enums
@@ -320,5 +368,23 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
         EXPECT_INPLACE,
         TestScopedEnum::VALUE1,
         TestScopedEnum::VALUE2);
+  }
+
+  // Cases where the flag manipulator specialization was defined with the help of std::enable_if.
+  {
+    EXERCISE_OPTIONAL((tiny::optional<SpecialEnum1>{}), EXPECT_INPLACE, SpecialEnum1::VALUE1, SpecialEnum1::VALUE2);
+    EXERCISE_OPTIONAL((tiny::optional<SpecialEnum2>{}), EXPECT_INPLACE, SpecialEnum2::VALUE1, SpecialEnum2::VALUE2);
+  }
+
+  // A special test for transform(): It always returns a tiny::optional. Nevertheless, it should see
+  // the flag manipulator.
+  {
+    tiny::optional<Test::Class1> opt1 = Test::Class1{"val1"};
+    auto const opt2 = opt1.transform([](Test::Class1 const & c1) { return OutermostClass{c1.someString}; });
+    static_assert(sizeof(opt1) == sizeof(Test::Class1));
+    static_assert(sizeof(opt2) == sizeof(OutermostClass));
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(opt2)>, tiny::optional<OutermostClass>>);
+    ASSERT_TRUE(opt2->someString != nullptr);
+    ASSERT_TRUE(opt1->someString == *opt2->someString);
   }
 }
