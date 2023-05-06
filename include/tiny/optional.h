@@ -231,7 +231,7 @@ namespace impl
 
 
 //====================================================================================
-// IsTypeWithUnusedBits and SentinelForExploitingUnusedBits
+// SentinelForExploitingUnusedBits
 //====================================================================================
 
 // So far the implementation defined exploits are only implemented and tested for x64 and x86.
@@ -240,27 +240,11 @@ namespace impl
 #endif
 
 
-  // TODO: Can this be removed??
-  // 
-  // optional is storing the 'IsEmpty'-flag within the payload itself automatically for certain types.
-  // These types are identified by this constant.
-  // Each of these types must have a corresponding SentinelForExploitingUnusedBits specialization.
-  // clang-format off
-  template <class T>
-  struct IsTypeWithUnusedBits
-    : std::integral_constant<bool, 
-        (std::is_floating_point_v<T> || std::is_same_v<std::remove_cv_t<T>, bool> || std::is_pointer_v<T>) 
-        && !std::is_same_v<std::remove_cv_t<T>, long double>
-      >
-  {
-  };
-  // clang-format on
-
-
   // The specializations of SentinelForExploitingUnusedBits define the bit pattern to use to indicate an empty value
-  // when the 'IsEmpty'-flag is stored inplace for various standard types, as indicated by IsTypeWithUnusedBits. By
-  // construction, we exploit implementation-defined behavior here, and use type punning. Thus, the
-  // SentinelForExploitingUnusedBits::value is not required to be of the same type as the IsEmpty-flag-variable.
+  // when the 'IsEmpty'-flag is stored inplace for various standard types. Which standard types are supported is 
+  // defined by the GetTinyOptionalInplaceFlagManipulator() overloads somewhere below. 
+  // Note: By construction, we exploit implementation-defined behavior here, and use type punning. Thus, the
+  // SentinelForExploitingUnusedBits::value cannot be of the same type as the IsEmpty-flag-variable.
   template <typename T>
   struct SentinelForExploitingUnusedBits
   {
@@ -330,7 +314,7 @@ namespace impl
     // - Similar, small values such as 0x01 (which, in principle, shouldn't appear in practice as valid addresses) are
     //   not a good choice either because at least the WinAPI function ShellExecute() function can return such values as
     //   error codes.
-    // - Not all addresses are possible on 64 bit. Current CPUs only implement 48 meaningful bits since this is cheaper
+    // - Not all addresses are possible on 64 bit. Current CPUs only implement 48 meaningful bits since this is cheaper.
     //   Having enough memory to require true 64 bits is a thing for the distant future (thousands of petabytes...).
     //   These so-called 'canonical addresses' range from 0x0000'0000'0000'0000 to 0x0000'7fff'ffff'ffff (which is
     //   reserved for user space addresses) and from 0xffff'8000'0000'0000 to 0xffff'ffff'ffff'ffff (which is reserved
@@ -1753,14 +1737,6 @@ namespace impl
   };
 
 
-  // TODO: Can this be removed????
-  // True if T is a type where the user can choose a specific value (e.g. MAX_INT) to indicate an empty state.
-  // That value is no longer considered to be in the valid value range, i.e. it is 'swallowed'.
-  template <class T>
-  struct TypeSupportsInplaceWithSwallowing : std::integral_constant<bool, !HasCustomInplaceFlagManipulator<T>>
-  {
-  };
-
 
   // Given the options chosen by the user, selects the proper StoredTypeDecomposition and FlagManipulator
   // with which to instantiate the TinyOptionalImpl. I.e. this is responsible for choosing if the 'IsEmpty'
@@ -1814,23 +1790,6 @@ namespace impl
       PayloadType,
       SentinelValue,
       UseDefaultValue,
-      std::enable_if_t<
-          !TypeSupportsInplaceWithSwallowing<PayloadType>::value && !HasCustomInplaceFlagManipulator<PayloadType>
-          && !std::is_same_v<SentinelValue, UseDefaultType>>>
-  {
-    static_assert(
-        always_false<PayloadType>,
-        "The payload type does not support an inplace flag, and you also did not specify that the flag should be stored in a member of the payload. "
-        "That means a separate bool needs to be used to store the flag (meaning the optional is no longer tiny). However, you specified an SentinelValue, "
-        "which is inconistent and unnecessary. Remove the SentinelValue.");
-  };
-
-
-  template <class PayloadType, class SentinelValue>
-  struct SelectDecomposition<
-      PayloadType,
-      SentinelValue,
-      UseDefaultValue,
       std::enable_if_t<HasCustomInplaceFlagManipulator<PayloadType> && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
     // The user specified a value to swallow for a type that has unused bits.
@@ -1851,7 +1810,7 @@ namespace impl
       SentinelValue,
       UseDefaultValue,
       std::enable_if_t<
-          TypeSupportsInplaceWithSwallowing<PayloadType>::value && !std::is_same_v<SentinelValue, UseDefaultType>>>
+          !HasCustomInplaceFlagManipulator<PayloadType> && !std::is_same_v<SentinelValue, UseDefaultType>>>
   {
     static constexpr auto test = SelectedDecompositionTest::SentinelValueSpecifiedForInplaceSwallowing;
 
@@ -1938,7 +1897,7 @@ namespace impl
       std::enable_if_t<
           !std::is_same_v<SentinelValue, UseDefaultType> 
           && std::is_member_object_pointer_v<decltype(memPtrToFlag)> 
-          && TypeSupportsInplaceWithSwallowing<typename MemberPointerFragments<memPtrToFlag>::VariableType>::value>>
+          && !HasCustomInplaceFlagManipulator<typename MemberPointerFragments<memPtrToFlag>::VariableType>>>
   // clang-format on
   {
     static constexpr auto test = SelectedDecompositionTest::SentinelValueAndMemPtrSpecifiedForInplaceSwallowing;
