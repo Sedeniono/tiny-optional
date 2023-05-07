@@ -303,35 +303,35 @@ namespace MyNamespace
 template <>
 struct tiny::optional_flag_manipulator<MyNamespace::IndexPair>
 {
-    static bool IsEmpty(MyNamespace::IndexPair const & payload) noexcept
+    static bool is_empty(MyNamespace::IndexPair const & payload) noexcept
     {
         // Needs to return true if the optional should be considered empty.
         // I.e. if the given "payload" state indicates emptiness. It can be called after 
-        // InitializeIsEmptyFlag() or PrepareIsEmptyFlagForPayload() by the library.
+        // init_empty_flag() or invalidate_empty_flag() by the library.
         return payload.GetIndex1() < 0 && payload.GetIndex2() < 0;
     }
     
-    static void InitializeIsEmptyFlag(MyNamespace::IndexPair & uninitializedPayloadMemory) noexcept
+    static void init_empty_flag(MyNamespace::IndexPair & uninitializedPayloadMemory) noexcept
     {
         // uninitializedPayloadMemory is a reference to an **uninitialized** payload (i.e. 
         // the constructor of the payload has not been called, but the memory has been
         // already allocated).
         // This function is called when the optional is constructed in an empty state or
         // once it should become empty. The function must initialize the memory such that 
-        // the optional is considered empty, i.e. IsEmpty(uninitializedPayloadMemory) must
+        // the optional is considered empty, i.e. is_empty(uninitializedPayloadMemory) must
         // return true afterwards.
         ::new (&uninitializedPayloadMemory) MyNamespace::IndexPair(); // Placement new
         uninitializedPayloadMemory.SetIndices(-1, -1);
     }
     
-    static void PrepareIsEmptyFlagForPayload(MyNamespace::IndexPair & emptyPayload) noexcept
+    static void invalidate_empty_flag(MyNamespace::IndexPair & emptyPayload) noexcept
     {
         // This function is called just before a (non-empty) value is stored in the
         // optional. The given "emptyPayload" is currently indicating the empty state,
-        // i.e. IsEmpty(emptyPayload) returns true.
+        // i.e. is_empty(emptyPayload) returns true.
         // The function must deconstruct the flag value in "emptyPayload" which was 
-        // previously constructed by InitializeIsEmptyFlag(). After this function returns,
-        // the library constructs the payload. After that, IsEmpty() must return false.
+        // previously constructed by init_empty_flag(). After this function returns,
+        // the library constructs the payload. After that, is_empty() must return false.
         // Note: The memory pointed to by "emptyPayload" must not be freed. It is handled
         // by the library.
         emptyPayload.~IndexPair();
@@ -352,25 +352,25 @@ Side note: Forward declaring `IndexPair` and using `tiny::optional<IndexPair>` a
 The `tiny::optional_flag_manipulator` specialization needs to happen in the `tiny` namespace. So if the `IndexPair` is in a namespace (like `MyNamespace` in the example), ensure that the specialization is not in the namespace `::MyNamespace::tiny`.
 
 There are 3 functions that the specialization needs to define:
-* `IsEmpty()`: It receives a reference to the memory stored in the optional. The function must return `true` if that memory indicates that the optional is in the empty state, and false otherwise.
-* `InitializeIsEmptyFlag()`: This function receives a reference to already allocated "raw" memory, but without any "object" created in that memory. (After all, the whole point of an optional compared to e.g. a `std::unique_ptr` is to have the memory allocated statically, it never gets deleted or created after the initial creation of the optional.)
-It must initialize the given memory such that afterwards `IsEmpty()` returns true.
+* `is_empty()`: It receives a reference to the memory stored in the optional. The function must return `true` if that memory indicates that the optional is in the empty state, and false otherwise.
+* `init_empty_flag()`: This function receives a reference to already allocated "raw" memory, but without any "object" created in that memory. (After all, the whole point of an optional compared to e.g. a `std::unique_ptr` is to have the memory allocated statically, it never gets deleted or created after the initial creation of the optional.)
+It must initialize the given memory such that afterwards `is_empty()` returns true.
 In this example, we simply construct a complete `IndexPair` in the given memory via [placement new](https://en.cppreference.com/w/cpp/language/new). Roughly speaking, this is just like the ordinary `operator new` except that it does not perform dynamic memory allocation and instead constructs the object in the given memory.
 Afterwards, we set both indices to `-1`, which we **define** to indicate the empty state.
-* `PrepareIsEmptyFlagForPayload()`: This function must destroy the object that was created in `InitializeIsEmptyFlag()`, but it must not free the associated memory! (As noted before, the whole point of an optional is to have the memory allocated statically and bound to the lifetime of the optional.) In C++ this means to call the destructor manually.
+* `invalidate_empty_flag()`: This function must destroy the object that was created in `init_empty_flag()`, but it must not free the associated memory! (As noted before, the whole point of an optional is to have the memory allocated statically and bound to the lifetime of the optional.) In C++ this means to call the destructor manually.
 
 
 In other words, the tasks of the 3 functions are:
-* `IsEmpty()` must decide whether the current state represents the empty state.
-* `InitializeIsEmptyFlag()` has 2 tasks: First, it must create an object that is used for the emptiness flag, and second it must set the value of that created emptiness flag so that the optional is seen as empty.
-* `PrepareIsEmptyFlagForPayload()` must destroy the emptiness flag that was created by `InitializeIsEmptyFlag()`.
+* `is_empty()` must decide whether the current state represents the empty state.
+* `init_empty_flag()` has 2 tasks: First, it must create an object that is used for the emptiness flag, and second it must set the value of that created emptiness flag so that the optional is seen as empty.
+* `invalidate_empty_flag()` must destroy the emptiness flag that was created by `init_empty_flag()`.
 
 All three functions must be `noexcept`. 
 This is necessary to satisfy the same exception guarantees as `std::optional`. Setting the optional into the empty state should always be possible. 
-If exceptions could be thrown from `InitializeIsEmptyFlag()`, the optional could be left in a weird in-between state. (So, requiring  `noexcept` avoids complications such as [`std::variant::valueless_by_exception`](https://en.cppreference.com/w/cpp/utility/variant/valueless_by_exception).)
-Especially note that the constructor that you usually call in `InitializeIsEmptyFlag()` must therefore not throw exceptions.
+If exceptions could be thrown from `init_empty_flag()`, the optional could be left in a weird in-between state. (So, requiring  `noexcept` avoids complications such as [`std::variant::valueless_by_exception`](https://en.cppreference.com/w/cpp/utility/variant/valueless_by_exception).)
+Especially note that the constructor that you usually call in `init_empty_flag()` must therefore not throw exceptions.
 
-The above example used the whole memory given in `InitializeIsEmptyFlag()` to initialize a full instance of the payload.
+The above example used the whole memory given in `init_empty_flag()` to initialize a full instance of the payload.
 We just defined that a specific state of the full payload is to be handled as invalid.
 In principle, one can also use just a part of the memory, e.g. the part where `IndexPair::mIndex2` is located, and to not initialize all the other members.
 This works in practice but it is actually undefined behavior.
@@ -473,21 +473,21 @@ Instead you can use `tiny::optional_inplace<Iterator, FlagManipulator>` with a c
 ```C++
 struct FlagManipulator
 {
-    static bool IsEmpty(Iterator const & iter) noexcept
+    static bool is_empty(Iterator const & iter) noexcept
     {
         return !iter.IsValid();
     }
 
-    static void InitializeIsEmptyFlag(Iterator & uninitializedIteratorMemory) noexcept
+    static void init_empty_flag(Iterator & uninitializedIteratorMemory) noexcept
     {
         // Placement new because memory is already allocated.
         // Default constructor of Iterator will set mIsValid=false.
         ::new (&uninitializedIteratorMemory) Iterator();
     }
 
-    static void PrepareIsEmptyFlagForPayload(Iterator & emptyIterator) noexcept
+    static void invalidate_empty_flag(Iterator & emptyIterator) noexcept
     {
-        // Deconstruct the iterator constructed in InitializeIsEmptyFlag().
+        // Deconstruct the iterator constructed in init_empty_flag().
         // The memory itself will be handled by the library.
         // After this function returns, the library will construct the new valid iterator.
         // That the new iterator will always have IsValid()==true was one of the basic

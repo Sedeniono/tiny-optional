@@ -173,17 +173,17 @@ struct optional_flag_manipulator : impl::NoCustomInplaceFlagManipulator
 template <class PayloadType, auto SentinelValue>
 struct sentinel_flag_manipulator
 {
-  static bool IsEmpty(PayloadType const & payload) noexcept
+  static bool is_empty(PayloadType const & payload) noexcept
   {
     return payload == SentinelValue;
   }
 
-  static void InitializeIsEmptyFlag(PayloadType & uninitializedPayloadMemory) noexcept
+  static void init_empty_flag(PayloadType & uninitializedPayloadMemory) noexcept
   {
     ::new (&uninitializedPayloadMemory) PayloadType(SentinelValue);
   }
 
-  static void PrepareIsEmptyFlagForPayload(PayloadType & emptyPayload) noexcept
+  static void invalidate_empty_flag(PayloadType & emptyPayload) noexcept
   {
     emptyPayload.~PayloadType();
   }
@@ -581,19 +581,23 @@ namespace impl
    * The FlagManipulator concept provides functions to initialize, destroy and query
    * a given 'IsEmpty'-flag. Functions:
    *
-   * - InitializeIsEmptyFlag(): This function receives the address of the already allocated
+   * - init_empty_flag(): This function receives the address of the already allocated
    *   memory that should contain the 'IsEmpty'-flag. The function must initialize this memory
    *   such that the flag indicates an empty state.
    *
-   * - PrepareIsEmptyFlagForPayload(): This function receives the flag (which currently indicates
-   *   the empty state, i.e. IsEmpty() returns true for it). The function is called just before
+   * - invalidate_empty_flag(): This function receives the flag (which currently indicates
+   *   the empty state, i.e. is_empty() returns true for it). The function is called just before
    *   the payload is constructed. It must deconstruct the value such that after the payload
    *   has been constructed the 'IsEmpty'-flag must indicate that some value is set.
    *   Note: It must NOT free the memory!
    *
-   * - IsEmpty(): This function receives a const-ref to the flag and must return 'true' if it
+   * - is_empty(): This function receives a const-ref to the flag and must return 'true' if it
    *   indicates that the optional contains no value, and 'false' if it indicates that some
    *   value is set.
+   * 
+   * We are using snake_case for the function names since users of the library might need to use 
+   * the concept (via tiny::optional_flag_manipulator or optional_inplace), and the whole public
+   * interface of the library uses snake_case (because std::optional does).
    */
 
 
@@ -601,22 +605,23 @@ namespace impl
   // stored in a separate bool variable (via SeparateFlagStorage).
   struct SeparateFlagManipulator
   {
-    [[nodiscard]] static bool IsEmpty(bool isEmptyFlag) noexcept
+    [[nodiscard]] static bool is_empty(bool isEmptyFlag) noexcept
     {
       return isEmptyFlag;
     }
 
-    static void InitializeIsEmptyFlag(bool & uninitializedIsEmptyFlagMemory) noexcept
+    static void init_empty_flag(bool & isEmptyFlag) noexcept
     {
       // Using placement new would be wrong here: The constructor of SeparateFlagStorage already pops the bool object
-      // into existence (but with an indeterminate value).
-      uninitializedIsEmptyFlagMemory = true;
+      // into existence (but with an indeterminate value). Also, invalidate_empty_flag() does not destroy the
+      // bool. So all we have to do is to set the value.
+      isEmptyFlag = true;
     }
 
-    static void PrepareIsEmptyFlagForPayload(bool & isEmptyFlag) noexcept
+    static void invalidate_empty_flag(bool & isEmptyFlag) noexcept
     {
-      // We do not destruct the bool object, since we continue to query it. Its lifetime extends until the destruction
-      // of the optional.
+      // We do not destruct the bool object, since SeparateFlagStorage::isEmptyFlag should remain valid during the whole
+      // lifetime of the optional. That is the whole point of the SeparateFlagStorage.
       isEmptyFlag = false;
     }
   };
@@ -647,7 +652,7 @@ namespace impl
     static_assert(std::is_trivial_v<FlagType>);
 
   public:
-    [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
+    [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
       return std::memcmp(
@@ -657,7 +662,7 @@ namespace impl
              == 0;
     }
 
-    static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
+    static void init_empty_flag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
     {
       // Similar to placement new, memcpy pops the flag object into existence:
       // https://en.cppreference.com/w/cpp/string/byte/memcpy
@@ -669,11 +674,11 @@ namespace impl
           sizeof(valueToIndicateEmpty));
     }
 
-    static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
+    static void invalidate_empty_flag(FlagType & isEmptyFlag) noexcept
     {
       // Destroy the flag object. In cases such as a simple 'double', this does not really translate to any
       // instructions. But it ensures that we formally destroy the object that was previously created in
-      // InitializeIsEmptyFlag(). By design, the payload that will be constructed will overlap with the flag memory and
+      // init_empty_flag(). By design, the payload that will be constructed will overlap with the flag memory and
       // assign a value that can never be equal to valueToIndicateEmpty.
       isEmptyFlag.~FlagType();
     }
@@ -736,9 +741,9 @@ namespace impl
 
 
   public:
-    [[nodiscard]] static bool IsEmpty(FlagType const & isEmptyFlag) noexcept
+    [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
-      // static_assert: Because tiny::optional requires IsEmpty() to be noexcept; otherwise, it could not give the same
+      // static_assert: Because tiny::optional requires is_empty() to be noexcept; otherwise, it could not give the same
       // noexcept guarantees as std::optional.
       static_assert(
           noexcept(isEmptyFlag == valueToIndicateEmpty),
@@ -750,9 +755,9 @@ namespace impl
       return isEmptyFlag == valueToIndicateEmpty;
     }
 
-    static void InitializeIsEmptyFlag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
+    static void init_empty_flag(FlagType & uninitializedIsEmptyFlagMemory) noexcept
     {
-      // static_assert: Because tiny::optional requires InitializeIsEmptyFlag() to be noexcept; otherwise, it could not
+      // static_assert: Because tiny::optional requires init_empty_flag() to be noexcept; otherwise, it could not
       // give the same noexcept guarantees as std::optional.
       static_assert(
           noexcept(*const_cast<std::remove_cv_t<FlagType> *>(&uninitializedIsEmptyFlagMemory) = valueToIndicateEmpty),
@@ -762,9 +767,9 @@ namespace impl
           FlagType(valueToIndicateEmpty);
     }
 
-    static void PrepareIsEmptyFlagForPayload(FlagType & isEmptyFlag) noexcept
+    static void invalidate_empty_flag(FlagType & isEmptyFlag) noexcept
     {
-      // Destroy the object that was previously created in InitializeIsEmptyFlag() (but do not free the
+      // Destroy the object that was previously created in init_empty_flag() (but do not free the
       // associated memory!).
       isEmptyFlag.~FlagType();
     }
@@ -832,7 +837,7 @@ namespace impl
 
     // The various helper functions must be noexcept so that we can get the same noexcept specification
     // as for std::optional.
-    // Especially FlagManipulator::InitializeIsEmptyFlag() must be noexcept because otherwise an optional could be
+    // Especially FlagManipulator::init_empty_flag() must be noexcept because otherwise an optional could be
     // left in a weird uninitialized state. I.e. setting the IsEmpty-flag must always be possible. Also, various
     // noexcept specifications of member functions would be more complex.
     static_assert(
@@ -842,14 +847,14 @@ namespace impl
         noexcept(StoredTypeDecomposition::GetPayload(std::declval<StoredType &>())),
         "StoredTypeDecomposition::GetPayload() must be noexcept");
     static_assert(
-        noexcept(FlagManipulator::IsEmpty(std::declval<FlagType const &>())),
-        "FlagManipulator::IsEmpty() must be noexcept");
+        noexcept(FlagManipulator::is_empty(std::declval<FlagType const &>())),
+        "FlagManipulator::is_empty() must be noexcept");
     static_assert(
-        noexcept(FlagManipulator::InitializeIsEmptyFlag(std::declval<FlagType &>())),
-        "FlagManipulator::InitializeIsEmptyFlag() must be noexcept");
+        noexcept(FlagManipulator::init_empty_flag(std::declval<FlagType &>())),
+        "FlagManipulator::init_empty_flag() must be noexcept");
     static_assert(
-        noexcept(FlagManipulator::PrepareIsEmptyFlagForPayload(std::declval<FlagType &>())),
-        "FlagManipulator::PrepareIsEmptyFlagForPayload() must be noexcept");
+        noexcept(FlagManipulator::invalidate_empty_flag(std::declval<FlagType &>())),
+        "FlagManipulator::invalidate_empty_flag() must be noexcept");
 
     static_assert(
         !std::is_same_v<std::remove_cv_t<PayloadType>, std::nullopt_t>,
@@ -863,23 +868,23 @@ namespace impl
 
     StorageBase() noexcept
     {
-      FlagManipulator::InitializeIsEmptyFlag(GetIsEmptyFlag());
+      FlagManipulator::init_empty_flag(GetIsEmptyFlag());
       assert(!has_value());
     }
 
     template <class... ArgsT>
     explicit StorageBase(std::in_place_t, ArgsT &&... args)
     {
-      // Initialize the IsEmpty flag first since PrepareIsEmptyFlagForPayload() might depend on it.
-      FlagManipulator::InitializeIsEmptyFlag(GetIsEmptyFlag());
+      // Initialize the IsEmpty flag first since invalidate_empty_flag() might depend on it.
+      FlagManipulator::init_empty_flag(GetIsEmptyFlag());
       ConstructPayload(std::forward<ArgsT>(args)...);
     }
 
     template <class FuncT, class ArgT>
     StorageBase(DirectInitializationFromFunctionTag, FuncT && func, ArgT && arg)
     {
-      // Initialize the IsEmpty flag first since PrepareIsEmptyFlagForPayload() might depend on it.
-      FlagManipulator::InitializeIsEmptyFlag(GetIsEmptyFlag());
+      // Initialize the IsEmpty flag first since invalidate_empty_flag() might depend on it.
+      FlagManipulator::init_empty_flag(GetIsEmptyFlag());
       ConstructPayloadFromFunction(std::forward<FuncT>(func), std::forward<ArgT>(arg));
     }
 
@@ -901,7 +906,7 @@ namespace impl
 
     [[nodiscard]] bool has_value() const noexcept
     {
-      return !FlagManipulator::IsEmpty(GetIsEmptyFlag());
+      return !FlagManipulator::is_empty(GetIsEmptyFlag());
     }
 
     [[nodiscard]] FlagType & GetIsEmptyFlag() noexcept
@@ -940,7 +945,7 @@ namespace impl
       ~InitializeIsEmptyFlagScope()
       {
         if (!doNotInitialize) {
-          FlagManipulator::InitializeIsEmptyFlag(opt.GetIsEmptyFlag());
+          FlagManipulator::init_empty_flag(opt.GetIsEmptyFlag());
         }
       }
 
@@ -959,7 +964,7 @@ namespace impl
       // Regarding the volatile casts: https://stackoverflow.com/q/63325244/3740047
 
       assert(!has_value());
-      FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
+      FlagManipulator::invalidate_empty_flag(GetIsEmptyFlag());
 
       // clang-tidy apparently does not correctly see placement news, resulting in false positive warnings. So suppress
       // the warning.
@@ -994,7 +999,7 @@ namespace impl
         std::is_nothrow_constructible_v<PayloadType, std::invoke_result_t<FuncT, ArgT>>)
     {
       assert(!has_value());
-      FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
+      FlagManipulator::invalidate_empty_flag(GetIsEmptyFlag());
 
       // clang-tidy apparently does not correctly see placement news, resulting in false positive warnings. So suppress
       // the warning.
@@ -1046,7 +1051,7 @@ namespace impl
     {
       if (has_value()) {
         this->DestroyPayload();
-        FlagManipulator::InitializeIsEmptyFlag(GetIsEmptyFlag());
+        FlagManipulator::init_empty_flag(GetIsEmptyFlag());
         assert(!has_value());
       }
     }

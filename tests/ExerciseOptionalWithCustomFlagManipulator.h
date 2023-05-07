@@ -29,18 +29,18 @@ struct ClassInHeader
 template <class T>
 struct tiny::optional_flag_manipulator<ClassInHeader<T>>
 {
-  static bool IsEmpty(ClassInHeader<T> const & payload) noexcept
+  static bool is_empty(ClassInHeader<T> const & payload) noexcept
   {
     return payload.isEmpty;
   }
 
-  static void InitializeIsEmptyFlag(ClassInHeader<T> & uninitializedPayloadMemory) noexcept
+  static void init_empty_flag(ClassInHeader<T> & uninitializedPayloadMemory) noexcept
   {
     ::new (&uninitializedPayloadMemory) ClassInHeader<T>();
     uninitializedPayloadMemory.isEmpty = true;
   }
 
-  static void PrepareIsEmptyFlagForPayload(ClassInHeader<T> & emptyPayload) noexcept
+  static void invalidate_empty_flag(ClassInHeader<T> & emptyPayload) noexcept
   {
     emptyPayload.~ClassInHeader();
   }

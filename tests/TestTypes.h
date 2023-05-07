@@ -70,18 +70,18 @@ struct hash<TestClass>
 
 struct FlagManipulatorForTestClass
 {
-  [[nodiscard]] static bool IsEmpty(TestClass const & flag) noexcept
+  [[nodiscard]] static bool is_empty(TestClass const & flag) noexcept
   {
     return !flag.IsValid();
   }
 
-  static void InitializeIsEmptyFlag(TestClass & uninitializedFlagMemory) noexcept
+  static void init_empty_flag(TestClass & uninitializedFlagMemory) noexcept
   {
     // Placement new because memory is already allocated.
     ::new (&uninitializedFlagMemory) TestClass();
   }
 
-  static void PrepareIsEmptyFlagForPayload(TestClass & emptyFlag) noexcept
+  static void invalidate_empty_flag(TestClass & emptyFlag) noexcept
   {
     // Freeing memory is handled by the TinyOptional implementation.
     emptyFlag.~TestClass();

@@ -52,17 +52,17 @@ inline const std::string CLASS1_SENTINEL = "SENTINEL";
 template <>
 struct tiny::optional_flag_manipulator<Test::Class1>
 {
-  static bool IsEmpty(Test::Class1 const & payload) noexcept
+  static bool is_empty(Test::Class1 const & payload) noexcept
   {
     return payload.someString == CLASS1_SENTINEL;
   }
 
-  static void InitializeIsEmptyFlag(Test::Class1 & uninitializedPayloadMemory) noexcept
+  static void init_empty_flag(Test::Class1 & uninitializedPayloadMemory) noexcept
   {
     ::new (&uninitializedPayloadMemory) Test::Class1(CLASS1_SENTINEL);
   }
 
-  static void PrepareIsEmptyFlagForPayload(Test::Class1 & emptyPayload) noexcept
+  static void invalidate_empty_flag(Test::Class1 & emptyPayload) noexcept
   {
     emptyPayload.~Class1();
   }
@@ -128,18 +128,18 @@ struct OuterClass
 template <>
 struct tiny::optional_flag_manipulator<OuterClass::NestedClass>
 {
-  static bool IsEmpty(OuterClass::NestedClass const & payload) noexcept
+  static bool is_empty(OuterClass::NestedClass const & payload) noexcept
   {
     return payload.isEmpty;
   }
 
-  static void InitializeIsEmptyFlag(OuterClass::NestedClass & uninitializedPayloadMemory) noexcept
+  static void init_empty_flag(OuterClass::NestedClass & uninitializedPayloadMemory) noexcept
   {
     ::new (&uninitializedPayloadMemory) OuterClass::NestedClass();
     uninitializedPayloadMemory.isEmpty = true;
   }
 
-  static void PrepareIsEmptyFlagForPayload(OuterClass::NestedClass & emptyPayload) noexcept
+  static void invalidate_empty_flag(OuterClass::NestedClass & emptyPayload) noexcept
   {
     emptyPayload.~NestedClass();
   }
@@ -184,17 +184,17 @@ struct OutermostClass
 template <>
 struct tiny::optional_flag_manipulator<OutermostClass>
 {
-  static bool IsEmpty(OutermostClass const & payload) noexcept
+  static bool is_empty(OutermostClass const & payload) noexcept
   {
     return payload.outerClass.nestedClass.isEmpty;
   }
 
-  static void InitializeIsEmptyFlag(OutermostClass & uninitializedPayloadMemory) noexcept
+  static void init_empty_flag(OutermostClass & uninitializedPayloadMemory) noexcept
   {
     ::new (&uninitializedPayloadMemory.outerClass.nestedClass.isEmpty) bool(true);
   }
 
-  static void PrepareIsEmptyFlagForPayload(OutermostClass & /*emptyPayload*/) noexcept { }
+  static void invalidate_empty_flag(OutermostClass & /*emptyPayload*/) noexcept { }
 };
 
 
@@ -268,17 +268,17 @@ struct tiny::optional_flag_manipulator<
     SpecialEnumType,
     std::enable_if_t<std::is_same_v<SpecialEnumType, SpecialEnum1> || std::is_same_v<SpecialEnumType, SpecialEnum2>>>
 {
-  static bool IsEmpty(SpecialEnumType const & payload) noexcept
+  static bool is_empty(SpecialEnumType const & payload) noexcept
   {
     return static_cast<int>(payload) == -1;
   }
 
-  static void InitializeIsEmptyFlag(SpecialEnumType & uninitializedPayloadMemory) noexcept
+  static void init_empty_flag(SpecialEnumType & uninitializedPayloadMemory) noexcept
   {
     ::new (&uninitializedPayloadMemory) SpecialEnumType(static_cast<SpecialEnumType>(-1));
   }
 
-  static void PrepareIsEmptyFlagForPayload(SpecialEnumType & emptyPayload) noexcept
+  static void invalidate_empty_flag(SpecialEnumType & emptyPayload) noexcept
   {
     emptyPayload.~SpecialEnumType();
   }
