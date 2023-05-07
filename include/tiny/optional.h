@@ -743,6 +743,10 @@ namespace impl
       static_assert(
           noexcept(isEmptyFlag == valueToIndicateEmpty),
           "The comparison operator of the flag type must be noexcept.");
+
+      // clang-tidy apparently does not correctly see placement news, resulting in false positive warnings. So suppress
+      // the warning.
+      // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
       return isEmptyFlag == valueToIndicateEmpty;
     }
 
@@ -957,6 +961,10 @@ namespace impl
       assert(!has_value());
       FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
 
+      // clang-tidy apparently does not correctly see placement news, resulting in false positive warnings. So suppress
+      // the warning.
+      // NOLINTBEGIN(clang-analyzer-core.uninitialized.Assign)
+
       if constexpr (std::is_nothrow_constructible_v<PayloadType, ArgsT...>) {
         // Don't burden the optimizer with optimizing away the InitializeIsEmptyFlagScope if the scope is unnecessary in
         // the first place (i.e. if the construction cannot throw).
@@ -969,6 +977,8 @@ namespace impl
             PayloadType(std::forward<ArgsT>(args)...);
         initScope.doNotInitialize = true;
       }
+
+      // NOLINTEND(clang-analyzer-core.uninitialized.Assign)
 
       // For example: A tiny optional storing an int and the special value MAX_INT indicates an empty optional.
       // If you then try to put MAX_INT directly into the optional, this assert gets triggered.
@@ -986,6 +996,10 @@ namespace impl
       assert(!has_value());
       FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
 
+      // clang-tidy apparently does not correctly see placement news, resulting in false positive warnings. So suppress
+      // the warning.
+      // NOLINTBEGIN(clang-analyzer-core.uninitialized.Assign)
+
       // In analogy to ConstructPayload().
       if constexpr (std::is_nothrow_constructible_v<PayloadType, std::invoke_result_t<FuncT, ArgT>>) {
         ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
@@ -997,6 +1011,8 @@ namespace impl
             PayloadType(std::invoke(std::forward<FuncT>(func), std::forward<ArgT>(arg)));
         initScope.doNotInitialize = true;
       }
+
+      // NOLINTEND(clang-analyzer-core.uninitialized.Assign)
 
       // For example: A tiny optional storing an int and the special value MAX_INT indicates an empty optional.
       // If you then try to put MAX_INT directly into the optional, this assert gets triggered.

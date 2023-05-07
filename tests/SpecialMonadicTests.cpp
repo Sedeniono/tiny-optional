@@ -103,7 +103,7 @@ void test_SpecialTestsFor_or_else()
     ASSERT_TRUE(newOpt->at(0) == 40);
 
     // Core check: The original optional should contain an empty vector because it was moved out.
-    ASSERT_TRUE(origOpt.has_value());
+    ASSERT_TRUE(origOpt.has_value()); // NOLINT(clang-analyzer-cplusplus.Move)
     ASSERT_TRUE(origOpt->empty());
   }
   // Similar test, but with a move-only type.

@@ -259,7 +259,7 @@ void test_TinyOptionalMoveConstruction()
 
     // According to the standard, the original should still have a value.
     // But it was moved from, so the vector should be empty.
-    ASSERT_TRUE(orig.has_value());
+    ASSERT_TRUE(orig.has_value()); // NOLINT(clang-analyzer-cplusplus.Move)
     ASSERT_TRUE(orig.value().empty());
   }
 
@@ -405,7 +405,7 @@ void test_TinyOptionalMoveAssignment()
 
     // According to the standard, the original should still have a value.
     // But it was moved from, so the vector should be empty.
-    ASSERT_TRUE(orig.has_value());
+    ASSERT_TRUE(orig.has_value()); // NOLINT(clang-analyzer-cplusplus.Move)
     ASSERT_TRUE(orig.value().empty());
   }
 
@@ -553,7 +553,7 @@ void test_TinyOptionalConversions()
 
     // The following two constructions always compile, regardless if the constructor is explicit or not.
     tiny::optional<ImplicitConversion> o1(42);
-    ASSERT_TRUE(o1.value().value == 42);
+    ASSERT_TRUE(o1.value().value == 42); // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult) (false positive)
     tiny::optional<ImplicitConversion> o2{42};
     ASSERT_TRUE(o2.value().value == 42);
 
@@ -613,7 +613,7 @@ void test_MakeOptional()
     auto o = tiny::make_optional(42.0);
     static_assert(sizeof(o) == sizeof(double));
     static_assert(std::is_same_v<decltype(o)::value_type, double>);
-    ASSERT_TRUE(o.value() == 42.0);
+    ASSERT_TRUE(o.value() == 42.0); // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult) (false positive)
   }
   {
     auto o = tiny::make_optional(42);

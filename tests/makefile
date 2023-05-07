@@ -23,7 +23,11 @@ CXX_AND_RUN_COMMAND = \
 # clang
 #---------------------------------------------------------------------
 
+clang_tidy: $(CPP_FILES)
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -stdlib=libc++ -O3)
+	clang-tidy $(CPP_FILES) -checks=clang-analyzer-* -- -I"$(TINY_OPTIONAL_INCLUDE_DIR)" $(ADDITIONAL_FLAGS) $(WARNING_FLAGS) $(SANITIZE_FLAGS) -pthread -DTINY_OPTIONAL_TESTS_COMPILER_EXECUTABLE='"$(CXX)"' -DTINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR='"$(TINY_OPTIONAL_INCLUDE_DIR)"' -DTINY_OPTIONAL_TESTS_COMPILATION_FLAGS='"$(ADDITIONAL_FLAGS) $(WARNING_FLAGS)"'
 	
+
 clang_x64_cpp17_libcpp_debug: $(CPP_FILES)
 	$(eval CXX = $(CXX_CLANG))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -stdlib=libc++)
