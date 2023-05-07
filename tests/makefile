@@ -97,6 +97,11 @@ gcc_x86_cpp17_debug: $(CPP_FILES)
 	$(eval ADDITIONAL_FLAGS = -m32 -std=c++17)
 	$(CXX_AND_RUN_COMMAND)
 
+gcc_x86_cpp17_release: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m32 -std=c++17 -O3 -DNDEBUG)
+	$(CXX_AND_RUN_COMMAND)
+
 gcc_x64_cpp20_release: $(CPP_FILES)
 	$(eval CXX = $(CXX_GCC))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -O3 -DNDEBUG)

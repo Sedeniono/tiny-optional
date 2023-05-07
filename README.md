@@ -166,6 +166,12 @@ Moreover, all members for which a specialization of `tiny::optional_flag_manipul
 
 Additionally, there is the option to use a sentinel value for the empty state and instruct the library to store it in one of the members. The sentinel value is specified as the third template parameter. For example, if you know that `Data::var1` can never be negative, you can instruct the library to use the value `-1` as sentinel: `tiny::optional<Data, &Data::var1, -1>`. Again the resulting `tiny::optional` will not require additional memory compared to a plain `Data`.
 
+Note: When storing the flag in a member variable, gcc with optimizations turned on likes to warn about possible uninitialized accesses (`-Wmaybe-uninitialized`).
+These are false positives.
+gcc fails to figure out that certain branches that would lead to access of uninitialized memory cannot occur because these branches are protected by `has_value()` calls.
+Unfortunately, gcc sometimes still attributes the warnings to a location in the user code rather than the library, so although the library actually by itself disables the warning locally (in the `tiny/optional.h` header file), it might still occur.
+In fact, even the standard stdlibc++ implementation of [`std::optional` at least until gcc 13 can trigger this warning](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635#c69).
+If it happens to you, I suggest to [disable the warning locally](https://stackoverflow.com/a/26003732/3740047).
 
 ## The full signature of `tiny::optional`
 Given the explanations above, the full signature of `tiny::optional` is:

@@ -80,6 +80,14 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #define TINY_OPTIONAL_ENABLE_ORELSE
 #endif
 
+#if defined(__GNUG__) && !defined(__clang__)
+// Disable incorrect warning for gcc that occurs in release builds. It sometimes fails to realize that certain branches
+// (such as calls to DestroyPayload()) are protected by a has_value() check, and thus cannot actually perform any
+// uninitialized access. In fact, this warning is notorious for producing false positives, and can even be triggered 
+// for std::optional (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635#c69) at least until gcc 13.
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 // Forward declaration of optional_flag_manipulator, which is a user customization point.
 // Reason for the #ifndef: Only the **first** declaration can specify the default values for the template parameters.
@@ -914,18 +922,7 @@ namespace impl
 
     void DestroyPayload() noexcept
     {
-#if defined(__GNUG__) && !defined(__clang__)
-      // Disable incorrect warning for gcc. It sometimes fails to realize that every DestroyPayload() call is protected
-      // by an has_value() check.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
       GetPayload().~PayloadType();
-
-#if defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC diagnostic pop
-#endif
     }
 
 
@@ -960,12 +957,6 @@ namespace impl
       assert(!has_value());
       FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
 
-#if defined(__GNUG__) && !defined(__clang__)
-      // Disable incorrect warning for gcc.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
       if constexpr (std::is_nothrow_constructible_v<PayloadType, ArgsT...>) {
         // Don't burden the optimizer with optimizing away the InitializeIsEmptyFlagScope if the scope is unnecessary in
         // the first place (i.e. if the construction cannot throw).
@@ -978,10 +969,6 @@ namespace impl
             PayloadType(std::forward<ArgsT>(args)...);
         initScope.doNotInitialize = true;
       }
-
-#if defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC diagnostic pop
-#endif
 
       // For example: A tiny optional storing an int and the special value MAX_INT indicates an empty optional.
       // If you then try to put MAX_INT directly into the optional, this assert gets triggered.
@@ -999,12 +986,6 @@ namespace impl
       assert(!has_value());
       FlagManipulator::PrepareIsEmptyFlagForPayload(GetIsEmptyFlag());
 
-#if defined(__GNUG__) && !defined(__clang__)
-      // Disable incorrect warning for gcc.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
       // In analogy to ConstructPayload().
       if constexpr (std::is_nothrow_constructible_v<PayloadType, std::invoke_result_t<FuncT, ArgT>>) {
         ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
@@ -1016,10 +997,6 @@ namespace impl
             PayloadType(std::invoke(std::forward<FuncT>(func), std::forward<ArgT>(arg)));
         initScope.doNotInitialize = true;
       }
-
-#if defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC diagnostic pop
-#endif
 
       // For example: A tiny optional storing an int and the special value MAX_INT indicates an empty optional.
       // If you then try to put MAX_INT directly into the optional, this assert gets triggered.
@@ -1033,12 +1010,6 @@ namespace impl
     template <class T>
     void AssignValue(T && v)
     {
-#if defined(__GNUG__) && !defined(__clang__)
-      // Disable incorrect warning for gcc.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
       if (has_value()) {
         GetPayload() = std::forward<T>(v);
       }
@@ -1046,9 +1017,6 @@ namespace impl
         ConstructPayload(std::forward<T>(v));
       }
 
-#if defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC diagnostic pop
-#endif
       // For example: A tiny optional storing an int and the special value MAX_INT indicates an empty optional.
       // If you then try to put MAX_INT directly into the optional, this assert gets triggered.
       // You must use reset() instead. Otherwise, we could run into inconsistencies with FlagManipulator.
@@ -1551,15 +1519,7 @@ namespace impl
           "PayloadType must be copy constructible for value_or().");
       static_assert(std::is_convertible_v<U, PayloadType>, "U must be convertible to PayloadType for value_or().");
 
-#if defined(__GNUG__) && !defined(__clang__)
-      // Disable incorrect warning for gcc.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
       return has_value() ? GetPayload() : static_cast<std::remove_cv_t<PayloadType>>(std::forward<U>(defaultValue));
-#if defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC diagnostic pop
-#endif
     }
 
     template <class U>
@@ -1570,16 +1530,8 @@ namespace impl
           "PayloadType must be move constructible for value_or().");
       static_assert(std::is_convertible_v<U, PayloadType>, "U must be convertible to PayloadType for value_or().");
 
-#if defined(__GNUG__) && !defined(__clang__)
-      // Disable incorrect warning for gcc.
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
       return has_value() ? std::move(GetPayload())
                          : static_cast<std::remove_cv_t<PayloadType>>(std::forward<U>(defaultValue));
-#if defined(__GNUG__) && !defined(__clang__)
-  #pragma GCC diagnostic pop
-#endif
     }
 
 
@@ -2700,3 +2652,8 @@ struct hash<
 // clang-format on
 
 } // namespace std
+
+#if defined(__GNUG__) && !defined(__clang__)
+  // Pop "-Wmaybe-uninitialized"
+  #pragma GCC diagnostic pop
+#endif
