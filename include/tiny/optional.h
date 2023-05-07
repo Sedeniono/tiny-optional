@@ -2194,7 +2194,7 @@ namespace impl
   {
     static_assert(
         always_false<PayloadType>,
-        "optional_aip: No automatic sentinel for the PayloadType available. You need to specify one manually, e.g. optional_aip<char, 0>.");
+        "optional_aip: No automatic sentinel for the PayloadType available. You need to specify one manually, e.g. optional_aip<char, 0>, or specialize tiny::optional_flag_manipulator.");
   };
 
 
@@ -2204,7 +2204,7 @@ namespace impl
   // the user should really specify the desired sentinel manually.
   // Also note that we do not use std::numeric_limits as a small compile time optimization: Using the C-constants does
   // not require the compiler to instantiate any templates.
-  template <class PayloadType> // Default case: Unknown type. Cause a compilation error.
+  template <class PayloadType> // Default case: Unknown type. Cause a compilation error via the above static_assert.
   inline constexpr auto SwallowingDefaultSentinel = MissingSentinel<PayloadType>::value;
 
   template <>
@@ -2226,11 +2226,12 @@ namespace impl
   inline constexpr auto SwallowingDefaultSentinel<signed long long> = LLONG_MIN;
 
 
-  // Case when the payload type has unused bits. In this case we rely on tiny::optional exploiting the unused bits.
-  template <class PayloadType, bool hasUnusedBits = HasCustomInplaceFlagManipulator<PayloadType>>
+  // Case when the payload type has a custom flag manipulator (e.g. one that exploits unused bits). In this case we rely
+  // on tiny::optional.
+  template <class PayloadType, bool hasFlagManip = HasCustomInplaceFlagManipulator<PayloadType>>
   inline constexpr auto SelectSentinelValueWithSwallowing = UseDefaultValue;
-  // Case when the payload type does not have unused bits. Attempt to select some sensible default sentinel, or cause a
-  // compilation error if this is not possible.
+  // Case when the payload type does not have a custom flag manipulator. Attempt to select some sensible default
+  // sentinel, or cause a compilation error if this is not possible.
   template <class PayloadType>
   inline constexpr auto SelectSentinelValueWithSwallowing<PayloadType, false>
       = SwallowingDefaultSentinel<std::remove_cv_t<PayloadType>>;
@@ -2240,7 +2241,7 @@ namespace impl
 
 // optional "always in-place": Similar to tiny::optional, but:
 // - Uses some default sentinels for most integers
-// - Types with unused bits are still exploited
+// - Types with unused bits or custom flag manipulators are still exploited
 // - If no sentinel is chosen automatically, it causes a compilation error.
 // Hence, this type is guaranteed to have the same size as the payload type.
 template <class PayloadType, auto sentinelValue = impl::SelectSentinelValueWithSwallowing<PayloadType>>

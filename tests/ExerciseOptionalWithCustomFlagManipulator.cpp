@@ -393,6 +393,12 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
     ASSERT_TRUE(opt2->someString != nullptr);
     ASSERT_TRUE(opt1->someString == *opt2->someString);
   }
+
+  // Test that tiny::optional_aip picks up the tiny::optional_flag_manipulator specialization and uses it. If it did
+  // not, we would get a compilation error here.
+  {
+    EXERCISE_OPTIONAL((tiny::optional_aip<Test::Class1>{}), EXPECT_INPLACE, Test::Class1{"val1"}, Test::Class1{"val2"});
+  }
 }
 
 #if defined(__GNUG__) && !defined(__clang__)
