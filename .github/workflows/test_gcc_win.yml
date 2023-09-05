@@ -21,7 +21,7 @@ jobs:
         buildmode: [-O2,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
 
     runs-on: windows-2022
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     defaults:
       run:
