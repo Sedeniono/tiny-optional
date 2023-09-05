@@ -23,6 +23,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install clang
+      uses: KyleMayes/install-llvm-action@v1.8.3
+      with:
+        version: "16"
     - name: Build and run tests
       working-directory: ${{env.TEST_DIR}}
       env:
