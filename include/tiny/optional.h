@@ -1101,6 +1101,10 @@ namespace impl
       else {
         assert(!this->has_value());
       }
+
+      // The C++ standard requires the moved-from optional to be non-empty if it was non-empty before.
+      // Also, we might run into problems with deallocations if an optional becomes empty 'magically'.
+      assert(this->has_value() == rhs.has_value());
     }
   };
 
@@ -1154,6 +1158,7 @@ namespace impl
       else {
         assert(!this->has_value());
       }
+      assert(this->has_value() == rhs.has_value());
     }
   };
 
@@ -1209,7 +1214,10 @@ namespace impl
         this->reset();
       }
 
+      // The C++ standard requires the moved-from optional to be non-empty if it was non-empty before.
+      // Also, we might run into problems with deallocations if an optional becomes empty 'magically'.
       assert(this->has_value() == rhs.has_value());
+
       return *this;
     }
   };

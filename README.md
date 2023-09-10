@@ -24,6 +24,8 @@
   - [Teaching `tiny::optional` about custom types (`tiny::optional_flag_manipulator`)](#teaching-tinyoptional-about-custom-types-tinyoptional_flag_manipulator)
     - [Introduction](#introduction-1)
     - [Example](#example)
+    - [Details](#details)
+    - [Storing the empty flag in only part of the payload](#storing-the-empty-flag-in-only-part-of-the-payload)
     - [Enumerations](#enumerations)
     - [Types that you have not authored](#types-that-you-have-not-authored)
 - [Performance results](#performance-results)
@@ -254,12 +256,12 @@ The type has been suggested in [this issue](https://github.com/Sedeniono/tiny-op
 ### Introduction
 
 The library provides a customization point: By specializing `tiny::optional_flag_manipulator` for a custom type, you instruct the library to always place the emptiness flag within the payload type, and how to do that.
-The method of customization is the same as used by e.g. [`std::hash`](https://en.cppreference.com/w/cpp/utility/hash) and [`fmt::formatter`](https://fmt.dev/latest/api.html#formatting-user-defined-types).
+The method of customization by means of a specialization is the same as used by e.g. [`std::hash`](https://en.cppreference.com/w/cpp/utility/hash) and [`fmt::formatter`](https://fmt.dev/latest/api.html#formatting-user-defined-types).
 
 
 ### Example
 
-For example, assume you have some custom type `MyNamespace::IndexPair` defined as
+Assume you have some custom type `MyNamespace::IndexPair` defined as
 ```C++
 namespace MyNamespace
 {
@@ -341,6 +343,9 @@ struct tiny::optional_flag_manipulator<MyNamespace::IndexPair>
 You first need to include `<tiny/optional_flag_manipulator_fwd.h>` to make the primary `tiny::optional_flag_manipulator` template known to the compiler. 
 Additionally, the `<new>` header is required to be able to use [placement new](https://en.cppreference.com/w/cpp/language/new).
 
+
+### Details
+
 > ⚠️ It is quite crucial to place the definition of the specialization as close as possible below the definition of the payload type `IndexPair`, i.e. in the same header file:
 You need to ensure that every time an instantiation of `tiny::optional<IndexPair>` happens, the compiler sees the specialization.
 If the compiler sometimes sees it and sometimes it does not see it, [you have undefined behavior](https://stackoverflow.com/q/21112148/3740047). In practice, the result can be that it appears to work sometimes and sometimes not (see e.g. [this](https://stackoverflow.com/q/57614188/3740047) post), or that you have two `tiny::optional<IndexPair>` instances with different sizes, possibly causing access violations and other hard to track bugs because of mismatching memory layouts.
@@ -359,7 +364,6 @@ In this example, we simply construct a complete `IndexPair` in the given memory 
 Afterwards, we set both indices to `-1`, which we **define** to indicate the empty state.
 * `invalidate_empty_flag()`: This function must destroy the object that was created in `init_empty_flag()`, but it must not free the associated memory! (As noted before, the whole point of an optional is to have the memory allocated statically and bound to the lifetime of the optional.) In C++ this means to call the destructor manually.
 
-
 In other words, the tasks of the 3 functions are:
 * `is_empty()` must decide whether the current state represents the empty state.
 * `init_empty_flag()` has 2 tasks: First, it must create an object that is used for the emptiness flag, and second it must set the value of that created emptiness flag so that the optional is seen as empty.
@@ -370,10 +374,78 @@ This is necessary to satisfy the same exception guarantees as `std::optional`. S
 If exceptions could be thrown from `init_empty_flag()`, the optional could be left in a weird in-between state. (So, requiring  `noexcept` avoids complications such as [`std::variant::valueless_by_exception`](https://en.cppreference.com/w/cpp/utility/variant/valueless_by_exception).)
 Especially note that the constructor that you usually call in `init_empty_flag()` must therefore not throw exceptions.
 
-The above example used the whole memory given in `init_empty_flag()` to initialize a full instance of the payload.
-We just defined that a specific state of the full payload is to be handled as invalid.
-In principle, one can also use just a part of the memory, e.g. the part where `IndexPair::mIndex2` is located, and to not initialize all the other members.
-This works in practice but it is actually undefined behavior.
+> ⚠️ **As a guideline, ensure that the payload can transition to the state which indicates emptiness ONLY by calling `init_empty_flag()`. The empty state should not be constructable via the payload's default constructor, move constructor, move assignment operator and any other member function, except possible a single dedicated one that is used exclusively by the `init_empty_flag()` specialization.**
+>
+> Consider as a **bad** example:
+> ```C++
+> struct TypeBecomingEmptyAfterMove {
+>   std::vector<int> v;
+> };
+> 
+> template <> 
+> struct tiny::optional_flag_manipulator<TypeBecomingEmptyAfterMove> {
+>     static bool is_empty(TypeBecomingEmptyAfterMove const & payload) noexcept {
+>         return payload.v.empty();
+>     }
+> 
+>     static void init_empty_flag(
+>             TypeBecomingEmptyAfterMove & uninitializedPayloadMemory) noexcept {
+>         ::new (&uninitializedPayloadMemory) TypeBecomingEmptyAfterMove();
+>     }
+> 
+>     static void invalidate_empty_flag(
+>             TypeBecomingEmptyAfterMove & emptyPayload) noexcept {
+>         emptyPayload.~TypeBecomingEmptyAfterMove();
+>     }
+> };
+> ```
+> `tiny::optional<TypeBecomingEmptyAfterMove>` is treated as empty if `TypeBecomingEmptyAfterMove::v` is empty. Especially note that the move constructor and move assignment operator of `TypeBecomingEmptyAfterMove` empty `v`, and thus cause a transition to the empty state when stored in `tiny::optional`.
+> Now consider:
+> ```C++
+> tiny::optional<TypeBecomingEmptyAfterMove> nonEmpty(std::vector<int>{1,2,3});
+> tiny::optional<TypeBecomingEmptyAfterMove> o = std::move(nonEmpty);
+> ```
+> The `nonEmpty` optional would become empty due to the move because `nonEmpty.v` becomes empty.
+> This happens "implicitly" from the point of view of `tiny::optional` rather than explicitly via e.g. `tiny::optional::reset()`.
+> Thus, `tiny::optional` does not call the destructor of the payload `TypeBecomingEmptyAfterMove` stored in `nonEmpty` and then `init_empty_flag()` to initialize the empty flag cleanly.
+> Instead, when `nonEmpty` is destroyed in the example, it ends up calling `invalidate_empty_flag()` rather than the destructor of `TypeBecomingEmptyAfterMove`.
+> This can cause problems.
+> 
+> In theory this is happens to be fine in the example because `invalidate_empty_flag()` happens to call the destructor of `TypeBecomingEmptyAfterMove`, too.
+> Also, the move constructor and assignment operators of `tiny::optional` could detect this case and handle it properly. 
+> But for two 2 reasons, this is **not supported** at the moment:
+> * In the general case outlined in the next section this is not fine (you might want to read that section, too!).
+> * `tiny::optional` tries to follow the C++ standard (i.e. `std::optional`) as close as possible, which requires that a moved-from non-empty optional is non-empty afterwards. We could lift this restriction, of course, but for now we do not.
+> 
+> As such, calling the move constructor or move assignment operator of `tiny::optional` performs a debug `assert()` that the emptiness state of the moved-from object does not change.
+
+
+### Storing the empty flag in only part of the payload
+The above examples used the whole memory given in `init_empty_flag()` to initialize a full instance of the payload.
+We just defined that a specific state of the full payload is to be interpreted as empty state.
+In principle, one can also use just a part of the memory, e.g. the part where `IndexPair::mIndex2` is located, and to not initialize all the other members at all.
+If the other member are expensive to initialize, this can improve performance.
+This works in practice but it is actually undefined behavior according to the C++ standard.
+So use this possibility at your own risk.
+
+> ⚠️ If the `optional_flag_manipulator` specialization initializes only part of the payload, the payload's member functions really must not change the instance stored in the optional such that `tiny::optional` transitions from non-empty to empty or vice versa! As explained in the previous section, this is not supported anyway.
+> But to explain the problems, consider the `TypeBecomingEmptyAfterMove` type again, and the code:
+> ```C++
+> tiny::optional<TypeBecomingEmptyAfterMove> nonEmpty(std::vector<int>{1,2,3});
+> TypeBecomingEmptyAfterMove t = std::move(*nonEmpty);
+> ```
+> Notice that in contrast to the example from the previous section the code `TypeBecomingEmptyAfterMove t = std::move(*nonEmpty)` calls the move assignment operator of `TypeBecomingEmptyAfterMove` **directly** rather than the move assignment operator of `tiny::optional` (which would debug assert, as explained above).
+> 
+> The `nonEmpty` optional will become empty due to the move because `nonEmpty.v` becomes empty.
+> This happens "magically" from the point of view of `tiny::optional`; it happens **completely outside** of `tiny::optional`.
+> There is no way for `tiny::optional` to detect the sudden change of emptiness.
+> Thus, `tiny::optional` has no chance to make the transition "clean", even in theory.
+> So, when `nonEmpty` is destroyed in the example, it ends up calling `invalidate_empty_flag()` rather than the destructor of `TypeBecomingEmptyAfterMove`.
+> In the example this is happens to be fine because `invalidate_empty_flag()` happens to call the destructor of `TypeBecomingEmptyAfterMove`, too.
+> But if your `optional_flag_manipulator` specialization does not call the constructor and destructor of the whole payload type, you get undefined behavior (i.e. some sort of memory leak), since `tiny::optional` originally constructed the whole payload but `invalidate_empty_flag()` destroys only part of it.
+> Since there is no way to detect the problem, there is also no debug `assert()`.
+>
+> Also compare [this issue](https://github.com/Sedeniono/tiny-optional/issues/4).
 
 
 ### Enumerations
