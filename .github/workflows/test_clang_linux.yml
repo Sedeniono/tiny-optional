@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install libc++ if required
       # libc++ is not installed for all clang versions by default.

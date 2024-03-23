@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install gcc-multilib for x86 if required
       # Creating a 32 bit executable on a 64 bit OS requires the gcc multilib. 

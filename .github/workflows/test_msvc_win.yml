@@ -32,9 +32,9 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
     - name: Build
       working-directory: ${{env.TEST_DIR}}
       run: msbuild /m /p:Configuration="Msvc ${{ matrix.buildmode }} ${{ matrix.cpp_version }}" /p:Platform=${{matrix.platform}} tiny-optional.sln
