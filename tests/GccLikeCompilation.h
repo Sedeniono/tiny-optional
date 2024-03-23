@@ -21,6 +21,7 @@ protected:
 private:
   std::filesystem::path mExecutable;
   std::filesystem::path mTinyOptionalIncludeDir;
+  std::filesystem::path mTinyOptionalIncludeDirCanon;
   std::string const mCompilationFlags;
 };
 
