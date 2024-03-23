@@ -40,4 +40,5 @@ jobs:
       env:
         CXX: g++
         ADDITIONAL_FLAGS: ${{ format('-Wa,-mbig-obj  -std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
+        IS_MSYS: 1
       run: make generic
