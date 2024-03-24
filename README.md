@@ -29,6 +29,7 @@
     - [Storing the empty flag in only part of the payload](#storing-the-empty-flag-in-only-part-of-the-payload)
     - [Enumerations](#enumerations)
     - [Types that you have not authored](#types-that-you-have-not-authored)
+  - [Natvis](#natvis)
 - [Performance results](#performance-results)
   - [Runtime](#runtime)
   - [Build time](#build-time)
@@ -592,6 +593,17 @@ int main()
     //o = Iterator{};
 }
 ```
+
+
+## Natvis
+The `include` directory contains a Natvis file which improves the display of the optionals in the Visual Studio debugger considerably.
+Copy and add the Natvis file to your project, or append its content to your existing natvis file.
+See the [official Microsoft documentation](https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects) for more information on Natvis.
+
+The visualizers show in most cases whether the optional contains a value or not, and if it does, the contained value.
+However, it only shows the raw storage but does not tell you if the optional is empty or not in the following cases:
+* When storing the empty state in a member variable. The underlying issue is that Natvis receives the member pointer as an integer offset rather than a proper pointer.
+* When you specialize `tiny::optional_flag_manipulator`. It is impossible to support general specializations because Natvis does not allow to call any functions (even if they are `constexpr`). So you need to add additional visualizers for each specialization yourself.
 
 
 # Performance results

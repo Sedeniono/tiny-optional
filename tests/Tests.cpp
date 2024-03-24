@@ -8,6 +8,7 @@
 #include "ExerciseStdOptional.h"
 #include "ExerciseTinyOptionalPayload.h"
 #include "IntermediateTests.h"
+#include "NatvisTests.h"
 #include "SpecialMonadicTests.h"
 #include "TestUtilities.h"
 #include "tiny/optional.h"
@@ -26,10 +27,10 @@ void RunTests()
 #define ADD_TEST(x) {x, #x}
 
   std::vector<std::pair<void (*)(), std::string>> const tests
-      = {ADD_TEST(test_IsIntegralInRange),
+      = {ADD_TEST(test_Natvis),
+         ADD_TEST(test_IsIntegralInRange),
          ADD_TEST(test_NanExploit),
          ADD_TEST(test_SelectDecomposition),
-         ADD_TEST(test_NanExploit),
          ADD_TEST(test_TinyOptionalPayload_Bool),
          ADD_TEST(test_TinyOptionalPayload_FloatingPoint),
          ADD_TEST(test_TinyOptionalPayload_IntegersAndEnums),

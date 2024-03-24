@@ -98,7 +98,6 @@ struct Class2
 
 //====================================================================
 // Example class: OuterClass::NestedClass
-// Especially note: GetTinyOptionalInplaceFlagManipulator() is defined as friend.
 //====================================================================
 
 namespace

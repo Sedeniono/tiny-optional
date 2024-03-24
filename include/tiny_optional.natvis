@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!--Visualizer when storing the IsEmpty-Flag in a separate bool. I.e. when tiny::optional behaves just like std::optional.-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::DecompositionForSeparateFlag&lt;*&gt;, tiny::impl::SeparateFlagManipulator&gt;">
+    <DisplayString Condition="mStorage.isEmptyFlag">nullopt</DisplayString>
+    <DisplayString Condition="!mStorage.isEmptyFlag">{mStorage.payload}</DisplayString>
+    <Expand>
+      <Item Condition="!mStorage.isEmptyFlag" Name="value (not empty)">mStorage.payload</Item>
+      <Item Condition="mStorage.isEmptyFlag" Name="value (is empty)">std::nullopt</Item>
+      <Item Name="is_compressed">(*this).is_compressed</Item>
+    </Expand>
+  </Type>
+
+  <!--Helper view to reduce code duplication in case tiny::impl::InplaceStorage is used.
+  It relies on that a natvis instrinsic IsEmpty() is defined.-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;*, *&gt;" IncludeView="TinyOptionalInplaceStorageView">
+    <DisplayString Condition="IsEmpty()">nullopt</DisplayString>
+    <DisplayString Condition="!IsEmpty()">{mStorage.storage}</DisplayString>
+    <Expand>
+      <Item Condition="IsEmpty()" Name="value (is empty)">std::nullopt</Item>
+      <Item Condition="!IsEmpty()" Name="value (not empty)">mStorage.storage</Item>
+      <Item Name="is_compressed">(*this).is_compressed</Item>
+    </Expand>
+  </Type>
+  
+  <!--tiny::optional<bool>-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;bool, void&gt;&gt;">
+    <Intrinsic Name="IsEmpty" Expression="(*(unsigned char*)&amp;mStorage.storage) == 0xfe"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <!--tiny::optional<double>-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;double, void&gt;&gt;">
+    <Intrinsic Name="IsEmpty" Expression="(*(unsigned long long*)&amp;mStorage.storage) == 0x7ff8fedcba987654"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  <!--tiny::optional<float>-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;float, void&gt;&gt;">
+    <Intrinsic Name="IsEmpty" Expression="(*(unsigned int*)&amp;mStorage.storage) == 0x7fedcba9"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
+
+    <!--tiny::optional<T*> as well as types with custom specialized tiny::optional_flag_manipulator.
+  This is quite tricky: I haven't found a way to specify a visualizer for all pointer types only. Also, there is the
+  PRIORITY attribute which can be used to select another visualizer in case another one causes an error, but this is
+  actually somewhat annoying since even if another one is ok Visual Studio write an error to the debug output (if the
+  natvis error debug output is enabled in the options).
+  So instead this visualizer accepts EVERY tiny::optional_flag_manipulator<T, void>. If T is bool, float or double, 
+  the "overloads" above are used. If T is anything else, this here is used. The trick to check whether T is a pointer 
+  or not is in the definition of the IsEmpty() intrinsic: We do *&mStorage.storage, which is invalid if storage is not 
+  a pointer. Then, the condition "IsEmpty() || !IsEmpty()" is always true for a pointer and undefined for non-pointers.
+  In case of undefined, the Optional="true" comes into play.
+  Note: Using pure natvis, it is impossible to properly query the IsEmpty flag. Natvis does not allow to call functions,
+  even constexpr ones. It is afraid of potential side effects. So for custom optional_flag_manipulator specializations,
+  the best we can do is to show the raw storage.
+  -->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;*, void&gt;&gt;">
+    <Intrinsic Name="IsEmpty" Optional="true" Expression="
+               sizeof(mStorage.storage) == 4 
+               ? &amp;(*mStorage.storage) == 0xffffffff - 8
+               : &amp;(*mStorage.storage) == 0xffff800000000000ull - 1
+               "/>
+    <!--Used for pointers-->
+    <DisplayString Optional="true" Condition="IsEmpty() || !IsEmpty()">{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <!--Used for non-pointers (custom optional_flag_manipulator specializations)-->
+    <DisplayString>(Preview for custom flag manipulators not supported in natvis)</DisplayString>
+    <Expand>
+      <ExpandedItem Optional="true" Condition="IsEmpty() || !IsEmpty()">this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+      <!--Also show the raw storage, which should help for custom optional_flag_manipulator specializations.-->
+      <Item Name="Raw storage (compressed)">mStorage.storage</Item>
+    </Expand>
+  </Type>
+
+  <!--Used when a sentinel has been specified explicitly, i.e. when the 2nd template argument is a AssignmentFlagManipulator.
+  For example tiny::optional<unsigned, 999>. We cannot explicitly write AssignmentFlagManipulator because then we wouldn't be 
+  able to access valueToIndicateEmpty here in natvis.-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, *&gt;">
+    <Intrinsic Name="IsEmpty" Expression="mStorage.storage == $T2::valueToIndicateEmpty"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  
+  <!--Fall back for any other optionals: Simply display the raw storage.
+  Note: InplaceDecompositionViaMemPtr (IsEmpty flag stored in a member) also uses this. I couldn't find a
+  way to make a proper visualizer for InplaceDecompositionViaMemPtr. The template argument is a member pointer,
+  but natvis just receives the offset to the member numerically. So forming an addres of the proper type to
+  the member is not possible, I think.-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;*, *&gt;" Priority="Low">
+    <DisplayString>(Preview is not supported)</DisplayString>
+    <Expand>
+      <Item Name="Raw storage">mStorage.storage</Item>
+      <Item Name="is_compressed">(*this).is_compressed</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>
