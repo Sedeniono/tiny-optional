@@ -20,7 +20,7 @@
 // The tiny optional library implements monadic operations always, but std::optional only with C++23.
 // This template checks whether the monadic operation should be available for the given optional type.
 template <class OptionalType>
-inline constexpr bool MonadicsAvailable = tiny::impl::IsTinyOptional<OptionalType>
+inline constexpr bool MonadicsAvailable = tiny::is_tiny_optional_v<OptionalType>
                                           || (__cpp_lib_optional >= 202110L && tiny::impl::IsStdOptional<OptionalType>);
 
 
@@ -89,11 +89,17 @@ void ExerciseOptional(
     static_assert(
         sizeof(Optional) == sizeof(typename Optional::value_type),
         "Test failure: Expected the tiny::optional to be tiny, i.e. to not require additional memory.");
+    if constexpr (tiny::is_tiny_optional_v<Optional>) {
+      static_assert(Optional::is_compressed);
+    }
   }
   else {
     static_assert(
         sizeof(Optional) == sizeof(std::optional<typename Optional::value_type>),
         "Test failure: Expected the tiny::optional to be the same size as std::optional.");
+    if constexpr (tiny::is_tiny_optional_v<Optional>) {
+      static_assert(!Optional::is_compressed);
+    }
   }
 
   static_assert(noexcept(Optional{}.has_value()));

@@ -19,6 +19,7 @@
   - [Storing the empty state in a member variable](#storing-the-empty-state-in-a-member-variable)
   - [The full signature of `tiny::optional`](#the-full-signature-of-tinyoptional)
   - [Available non-member definitions](#available-non-member-definitions)
+  - [Helpers to distinguish types at compile-time (metaprogramming)](#helpers-to-distinguish-types-at-compile-time-metaprogramming)
   - [Specifying a sentinel value via a type](#specifying-a-sentinel-value-via-a-type)
   - [An optional type with automatic sentinels for integers and guarantee of in-place](#an-optional-type-with-automatic-sentinels-for-integers-and-guarantee-of-in-place)
   - [Teaching `tiny::optional` about custom types (`tiny::optional_flag_manipulator`)](#teaching-tinyoptional-about-custom-types-tinyoptional_flag_manipulator)
@@ -213,6 +214,13 @@ All the comparison operators `operator==`, `operator<=`, etc. are provided, incl
 Additionally, `std::hash` is specialized ([as for `std::optional`](https://en.cppreference.com/w/cpp/utility/optional/hash)) for the optional types defined by this library.
 
 An appropriate deduction guide is also defined, allowing to write e.g. `tiny::optional{42}` to construct a `tiny::optional<int>{42}`. Note that this does not allow you to specify a sentinel.
+
+
+## Helpers to distinguish types at compile-time (metaprogramming)
+There are a few helpers available which facilitate checks at compile-time:
+* `tiny::optional<T>::is_compressed` is true if the optional has the same size as the payload `T`, and false otherwise. It is also defined for all other optional types defined by this library.
+* `tiny::is_tiny_optional_v<T>` is true if `T` is an optional defined by this library (`tiny::optional`, `tiny::optional_inplace` or `tiny::optional_aip`, compare below). It is false for any other type, including `std::optional`.
+* Every optional defined by this library defines a static boolean member `is_tiny_optional` with value true. For example, `tiny::optional<T>::is_tiny_optional` is true for **every** type `T`. The value is never false. It can be used to determine whether something is a tiny optional. But it is most likely more convenient to use `tiny::is_tiny_optional_v`, which yields false for any type that is not a tiny optional instead of resulting in compilation error. Nevertheless, the member `is_tiny_optional` might be useful in SFINAE contexts.
 
 
 ## Specifying a sentinel value via a type

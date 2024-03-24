@@ -189,6 +189,28 @@ struct sentinel_flag_manipulator
   }
 };
 
+
+namespace impl
+{
+  template <class U>
+  constexpr std::enable_if_t<U::is_tiny_optional, bool> IsTinyOptionalHelper(U const *)
+  {
+    return true;
+  }
+
+  template <class>
+  constexpr bool IsTinyOptionalHelper(...)
+  {
+    return false;
+  }
+} // namespace impl
+
+
+// Can be used to check whether the given type 'U' is some tiny optional type
+// (i.e. tiny::optional, tiny::optional_inplace or tiny::optional_aip).
+template <class U>
+inline constexpr bool is_tiny_optional_v = impl::IsTinyOptionalHelper<U>(nullptr);
+
 } // namespace tiny
 
 
@@ -244,23 +266,6 @@ namespace impl
   // clang-format on
 
 
-  // Helper to check whether some type U is a TinyOptionalImpl or a derived class.
-  template <class U>
-  constexpr std::enable_if_t<U::is_tiny_optional, bool> IsTinyOptionalHelper(U const *)
-  {
-    return true;
-  }
-
-  template <class>
-  constexpr bool IsTinyOptionalHelper(...)
-  {
-    return false;
-  }
-
-  template <class U>
-  inline constexpr bool IsTinyOptional = IsTinyOptionalHelper<U>(nullptr);
-
-
   // Helper to check whether some type T is a std::optional.
   template <class T>
   inline constexpr bool IsStdOptional = false;
@@ -269,7 +274,7 @@ namespace impl
 
 
   template <class T>
-  inline constexpr bool IsSomeOptional = IsTinyOptional<T> || IsStdOptional<T>;
+  inline constexpr bool IsSomeOptional = is_tiny_optional_v<T> || IsStdOptional<T>;
 
 
   // Extracts the class and target variable of a given member pointer.
@@ -834,6 +839,7 @@ namespace impl
     using PayloadType = typename StoredTypeDecomposition::PayloadType;
     using FlagType
         = std::remove_reference_t<decltype(StoredTypeDecomposition::GetIsEmptyFlag(std::declval<StoredType &>()))>;
+    static constexpr bool is_compressed = sizeof(StoredType) == sizeof(PayloadType);
 
     // The various helper functions must be noexcept so that we can get the same noexcept specification
     // as for std::optional.
@@ -1346,6 +1352,9 @@ namespace impl
 
     // Marker that can be useful to check if a given type is a TinyOptionalImpl.
     static constexpr bool is_tiny_optional = true;
+    
+    // true if the optional is not using more space than the payload.
+    using Base::is_compressed;
 
   public:
     // Implemented in base classes.
@@ -2334,7 +2343,7 @@ namespace impl
 #endif
 
   template <class D1, class F1, class U>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator==(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator==(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2342,7 +2351,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator==(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator==(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -2379,7 +2388,7 @@ namespace impl
 #endif
 
   template <class D1, class F1, class U>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator!=(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator!=(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2387,7 +2396,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator!=(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator!=(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -2423,7 +2432,7 @@ namespace impl
 #endif
 
   template <class D1, class F1, class U>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator<(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator<(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2431,7 +2440,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator<(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator<(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -2467,7 +2476,7 @@ namespace impl
 #endif
 
   template <class D1, class F1, class U>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator<=(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator<=(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2475,7 +2484,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator<=(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator<=(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -2511,7 +2520,7 @@ namespace impl
 #endif
 
   template <class D1, class F1, class U>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator>(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator>(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2519,7 +2528,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator>(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator>(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -2555,7 +2564,7 @@ namespace impl
 #endif
 
   template <class D1, class F1, class U>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator>=(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator>=(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
   {
@@ -2563,7 +2572,7 @@ namespace impl
   }
 
   template <class U, class D1, class F1>
-  [[nodiscard]] std::enable_if_t<!IsTinyOptional<U>, bool> operator>=(
+  [[nodiscard]] std::enable_if_t<!is_tiny_optional_v<U>, bool> operator>=(
       U const & lhs,
       TinyOptionalImpl<D1, F1> const & rhs)
   {
@@ -2629,7 +2638,7 @@ namespace impl
   }
 
   template <class D1, class F1, class U>
-    requires(!IsTinyOptional<U> && std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
+    requires(!is_tiny_optional_v<U> && std::three_way_comparable_with<typename TinyOptionalImpl<D1, F1>::value_type, U>)
   [[nodiscard]] std::compare_three_way_result_t<typename TinyOptionalImpl<D1, F1>::value_type, U> operator<=>(
       TinyOptionalImpl<D1, F1> const & lhs,
       U const & rhs)
