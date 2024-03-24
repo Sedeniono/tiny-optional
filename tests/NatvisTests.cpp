@@ -28,7 +28,7 @@ struct tiny::optional_flag_manipulator<ClassWithCustomManip>
 
   static void init_empty_flag(ClassWithCustomManip & uninitializedPayloadMemory) noexcept
   {
-    ::new (&uninitializedPayloadMemory) ClassWithCustomManip(CLASS_SENTINEL);
+    ::new (&uninitializedPayloadMemory) ClassWithCustomManip{CLASS_SENTINEL};
   }
 
   static void invalidate_empty_flag(ClassWithCustomManip & emptyPayload) noexcept
