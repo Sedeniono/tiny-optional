@@ -17,7 +17,7 @@ TINY_OPTIONAL_INCLUDE_DIR_IN_EXE = $(shell cygpath -m $(TINY_OPTIONAL_INCLUDE_DI
 endif
 
 
-CPP_FILES = ComparisonTests.cpp CompilationBase.cpp CompilationErrorTests.cpp ConstructionTests.cpp ExerciseOptionalAIP.cpp ExerciseOptionalEmptyViaType.cpp ExerciseOptionalInplace.cpp ExerciseOptionalWithCustomFlagManipulator.cpp ExerciseStdOptional.cpp ExerciseTinyOptionalPayload1.cpp ExerciseTinyOptionalPayload2.cpp GccLikeCompilation.cpp IntermediateTests.cpp MsvcCompilation.cpp SpecialMonadicTests.cpp Tests.cpp TestUtilities.cpp
+CPP_FILES = ComparisonTests.cpp CompilationBase.cpp CompilationErrorTests.cpp ConstructionTests.cpp ExerciseOptionalAIP.cpp ExerciseOptionalEmptyViaType.cpp ExerciseOptionalInplace.cpp ExerciseOptionalWithCustomFlagManipulator.cpp ExerciseStdOptional.cpp ExerciseTinyOptionalPayload1.cpp ExerciseTinyOptionalPayload2.cpp GccLikeCompilation.cpp IntermediateTests.cpp MsvcCompilation.cpp NatvisTests.cpp SpecialMonadicTests.cpp Tests.cpp TestUtilities.cpp
 
 
 CXX_AND_RUN_COMMAND = \

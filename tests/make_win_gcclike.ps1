@@ -14,7 +14,7 @@ $PS_VERSION_COMBINED = $PS_VERSION_MAJOR * 1000 + $PS_VERSION_MINOR
 echo "Powershell version: $PS_VERSION_MAJOR.$PS_VERSION_MINOR (combined: $PS_VERSION_COMBINED)"
 
 $WARNING_FLAGS = "-Wall", "-Wextra", "-pedantic", "-Wconversion", "-Werror"
-$CPP_FILES = "ComparisonTests.cpp", "CompilationBase.cpp", "CompilationErrorTests.cpp", "ConstructionTests.cpp", "ExerciseOptionalAIP.cpp", "ExerciseOptionalEmptyViaType.cpp", "ExerciseOptionalInplace.cpp", "ExerciseOptionalWithCustomFlagManipulator.cpp", "ExerciseStdOptional.cpp", "ExerciseTinyOptionalPayload1.cpp", "ExerciseTinyOptionalPayload2.cpp", "GccLikeCompilation.cpp", "IntermediateTests.cpp", "MsvcCompilation.cpp", "SpecialMonadicTests.cpp", "Tests.cpp", "TestUtilities.cpp"
+$CPP_FILES = "ComparisonTests.cpp", "CompilationBase.cpp", "CompilationErrorTests.cpp", "ConstructionTests.cpp", "ExerciseOptionalAIP.cpp", "ExerciseOptionalEmptyViaType.cpp", "ExerciseOptionalInplace.cpp", "ExerciseOptionalWithCustomFlagManipulator.cpp", "ExerciseStdOptional.cpp", "ExerciseTinyOptionalPayload1.cpp", "ExerciseTinyOptionalPayload2.cpp", "GccLikeCompilation.cpp", "IntermediateTests.cpp", "MsvcCompilation.cpp", "NatvisTests.cpp", "SpecialMonadicTests.cpp", "Tests.cpp", "TestUtilities.cpp"
 $TINY_OPTIONAL_INCLUDE_DIR = "../include"
 $EXE_NAME = "TinyOptionalTests.exe"
 
