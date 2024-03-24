@@ -63,7 +63,7 @@ void test_Natvis()
   // Not in-place (i.e. not compressed)
   {
     tiny::optional<unsigned> empty;
-    tiny::optional<unsigned> nonEmpty = 42;
+    tiny::optional<unsigned> nonEmpty = 42u;
     [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
   }
 
@@ -110,7 +110,7 @@ void test_Natvis()
   // In-place with custom sentinel
   {
     tiny::optional<unsigned, 999> empty;
-    tiny::optional<unsigned> nonEmpty = 42;
+    tiny::optional<unsigned, 999> nonEmpty = 42u;
     [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
   }
 
