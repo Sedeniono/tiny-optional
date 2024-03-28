@@ -69,7 +69,7 @@ void test_TinyOptionalPayload_Cpp20NTTP()
 
     // Floating point, stored in member.
     EXERCISE_OPTIONAL(
-        (tiny::optional<TestClassForInplace, &TestClassForInplace::someValue2, 42.0>{}),
+        (tiny::optional<TestClassForInplace, &TestClassForInplace::someDouble, 42.0>{}),
         EXPECT_INPLACE,
         TestClassForInplace{},
         TestClassForInplace(43, 44.0, 45, nullptr));
