@@ -629,7 +629,7 @@ void test_MakeOptional()
   }
   {
     TestClassForInplace const testValue{};
-    auto o = tiny::make_optional<TestClassForInplace, &TestClassForInplace::someValue1, 42>(testValue);
+    auto o = tiny::make_optional<TestClassForInplace, &TestClassForInplace::someInt, 42>(testValue);
     static_assert(sizeof(o) == sizeof(TestClassForInplace));
     static_assert(std::is_same_v<decltype(o)::value_type, TestClassForInplace>);
     ASSERT_TRUE(o.value() == testValue);
@@ -649,7 +649,7 @@ void test_MakeOptional()
     ASSERT_TRUE(o.value() == TestClassForInplace(2, 5.0, 43u, nullptr));
   }
   {
-    auto o = tiny::make_optional<TestClassForInplace, &TestClassForInplace::someValue1, 42>(2, 5.0, 43u, nullptr);
+    auto o = tiny::make_optional<TestClassForInplace, &TestClassForInplace::someInt, 42>(2, 5.0, 43u, nullptr);
     static_assert(sizeof(o) == sizeof(TestClassForInplace));
     static_assert(std::is_same_v<decltype(o)::value_type, TestClassForInplace>);
     ASSERT_TRUE(o.value() == TestClassForInplace(2, 5.0, 43u, nullptr));

@@ -11,6 +11,7 @@
     </Expand>
   </Type>
 
+  
   <!--Helper view to reduce code duplication in case tiny::impl::InplaceStorage is used.
   It relies on that a natvis instrinsic IsEmpty() is defined.-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;*, *&gt;" IncludeView="TinyOptionalInplaceStorageView">
@@ -23,6 +24,7 @@
     </Expand>
   </Type>
   
+  
   <!--tiny::optional<bool>-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;bool, void&gt;&gt;">
     <Intrinsic Name="IsEmpty" Expression="(*(unsigned char*)&amp;mStorage.storage) == 0xfe"/>
@@ -32,6 +34,17 @@
     </Expand>
   </Type>
 
+  <!--tiny::optional<SomeClass, &SomeClass::someBool>-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;bool, void&gt;&gt;">
+    <!--Note: $T2 is the offset of the member in the class.-->
+    <Intrinsic Name="IsEmpty" Expression="*(((unsigned char*)&amp;mStorage.storage) + $T2) == 0xfe"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  
   <!--tiny::optional<double>-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;double, void&gt;&gt;">
     <Intrinsic Name="IsEmpty" Expression="(*(unsigned long long*)&amp;mStorage.storage) == 0x7ff8fedcba987654"/>
@@ -40,6 +53,17 @@
       <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
     </Expand>
   </Type>
+
+  <!--tiny::optional<SomeClass, &SomeClass::someDouble>-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;double, void&gt;&gt;">
+    <!--Note: $T2 is the offset of the member in the class.-->
+    <Intrinsic Name="IsEmpty" Expression="*(unsigned long long*)(((unsigned char*)&amp;mStorage.storage) + $T2) == 0x7ff8fedcba987654"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
+  
   
   <!--tiny::optional<float>-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;float, void&gt;&gt;">
@@ -49,8 +73,22 @@
       <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
     </Expand>
   </Type>
-
-    <!--tiny::optional<T*> as well as types with custom specialized tiny::optional_flag_manipulator.
+  
+  <!--tiny::optional<SomeClass, &SomeClass::someFloat>-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;float, void&gt;&gt;">
+    <!--Note: $T2 is the offset of the member in the class.-->
+    <Intrinsic Name="IsEmpty" Expression="*(unsigned int*)(((unsigned char*)&amp;mStorage.storage) + $T2) == 0x7fedcba9"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  
+  <!--For types:
+         - tiny::optional<T*>, 
+         - tiny::optional<funcPointer> 
+         - Types with custom specialized tiny::optional_flag_manipulator.
   This is quite tricky: I haven't found a way to specify a visualizer for all pointer types only. Also, there is the
   PRIORITY attribute which can be used to select another visualizer in case another one causes an error, but this is
   actually somewhat annoying since even if another one is ok Visual Studio write an error to the debug output (if the
@@ -66,9 +104,9 @@
   -->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;*, void&gt;&gt;">
     <Intrinsic Name="IsEmpty" Optional="true" Expression="
-               sizeof(mStorage.storage) == 4 
-               ? &amp;(*mStorage.storage) == 0xffffffff - 8
-               : &amp;(*mStorage.storage) == 0xffff800000000000ull - 1
+               sizeof(&amp;*mStorage.storage) == 4
+               ? ((unsigned int)(void*)mStorage.storage) == 0xffffffff - 8
+               : ((unsigned long long)(void*)mStorage.storage) == 0xffff800000000000ull - 1
                "/>
     <!--Used for pointers-->
     <DisplayString Optional="true" Condition="IsEmpty() || !IsEmpty()">{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
@@ -81,9 +119,34 @@
     </Expand>
   </Type>
 
-  <!--Used when a sentinel has been specified explicitly, i.e. when the 2nd template argument is a AssignmentFlagManipulator.
-  For example tiny::optional<unsigned, 999>. We cannot explicitly write AssignmentFlagManipulator because then we wouldn't be 
-  able to access valueToIndicateEmpty here in natvis.-->
+  <!--For types:
+         - tiny::optional<SomeClass, &SomeClass::somePtr>
+         - tiny::optional<SomeClass, &SomeClass::someFuncPtr>
+         - tiny::optional<SomeClass, &SomeClass::someMember>, where the type of someMember has a custom specialized tiny::optional_flag_manipulator.
+  See the above visualizer for tiny::optional<T*> for an explanation.
+  -->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;*, void&gt;&gt;">
+    <!--Note: $T2 is the offset of the member in the class.-->
+    <Intrinsic Name="IsEmpty" Optional="true" Expression="
+               sizeof(&amp;**(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 4
+               ? ((unsigned int)(void*)*(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 0xffffffff - 8
+               : ((unsigned long long)(void*)*(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 0xffff800000000000ull - 1
+               "/>
+    <!--Used for pointers-->
+    <DisplayString Optional="true" Condition="IsEmpty() || !IsEmpty()">{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <!--Used for non-pointers (custom optional_flag_manipulator specializations)-->
+    <DisplayString>(Preview for custom flag manipulators not supported in natvis)</DisplayString>
+    <Expand>
+      <ExpandedItem Optional="true" Condition="IsEmpty() || !IsEmpty()">this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+      <!--Also show the raw storage, which should help for custom optional_flag_manipulator specializations.-->
+      <Item Name="Raw storage (compressed)">mStorage.storage</Item>
+    </Expand>
+  </Type>
+
+  
+  <!--tiny::optional<unsigned, 999>. 
+  Used when a sentinel has been specified explicitly, i.e. when the 2nd template argument is a AssignmentFlagManipulator.
+  We cannot explicitly write AssignmentFlagManipulator because then we wouldn't be able to access valueToIndicateEmpty here in natvis.-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, *&gt;">
     <Intrinsic Name="IsEmpty" Expression="mStorage.storage == $T2::valueToIndicateEmpty"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
@@ -91,13 +154,19 @@
       <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
     </Expand>
   </Type>
+
+  <!--tiny::optional<SomeClass, &SomeClass::someUnsigned, 42>-->
+  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, *&gt;">
+    <!--Note: $T2 is the offset of the member in the class.-->
+    <Intrinsic Name="IsEmpty" Expression="*(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2) == $T3::valueToIndicateEmpty"/>
+    <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
+    <Expand>
+      <ExpandedItem>this,view(TinyOptionalInplaceStorageView)</ExpandedItem>
+    </Expand>
+  </Type>
   
   
-  <!--Fall back for any other optionals: Simply display the raw storage.
-  Note: InplaceDecompositionViaMemPtr (IsEmpty flag stored in a member) also uses this. I couldn't find a
-  way to make a proper visualizer for InplaceDecompositionViaMemPtr. The template argument is a member pointer,
-  but natvis just receives the offset to the member numerically. So forming an addres of the proper type to
-  the member is not possible, I think.-->
+  <!--Fall back for any other optionals: Simply display the raw storage.-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;*, *&gt;" Priority="Low">
     <DisplayString>(Preview is not supported)</DisplayString>
     <Expand>

@@ -61,7 +61,7 @@ void test_TinyOptionalPayload_IsEmptyFlagInMember()
   // Exploiting a member to place the IsEmpty flag
 
   EXERCISE_OPTIONAL_WITH_CONSTRUCTOR_ARGS(
-      (tiny::optional<TestClassForInplace, &TestClassForInplace::someValue1, 42>{}),
+      (tiny::optional<TestClassForInplace, &TestClassForInplace::someInt, 42>{}),
       EXPECT_INPLACE,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr),
@@ -71,13 +71,13 @@ void test_TinyOptionalPayload_IsEmptyFlagInMember()
       nullptr);
 
   EXERCISE_OPTIONAL(
-      (tiny::optional<TestClassForInplace, &TestClassForInplace::someValue2>{}),
+      (tiny::optional<TestClassForInplace, &TestClassForInplace::someDouble>{}),
       EXPECT_INPLACE,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));
 
   EXERCISE_OPTIONAL(
-      (tiny::optional<TestClassForInplace, &TestClassForInplace::someValue4>{}),
+      (tiny::optional<TestClassForInplace, &TestClassForInplace::somePtr>{}),
       EXPECT_INPLACE,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));
@@ -190,8 +190,8 @@ void test_TinyOptionalPayload_StdTypes()
     ASSERT_TRUE(set.count(std::nullopt) > 0);
   }
   {
-    static_assert(!IsDisabledHash<tiny::optional<TestClassForInplace, &TestClassForInplace::someValue1, 42>>);
-    std::unordered_set<tiny::optional<TestClassForInplace, &TestClassForInplace::someValue1, 42>> const set
+    static_assert(!IsDisabledHash<tiny::optional<TestClassForInplace, &TestClassForInplace::someInt, 42>>);
+    std::unordered_set<tiny::optional<TestClassForInplace, &TestClassForInplace::someInt, 42>> const set
         = {TestClassForInplace(43, 44.0, 45, nullptr), std::nullopt};
     ASSERT_TRUE(set.count(TestClassForInplace(43, 44.0, 45, nullptr)) > 0);
     ASSERT_TRUE(set.count(std::nullopt) > 0);

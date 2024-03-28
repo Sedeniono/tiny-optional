@@ -21,7 +21,7 @@ void test_OptionalEmptyViaType()
       (tiny::optional_sentinel_via_type<
           TestClassForInplace,
           std::integral_constant<int, 42>,
-          &TestClassForInplace::someValue1>{}),
+          &TestClassForInplace::someInt>{}),
       EXPECT_INPLACE,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));
@@ -35,7 +35,7 @@ void test_OptionalEmptyViaType()
   EXERCISE_OPTIONAL((tiny::optional_sentinel_via_type<double, TestDoubleValue>{}), EXPECT_INPLACE, 43.0, 44.0);
 
   EXERCISE_OPTIONAL(
-      (tiny::optional_sentinel_via_type<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someValue2>{}),
+      (tiny::optional_sentinel_via_type<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someDouble>{}),
       EXPECT_INPLACE,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));

@@ -93,24 +93,27 @@ struct FlagManipulatorForTestClass
 
 struct TestClassForInplace
 {
-  int someValue1 = -1;
-  double someValue2 = 1.0;
-  unsigned someValue3 = 3;
-  TestClassForInplace * someValue4 = nullptr;
+  int someInt = -1;
+  unsigned someUnsigned = 3;
+  double someDouble = 1.0;
+  float someFloat = 2.0;
+  bool someBool = false;
+  TestClassForInplace * somePtr = nullptr;
 
   friend bool operator==(TestClassForInplace const & lhs, TestClassForInplace const & rhs)
   {
-    return lhs.someValue1 == rhs.someValue1 && MatchingFloat(lhs.someValue2, rhs.someValue2)
-           && lhs.someValue3 == rhs.someValue3 && lhs.someValue4 == rhs.someValue4;
+    return lhs.someInt == rhs.someInt && lhs.someUnsigned == rhs.someUnsigned
+           && MatchingFloat(lhs.someDouble, rhs.someDouble) && MatchingFloat(lhs.someFloat, rhs.someFloat)
+           && lhs.someBool == rhs.someBool && lhs.somePtr == rhs.somePtr;
   }
 
   TestClassForInplace() = default;
 
   TestClassForInplace(int someValue1, double someValue2, unsigned someValue3, TestClassForInplace * someValue4)
-    : someValue1(someValue1)
-    , someValue2(someValue2)
-    , someValue3(someValue3)
-    , someValue4(someValue4)
+    : someInt(someValue1)
+    , someUnsigned(someValue3)
+    , someDouble(someValue2)
+    , somePtr(someValue4)
   {
   }
 };
@@ -123,10 +126,12 @@ struct hash<TestClassForInplace>
   size_t operator()(TestClassForInplace const & v) const
   {
     size_t s = 0;
-    hash_combine(s, v.someValue1);
-    hash_combine(s, v.someValue2);
-    hash_combine(s, v.someValue3);
-    hash_combine(s, v.someValue4);
+    hash_combine(s, v.someInt);
+    hash_combine(s, v.someUnsigned);
+    hash_combine(s, v.someDouble);
+    hash_combine(s, v.someFloat);
+    hash_combine(s, v.someBool);
+    hash_combine(s, v.somePtr);
     return s;
   }
 };
