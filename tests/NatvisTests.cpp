@@ -3,6 +3,7 @@
 #include "TestTypes.h"
 #include "tiny/optional.h"
 
+#include <memory>
 #include <optional>
 
 
@@ -12,6 +13,13 @@ struct ClassWithCustomManip
 {
   std::string someString = "someString";
   int someInt = 42;
+
+  // Because we use a dereference trick in the Natvis file, added to check that an
+  // operator* does not confuse Natvis.
+  int const & operator*() const
+  {
+    return someInt;
+  }
 };
 
 inline const std::string CLASS_SENTINEL = "SENTINEL";
@@ -95,6 +103,16 @@ void test_Natvis()
     typedef void (ClassWithFunc::*MemFuncType)();
     tiny::optional<MemFuncType> empty;
     tiny::optional<MemFuncType> nonEmpty = &ClassWithFunc::memberFunc;
+    [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
+  }
+  {
+    tiny::optional<std::shared_ptr<unsigned>> empty;
+    tiny::optional<std::shared_ptr<unsigned>> nonEmpty = nullptr;
+    [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
+  }
+  {
+    tiny::optional<std::shared_ptr<unsigned>> empty;
+    tiny::optional<std::shared_ptr<unsigned>> nonEmpty = std::make_shared<unsigned>(42u);
     [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
   }
 

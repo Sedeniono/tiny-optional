@@ -2,8 +2,8 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <!--Visualizer when storing the IsEmpty-Flag in a separate bool. I.e. when tiny::optional behaves just like std::optional.-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::DecompositionForSeparateFlag&lt;*&gt;, tiny::impl::SeparateFlagManipulator&gt;">
-    <DisplayString Condition="mStorage.isEmptyFlag">nullopt</DisplayString>
-    <DisplayString Condition="!mStorage.isEmptyFlag">{mStorage.payload}</DisplayString>
+    <DisplayString Condition="mStorage.isEmptyFlag">nullopt (optional is empty)</DisplayString>
+    <DisplayString Condition="!mStorage.isEmptyFlag">Not empty. Value={{{mStorage.payload}}}</DisplayString>
     <Expand>
       <Item Condition="!mStorage.isEmptyFlag" Name="value (not empty)">mStorage.payload</Item>
       <Item Condition="mStorage.isEmptyFlag" Name="value (is empty)">std::nullopt</Item>
@@ -15,8 +15,8 @@
   <!--Helper view to reduce code duplication in case tiny::impl::InplaceStorage is used.
   It relies on that a natvis instrinsic IsEmpty() is defined.-->
   <Type Name="tiny::impl::TinyOptionalImpl&lt;*, *&gt;" IncludeView="TinyOptionalInplaceStorageView">
-    <DisplayString Condition="IsEmpty()">nullopt</DisplayString>
-    <DisplayString Condition="!IsEmpty()">{mStorage.storage}</DisplayString>
+    <DisplayString Condition="IsEmpty()">nullopt (optional is empty)</DisplayString>
+    <DisplayString Condition="!IsEmpty()">Not empty. Value={{{mStorage.storage}}}</DisplayString>
     <Expand>
       <Item Condition="IsEmpty()" Name="value (is empty)">std::nullopt</Item>
       <Item Condition="!IsEmpty()" Name="value (not empty)">mStorage.storage</Item>
