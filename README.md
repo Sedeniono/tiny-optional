@@ -10,6 +10,8 @@
 
 - [Introduction](#introduction)
 - [Motivation](#motivation)
+  - [Use case 1: Wasting no memory](#use-case-1-wasting-no-memory)
+  - [Use case 2: Using sentinel values](#use-case-2-using-sentinel-values)
 - [Requirements](#requirements)
 - [Limitations](#limitations)
 - [Usage](#usage)
@@ -39,7 +41,8 @@
 
 # Introduction
 The goal of this library is to provide the functionality of [`std::optional`](https://en.cppreference.com/w/cpp/utility/optional) while not wasting any memory unnecessarily for 
-* types with unused bits (currently `double`, `float`, `bool`, raw pointers) or custom types with unused states, or 
+* types with unused bits (currently `double`, `float`, `bool`, raw pointers; note that NaNs, `nullptr` etc. are still valid non-empty values!), or
+* custom types with unused states, or 
 * where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
 
 > ⚠️ **Warning:** This library exploits undefined/platform specific behavior on x86/x64 architectures. See below for more details.
@@ -89,19 +92,32 @@ static_assert(sizeof(tiny::optional<int>) == sizeof(std::optional<int>));
 
 
 # Motivation
-## Use case 1  <!-- omit in toc -->
-`std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes afterwards. For example, a `double` has a size of 8 bytes. A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes after the internal `bool`. But for several types this is unnecessary, just wastes memory and is not very cache-friendly. In the case of IEEE-754 floating point values, a wide range of bit patterns indicate quiet or signaling NaNs, but typically only one specific bit pattern for each NaN is used in practice. This library exploits these unused bit patterns to store the information if a value is set or not in-place within the type itself. Thus, we have `sizeof(tiny::optional<double>) == sizeof(double)`.
+## Use case 1: Wasting no memory
+`std::optional` always uses a separate `bool` member to store the information if a value is set or not. A `bool` always has a size of at least 1 byte, and often implies several padding bytes afterwards. For example, a `double` has a size of 8 bytes.
+A `std::optional<double>` typically has a size of 16 bytes because the compiler inserts 7 padding bytes after the internal `bool`.
+But for several types this is unnecessary because they have unused bit patterns.
+Therefore, `std::optional` often just wastes memory and is not very cache-friendly.
+This library exploits these **unused** bit patterns to store the information if a value is set or not in-place within the payload itself, **without** loosing any "valid" values.
+To emphasize this:
+* `sizeof(tiny::optional<bool>) == sizeof(bool)`, and both `true` and `false` can be stored.
+* `sizeof(tiny::optional<double>) == sizeof(double)`, and all "normal" values of `double` remain valid and can be stored in the `tiny::optional` without the optional becoming empty. This includes `std::numeric_limits<double>::quiet_NaN()` and `std::numeric_limits<double>::signaling_NaN()`, and of course infinities, subnormals, max. and lowest values, etc. Similar for `float`.
+* `sizeof(tiny::optional<Foo*>) == sizeof(Foo*)`; storing a `nullptr` results in a **non-empty** optional, so `nullptr` remains a valid value and is distinct from an empty optional!
 
-`tiny::optional` can be "taught" how it may store a custom payload type with an unused state without requiring an additional internal `bool`. See chapter about `tiny::optional_flag_manipulator`.
+See the end of the readme for details on how the library achieves this.
+
+`tiny::optional` can also be "taught" how it may store a custom payload type with an unused state without requiring an additional internal `bool`. See the chapter about `tiny::optional_flag_manipulator`.
 
 The results below show that in memory bound applications this can result in a significant performance improvement.
 This optimization is similar to what Rust is doing for [booleans](https://stackoverflow.com/a/73181003/3740047) and [references](https://stackoverflow.com/a/16515488/3740047).
 
 
-## Use case 2  <!-- omit in toc -->
+## Use case 2: Using sentinel values
 Sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about a raw integer `int index` that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. 
 
 The present library can be used to provide more semantics: `tiny::optional<int, -1>` immediately tells the reader that the variable might be empty, and that the "sentinel" `-1` must not be within the set of valid values. At the same time, it does not waste additional memory (i.e. `sizeof(tiny::optional<int, -1>) == sizeof(int)`), in contrast to `std::optional<int>`.
+
+Note: In contrast to the first use case, the sentinel value is "removed" from the range of valid values of the type.
+So `-1` cannot be stored in `tiny::optional<int, -1>`.
 
 
 # Requirements
@@ -711,14 +727,16 @@ The library exploits **platform specific behavior** (that is not guaranteed by t
 
 * Booleans: A `bool` has a size of at least 1 byte (so that addresses to it can be formed). But only 1 bit is necessary to store the information if the value is `true` or `false`. The remaining 7 or more bits are unused. More precisely, the numerical value of `true` is `1` and for `false` it is `0` on the supported platforms. Any other numerical value results in undefined behavior. `tiny::optional<bool>` will store the numerical value `0xfe` in the `bool` to indicate an empty state.
 
-* Floating point types (`float` and `double`): There are two types of "not a numbers" (NaNs) defined by the IEEE754 standard: Quiet and signaling NaNs. However, there is a wide range of bit patterns that represent a quite or a signaling NaN. For example, for `float` **any** bit pattern in `[0x7f800001, 0x7fbfffff]` and `[0xff800001, 0xffbfffff]` represents a signaling NaN, and **any** bit pattern in `[0x7fc00000, 0x7fffffff]` and `[0xffc00000, 0xffffffff]` represents a quiet NaN. However, on the supported platforms only one specific quiet NaN and one specific signaling NaN bit pattern is used by the supported compilers and standard libraries (e.g. for linux clang x64: `0x7fc00000` for quiet and `0x7fa00000` for signaling NaNs). 
-Also see e.g. the paper ["Floating point exception tracking and NAN propagation" by Agner Fog](https://www.agner.org/optimize/nan_propagation.pdf). This holds of course only as long as a program does not do any tricks by itself. This library exploits this assumption and uses the quiet NaN `0x7fedcba9` as sentinel value for `float` and `0x7ff8fedcba987654` for `double`.
-Note: `long double` is not (yet) supported and a `tiny::optional<long double>` instead uses a separate `bool`.
+* Floating point types (`float` and `double`): There are two types of "not a numbers" (NaNs) defined by the IEEE754 standard: Quiet and signaling NaNs. However, there is a wide range of bit patterns that represent a quite or a signaling NaN. For example, for `float` **any** bit pattern in `[0x7f800001, 0x7fbfffff]` and `[0xff800001, 0xffbfffff]` represents a signaling NaN, and **any** bit pattern in `[0x7fc00000, 0x7fffffff]` and `[0xffc00000, 0xffffffff]` represents a quiet NaN. However, on the supported platforms only a **single** specific quiet NaN and a **single** specific signaling NaN bit pattern is used by the supported compilers and standard libraries (e.g. for linux clang x64 `float`: `0x7fc00000` for quiet and `0x7fa00000` for signaling NaNs). 
+Also see e.g. the paper ["Floating point exception tracking and NAN propagation" by Agner Fog](https://www.agner.org/optimize/nan_propagation.pdf).
+This holds of course only as long as a program does not do any tricks by itself. This library exploits this assumption and uses the quiet NaN `0x7fedcba9` as sentinel value for `float` and `0x7ff8fedcba987654` for `double`.  
+**Note 1:** To emphasize with an example, `tiny::optional<double>{std::numeric_limits<double>::quiet_NaN()}` and `tiny::optional<double>{std::numeric_limits<double>::signaling_NaN()}` are **not** empty optionals!  
+**Note 2:** `long double` is not (yet) supported and a `tiny::optional<long double>` instead uses a separate `bool`.
 
 * Pointers: For pointers the library uses the sentinel values `0xffff'ffff - 8` (32 bit) and `0xffff'8000'0000'0000 - 1` (64 bit) to indicate an empty state. In short, these values avoid [pseudo-handles on Windows](https://devblogs.microsoft.com/oldnewthing/20210105-00/?p=104667), and for 64 bit lies in the gap of [non-canonical addresses](https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/). See the explanation in the source code at `SentinelForExploitingUnusedBits<T*>` for more details. Thanks to the reddit users "compiling" and "ra-zor" for [pointing this out](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itjvkmc/?utm_source=share&utm_medium=web2x&context=3).  
 **Note 1:** Only pointers in the sense of `std::is_pointer` (i.e. ordinary pointers and function pointers) are supported that way; member pointers and member function pointers require an additional `bool` since they are not "ordinary" pointers).  
 **Note 2:** Having a `tiny::optional<T*>` is probably not that often useful. But if you have a POD like type with a pointer in it as member, you can instruct `tiny::optional` to use that member as storage for the sentinel value (see above) and save the memory of the additional `bool`. To this end, the library implements the trick for pointers.  
-**Note 3:** The `nullptr` is not used as sentinel, and thus remains a valid value.
+**Note 3:** The `nullptr` is not used as sentinel, and thus remains a valid value. So assigning `nullptr` to a `tiny::optional` results in a non-empty optional!
 
 
 
