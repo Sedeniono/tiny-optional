@@ -2,9 +2,9 @@
 
 #include <cassert>
 #include <cmath>
-#include <iostream>
 #include <filesystem>
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -55,7 +55,7 @@
 
 #define FAIL()                                                                                                         \
   do {                                                                                                                 \
-    std::cerr << "\tFAIL() in line " << __LINE__ << ", function " << TINY_OPTIONAL_CURRENT_FUNC << ", file '"         \
+    std::cerr << "\tFAIL() in line " << __LINE__ << ", function " << TINY_OPTIONAL_CURRENT_FUNC << ", file '"          \
               << __FILE__ << "'\n";                                                                                    \
     assert(false);                                                                                                     \
     exit(42);                                                                                                          \
@@ -133,7 +133,7 @@ bool EmptyOrNoContainer(std::vector<T> const & c)
 }
 
 
-// Checks weather T is not hashable. 
+// Checks weather T is not hashable.
 // clang-format off
 template <class T>
 constexpr bool IsDisabledHash 
@@ -153,7 +153,7 @@ inline void hash_combine(std::size_t & seed, T const & v)
 }
 
 
-inline std::ostream & operator<<(std::ostream & out, std::nullopt_t) 
+inline std::ostream & operator<<(std::ostream & out, std::nullopt_t)
 {
   return out << "nullopt";
 }
@@ -180,7 +180,6 @@ struct ExecutionResult
 // Runs the specified program and waits until it terminates.
 // The returned string contains both stdout and stderr of the run program.
 ExecutionResult ExecuteProgramSync(std::string const & commandline);
-
 
 
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD

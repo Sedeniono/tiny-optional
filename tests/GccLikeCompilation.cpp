@@ -30,7 +30,7 @@ auto GccLikeCompilationChecks::PerformCompilation(std::string const & code) cons
 {
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
   // Piping strings with new lines and containing quotation marks into clang on Windows is cumbersome.
-  // So instead just use a temporary file. Especially since we have the required mechanism anyway for the 
+  // So instead just use a temporary file. Especially since we have the required mechanism anyway for the
   // MSVC version.
   WindowsTemporaryCodeFileScope tempCodeFileScope(code);
 

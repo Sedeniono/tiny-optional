@@ -37,7 +37,7 @@ void test_SpecialTestsFor_and_then()
 }
 
 
-void test_SpecialTestsFor_transform() 
+void test_SpecialTestsFor_transform()
 {
   // Check that modification of the payload works from within the function called by transform.
   {
@@ -90,7 +90,7 @@ void test_SpecialTestsFor_transform()
 }
 
 
-void test_SpecialTestsFor_or_else() 
+void test_SpecialTestsFor_or_else()
 {
 #ifdef TINY_OPTIONAL_ENABLE_ORELSE
   // Check that or_else moves out the payload when called on a rvalue.

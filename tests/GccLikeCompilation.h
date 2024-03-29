@@ -24,5 +24,3 @@ private:
   std::filesystem::path mTinyOptionalIncludeDirCanon;
   std::string const mCompilationFlags;
 };
-
-

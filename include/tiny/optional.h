@@ -83,7 +83,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 #if defined(__GNUG__) && !defined(__clang__)
 // Disable incorrect warning for gcc that occurs in release builds. It sometimes fails to realize that certain branches
 // (such as calls to DestroyPayload()) are protected by a has_value() check, and thus cannot actually perform any
-// uninitialized access. In fact, this warning is notorious for producing false positives, and can even be triggered 
+// uninitialized access. In fact, this warning is notorious for producing false positives, and can even be triggered
 // for std::optional (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635#c69) at least until gcc 13.
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -599,8 +599,8 @@ namespace impl
    * - is_empty(): This function receives a const-ref to the flag and must return 'true' if it
    *   indicates that the optional contains no value, and 'false' if it indicates that some
    *   value is set.
-   * 
-   * We are using snake_case for the function names since users of the library might need to use 
+   *
+   * We are using snake_case for the function names since users of the library might need to use
    * the concept (via tiny::optional_flag_manipulator or optional_inplace), and the whole public
    * interface of the library uses snake_case (because std::optional does).
    */
@@ -661,7 +661,7 @@ namespace impl
     {
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
       return std::memcmp(
-                 const_cast<void *>(static_cast<void const volatile *>(std::addressof(isEmptyFlag))),
+                 const_cast<void *>(static_cast<void volatile const *>(std::addressof(isEmptyFlag))),
                  &valueToIndicateEmpty,
                  sizeof(valueToIndicateEmpty))
              == 0;
@@ -674,7 +674,7 @@ namespace impl
       // To this end note the static_asserts above: The flag is trivially copyable.
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
       std::memcpy(
-          const_cast<void *>(static_cast<void const volatile *>(std::addressof(uninitializedIsEmptyFlagMemory))),
+          const_cast<void *>(static_cast<void volatile const *>(std::addressof(uninitializedIsEmptyFlagMemory))),
           &valueToIndicateEmpty,
           sizeof(valueToIndicateEmpty));
     }
@@ -768,7 +768,7 @@ namespace impl
           noexcept(*const_cast<std::remove_cv_t<FlagType> *>(&uninitializedIsEmptyFlagMemory) = valueToIndicateEmpty),
           "The assignment operator of the flag type must be noexcept.");
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
-      ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(uninitializedIsEmptyFlagMemory))))
+      ::new (const_cast<void *>(static_cast<void volatile const *>(std::addressof(uninitializedIsEmptyFlagMemory))))
           FlagType(valueToIndicateEmpty);
     }
 
@@ -979,12 +979,12 @@ namespace impl
       if constexpr (std::is_nothrow_constructible_v<PayloadType, ArgsT...>) {
         // Don't burden the optimizer with optimizing away the InitializeIsEmptyFlagScope if the scope is unnecessary in
         // the first place (i.e. if the construction cannot throw).
-        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+        ::new (const_cast<void *>(static_cast<void volatile const *>(std::addressof(GetPayload()))))
             PayloadType(std::forward<ArgsT>(args)...);
       }
       else {
         InitializeIsEmptyFlagScope initScope{*this};
-        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+        ::new (const_cast<void *>(static_cast<void volatile const *>(std::addressof(GetPayload()))))
             PayloadType(std::forward<ArgsT>(args)...);
         initScope.doNotInitialize = true;
       }
@@ -1013,12 +1013,12 @@ namespace impl
 
       // In analogy to ConstructPayload().
       if constexpr (std::is_nothrow_constructible_v<PayloadType, std::invoke_result_t<FuncT, ArgT>>) {
-        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+        ::new (const_cast<void *>(static_cast<void volatile const *>(std::addressof(GetPayload()))))
             PayloadType(std::invoke(std::forward<FuncT>(func), std::forward<ArgT>(arg)));
       }
       else {
         InitializeIsEmptyFlagScope initScope{*this};
-        ::new (const_cast<void *>(static_cast<void const volatile *>(std::addressof(GetPayload()))))
+        ::new (const_cast<void *>(static_cast<void volatile const *>(std::addressof(GetPayload()))))
             PayloadType(std::invoke(std::forward<FuncT>(func), std::forward<ArgT>(arg)));
         initScope.doNotInitialize = true;
       }
@@ -1195,8 +1195,8 @@ namespace impl
   template <
       class StoredTypeDecomposition,
       class FlagManipulator,
-      bool = std::is_move_constructible_v<typename StoredTypeDecomposition::PayloadType> &&
-          std::is_move_assignable_v<typename StoredTypeDecomposition::PayloadType>>
+      bool = std::is_move_constructible_v<typename StoredTypeDecomposition::PayloadType>
+             && std::is_move_assignable_v<typename StoredTypeDecomposition::PayloadType>>
   struct MoveAssignmentBase : CopyConstructionBase<StoredTypeDecomposition, FlagManipulator>
   {
     using Base = CopyConstructionBase<StoredTypeDecomposition, FlagManipulator>;
@@ -1257,8 +1257,8 @@ namespace impl
   template <
       class StoredTypeDecomposition,
       class FlagManipulator,
-      bool = std::is_copy_constructible_v<typename StoredTypeDecomposition::PayloadType> &&
-          std::is_copy_assignable_v<typename StoredTypeDecomposition::PayloadType>>
+      bool = std::is_copy_constructible_v<typename StoredTypeDecomposition::PayloadType>
+             && std::is_copy_assignable_v<typename StoredTypeDecomposition::PayloadType>>
   struct CopyAssignmentBase : MoveAssignmentBase<StoredTypeDecomposition, FlagManipulator>
   {
     using Base = MoveAssignmentBase<StoredTypeDecomposition, FlagManipulator>;
@@ -1352,7 +1352,7 @@ namespace impl
 
     // Marker that can be useful to check if a given type is a TinyOptionalImpl.
     static constexpr bool is_tiny_optional = true;
-    
+
     // true if the optional is not using more space than the payload.
     using Base::is_compressed;
 

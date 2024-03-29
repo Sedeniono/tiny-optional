@@ -1,10 +1,10 @@
 #include "TestUtilities.h"
 
+#include <cstdio>
 #include <exception>
 #include <fstream>
 #include <stdexcept>
 #include <utility>
-#include <cstdio>
 
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
   #include <Windows.h>
@@ -109,7 +109,7 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
 
   {
     static constexpr DWORD BUFFER_SIZE = 1024;
-    CHAR chBuf[BUFFER_SIZE] = { 0 };
+    CHAR chBuf[BUFFER_SIZE] = {0};
 
     while (true) {
       DWORD dwRead = 0;
@@ -149,7 +149,7 @@ ExecutionResult ExecuteProgramSync(std::string const & commandline)
   std::string receivedOutput;
 
   static constexpr size_t BUFFER_SIZE = 1024;
-  char buffer[BUFFER_SIZE] = { 0 };
+  char buffer[BUFFER_SIZE] = {0};
   while (fgets(buffer, BUFFER_SIZE, file) != nullptr) {
     receivedOutput += buffer;
   }
@@ -235,7 +235,8 @@ WindowsTemporaryCodeFileScope ::~WindowsTemporaryCodeFileScope()
 
     if (ec) {
       // Stop the tests. Note that we cannot throw an exception from within a destructor.
-      std::cerr << "Error: Failed to remove temporary directory '" << tempDir << "' after several attempts." << std::endl;
+      std::cerr << "Error: Failed to remove temporary directory '" << tempDir << "' after several attempts."
+                << std::endl;
       std::terminate();
     }
   }

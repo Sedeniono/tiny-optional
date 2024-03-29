@@ -24,7 +24,9 @@
 
 void RunTests()
 {
+  // clang-format off
 #define ADD_TEST(x) {x, #x}
+  // clang-format on
 
   std::vector<std::pair<void (*)(), std::string>> const tests
       = {ADD_TEST(test_Natvis),

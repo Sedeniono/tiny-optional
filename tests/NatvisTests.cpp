@@ -22,7 +22,7 @@ struct ClassWithCustomManip
   }
 };
 
-inline const std::string CLASS_SENTINEL = "SENTINEL";
+inline std::string const CLASS_SENTINEL = "SENTINEL";
 } // namespace
 
 
@@ -194,14 +194,14 @@ void test_Natvis()
   // optional_sentinel_via_type
   {
     tiny::optional_sentinel_via_type<unsigned, std::integral_constant<unsigned, 999>> empty;
-    tiny::optional_sentinel_via_type<unsigned, std::integral_constant<unsigned, 999>> nonEmpty = 42;
+    tiny::optional_sentinel_via_type<unsigned, std::integral_constant<unsigned, 999>> nonEmpty = 42u;
     [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
   }
 
   // optional_aip
   {
     tiny::optional_aip<unsigned> empty;
-    tiny::optional_aip<unsigned> nonEmpty = 42;
+    tiny::optional_aip<unsigned> nonEmpty = 42u;
     [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
   }
 

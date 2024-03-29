@@ -45,7 +45,7 @@ namespace Test
   };
 } // namespace Test
 
-inline const std::string CLASS1_SENTINEL = "SENTINEL";
+inline std::string const CLASS1_SENTINEL = "SENTINEL";
 } // namespace
 
 

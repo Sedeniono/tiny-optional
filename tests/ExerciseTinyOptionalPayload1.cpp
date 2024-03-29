@@ -1,5 +1,4 @@
 #include "ExerciseTinyOptionalPayload.h"
-
 #include "Exercises.h"
 #include "TestTypes.h"
 #include "TestUtilities.h"
@@ -93,7 +92,7 @@ void test_TinyOptionalPayload_Pointers()
     EXERCISE_OPTIONAL((tiny::optional<TestClass *>{}), EXPECT_INPLACE, nullptr, &c1);
     EXERCISE_OPTIONAL((tiny::optional{&c1}), EXPECT_INPLACE, &c1, &c2); // Uses deduction guide
     EXERCISE_OPTIONAL((tiny::optional<TestClass const *>{}), EXPECT_INPLACE, nullptr, &c1);
-    EXERCISE_OPTIONAL((tiny::optional<TestClass const volatile *>{}), EXPECT_INPLACE, nullptr, &c1);
+    EXERCISE_OPTIONAL((tiny::optional<TestClass volatile const *>{}), EXPECT_INPLACE, nullptr, &c1);
     EXERCISE_OPTIONAL((tiny::optional<TestClass volatile *>{}), EXPECT_INPLACE, nullptr, &c1);
   }
 
@@ -202,4 +201,3 @@ void test_TinyOptionalPayload_StdTypes()
     static_assert(IsDisabledHash<tiny::optional<TestClassWithInitializerList>>);
   }
 }
-

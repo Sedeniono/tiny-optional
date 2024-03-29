@@ -5,9 +5,9 @@
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
   #include <Windows.h>
   #include <filesystem>
+  #include <iostream>
   #include <regex>
   #include <sstream>
-  #include <iostream>
 #endif
 
 

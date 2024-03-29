@@ -24,7 +24,6 @@ inline constexpr bool MonadicsAvailable = tiny::is_tiny_optional_v<OptionalType>
                                           || (__cpp_lib_optional >= 202110L && tiny::impl::IsStdOptional<OptionalType>);
 
 
-
 enum InPlaceExpectation
 {
   EXPECT_INPLACE,
@@ -35,7 +34,7 @@ enum InPlaceExpectation
 // The function ExerciseOptional() below is called with all sorts of optional types (including std::optional) and
 // payloads. For each one, ExerciseOptional() tests most of the operations provided by the optional.
 // The macro here mainly exists to stringify the arguments for readable test outputs.
-// 
+//
 // validValueToAssign1 and validValueToAssign2 should be two different test values, i.e. values that the tests can
 // assign to the optional to test various things for non-empty optionals. They should be different so that the tests can
 // check whether e.g. an optional that initially contains validValueToAssign1 and then assigns validValueToAssign2
@@ -108,7 +107,7 @@ void ExerciseOptional(
             << ", validValueToAssign2='" << validValueToAssign2Str << "' and constructorArgs = '" << constructorArgsStr
             << "'" << std::endl;
 
-// clang-format off
+  // clang-format off
   #define TEST_PARAMS \
       [[maybe_unused]] TestValue1T validValueToAssign1, \
       [[maybe_unused]] TestValue2T validValueToAssign2, \

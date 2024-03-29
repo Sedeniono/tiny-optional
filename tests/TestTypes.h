@@ -27,7 +27,6 @@ enum UnscopedEnum
 };
 
 
-
 struct TestClass
 {
   bool IsValid() const noexcept
@@ -87,8 +86,6 @@ struct FlagManipulatorForTestClass
     emptyFlag.~TestClass();
   }
 };
-
-
 
 
 struct TestClassForInplace
@@ -184,13 +181,10 @@ private:
 };
 
 
-
 // Various stuff is noexcept(false)
 struct TestClassWithExcept
 {
-  TestClassWithExcept() noexcept(false)
-  {
-  }
+  TestClassWithExcept() noexcept(false) { }
 
   TestClassWithExcept(int value) noexcept(false)
     : someValue(value)
@@ -217,7 +211,6 @@ struct TestClassWithExcept
 };
 
 
-
 typedef int (*TestFuncPtr)(double, TestClass &);
 
 inline int TestFunc1(double, TestClass &)
@@ -235,7 +228,6 @@ struct TestDoubleValue
 {
   static constexpr double value = 42.0;
 };
-
 
 
 // Used for C++20 tests where we specify a sentinel value at compile to be an instance of this class.

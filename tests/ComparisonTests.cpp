@@ -55,7 +55,6 @@ void TestCompareOptWithValue(Val1 val1, Val2 val2, Comparer comparer)
 } // namespace
 
 
-
 // Some comparison tests involving NaNs fail with -ffast-math, C++20, gcc <=10 and optimizations enabled. fast-math is
 // quite problematic for reproducible results, so there does not seem to be a defect in the tiny::optional library, and
 // certainly not with the sentinel used within tiny::optional. Instead, the optimizer is giving inconsistent results.

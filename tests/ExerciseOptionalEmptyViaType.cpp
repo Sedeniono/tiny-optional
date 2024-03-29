@@ -43,7 +43,8 @@ void test_OptionalEmptyViaType()
   {
     // Test for the std::hash specialization
     static_assert(!IsDisabledHash<tiny::optional_sentinel_via_type<double, TestDoubleValue>>);
-    std::unordered_set<tiny::optional_sentinel_via_type<double, TestDoubleValue>> const set = {43.0, std::nullopt, 44.0};
+    std::unordered_set<tiny::optional_sentinel_via_type<double, TestDoubleValue>> const set
+        = {43.0, std::nullopt, 44.0};
     ASSERT_TRUE(set.count(43.0) > 0);
     ASSERT_TRUE(set.count(std::nullopt) > 0);
     ASSERT_TRUE(set.count(44.0) > 0);

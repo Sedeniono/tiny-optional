@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
-#include <memory>
 #include <iosfwd>
+#include <memory>
+#include <string>
 
 struct ExecutionResult;
 
@@ -24,7 +24,6 @@ protected:
 private:
   static std::string FormatInfo(std::string const & code, ExecutionResult const & result);
 };
-
 
 
 std::unique_ptr<CompilationChecksBase> CreateCompilationChecker();

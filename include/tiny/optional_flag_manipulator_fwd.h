@@ -37,6 +37,6 @@ namespace tiny
 // See README.md and corresponding definition in optional.h.
 template <class PayloadType, class Enable = void>
 struct optional_flag_manipulator;
-}
+} // namespace tiny
 
 #endif
