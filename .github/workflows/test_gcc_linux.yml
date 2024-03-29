@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gcc_version: [9, 10]
+        gcc_version: [9, 11, 13]
         cpp_version: [c++17, c++20]
         arch: [m64, m32] # 64 and 32 bit
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
@@ -27,7 +27,7 @@ jobs:
           - gcc_version: 9
             cpp_version: c++20
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
 
     steps:
