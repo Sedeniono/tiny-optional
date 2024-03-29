@@ -57,10 +57,10 @@ void test_TinyOptionalPayload_ConstAndVolatile()
 
 void test_TinyOptionalPayload_Cpp20NTTP()
 {
-  // Non type template parameters supported since C++20.
-  // C++20 allows using floating point values and literal class types in templates.
-  // Unfortunately, even clang 14 does yet support it.
-#if defined(TINY_OPTIONAL_CPP20) && !defined(TINY_OPTIONAL_CLANG_BUILD)
+  // Non type template parameters (NTTP) since C++20 support floating point values and literal class types.
+  // Clang supports this fully since clang 18. But we cannot simply use a feature test on "__cpp_nontype_template_args"
+  // because clang 18 still does not define it as 201911L (but instead uses 201411L, which seems incorrect).
+#if defined(TINY_OPTIONAL_CPP20) && (!defined(TINY_OPTIONAL_CLANG_BUILD) || __clang_major__ >= 18)
   {
     // Floating point, directly in the payload
     EXERCISE_OPTIONAL((tiny::optional<float, 42.0f>{}), EXPECT_INPLACE, 43.0f, 44.0f);
