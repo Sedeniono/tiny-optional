@@ -40,7 +40,7 @@ struct tiny::optional_flag_manipulator<ClassWithCustomManip>
 
 namespace
 {
-enum class TestEnum : unsigned long long 
+enum class TestEnum : unsigned long long
 {
   VALUE1,
   VALUE2,
@@ -70,7 +70,7 @@ struct ClassWithFunc
 {
   void memberFunc() { }
 };
-}
+} // namespace
 
 
 // We cannot really run automated tests for Visual Studio natvis files. The code here serves as convenient
@@ -79,7 +79,7 @@ struct ClassWithFunc
 void test_Natvis()
 {
   //-------------- Supported by natvis --------------
-  
+
   // Not in-place (i.e. not compressed)
   {
     tiny::optional<unsigned> empty;
@@ -173,10 +173,25 @@ void test_Natvis()
     [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
   }
 
+  // optional_sentinel_via_type
+  {
+    tiny::optional_sentinel_via_type<unsigned, std::integral_constant<unsigned, 999>> empty;
+    tiny::optional_sentinel_via_type<unsigned, std::integral_constant<unsigned, 999>> nonEmpty = 42;
+    [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
+  }
 
-  //-------------- Not supported by natvis --------------
+  // optional_aip
+  {
+    tiny::optional_aip<unsigned> empty;
+    tiny::optional_aip<unsigned> nonEmpty = 42;
+    [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
+  }
+
+
+  //-------------- Not supported by our generic natvis file --------------
 
   // These have specializations of tiny::optional_flag_manipulator.
+  // Because Natvis does not allow to call functions, we cannot support them with a generic Natvis.
   {
     tiny::optional<ClassWithCustomManip> empty;
     tiny::optional<ClassWithCustomManip> nonEmpty = ClassWithCustomManip{};
@@ -191,6 +206,15 @@ void test_Natvis()
     tiny::optional<AdditionalInplaceTestClass, &AdditionalInplaceTestClass::someEnum> empty;
     tiny::optional<AdditionalInplaceTestClass, &AdditionalInplaceTestClass::someEnum> nonEmpty
         = AdditionalInplaceTestClass{};
+    [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
+  }
+
+  // optional_inplace: Always uses a custom FlagManipulator, so also no chance to write a
+  // generic Natvis visualizer.
+  {
+    tiny::optional_inplace<ClassWithCustomManip, tiny::optional_flag_manipulator<ClassWithCustomManip>> empty;
+    tiny::optional_inplace<ClassWithCustomManip, tiny::optional_flag_manipulator<ClassWithCustomManip>> nonEmpty
+        = ClassWithCustomManip{};
     [[maybe_unused]] int dummyToPlaceBreakpoint = 0;
   }
 }

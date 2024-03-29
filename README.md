@@ -601,8 +601,9 @@ Copy and add the Natvis file to your project, or append its content to your exis
 See the [official Microsoft documentation](https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects) for more information on Natvis.
 
 The Natvis visualizers show whether the optional contains a value or not, and if it does, the contained value.
-Unfortunately, when you specialize `tiny::optional_flag_manipulator` (see above), it seems to be impossible to write a generic Natvis visualizer because Natvis does not allow to call any functions (even if they are `constexpr`).
+Unfortunately, when you specialize `tiny::optional_flag_manipulator` (see above), it is not reasonably possible to write a generic Natvis visualizer because Natvis does not allow to call any functions (even if they are `constexpr`).
 So you need to add additional visualizers for each custom specialization yourself.
+The same holds true for `tiny::optional_inplace`.
 
 
 

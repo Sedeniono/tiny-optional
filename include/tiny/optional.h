@@ -207,7 +207,7 @@ namespace impl
 
 
 // Can be used to check whether the given type 'U' is some tiny optional type
-// (i.e. tiny::optional, tiny::optional_inplace or tiny::optional_aip).
+// (i.e. tiny::optional, tiny::optional_inplace, tiny::optional_aip or tiny::optional_sentinel_via_type).
 template <class U>
 inline constexpr bool is_tiny_optional_v = impl::IsTinyOptionalHelper<U>(nullptr);
 
@@ -2035,6 +2035,7 @@ namespace impl
   using TinyOptionalImplCombined
       = TinyOptionalImpl<typename Options::StoredTypeDecomposition, typename Options::FlagManipulator>;
 } // namespace impl
+
 
 // Basically the same as optional, except that the value for the sentinel flag needs to be specified via a type
 // (i.e. SentinelValue::value must be the sentinel).
