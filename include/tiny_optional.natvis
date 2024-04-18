@@ -36,7 +36,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
     <DisplayString Condition="!mStorage.isEmptyFlag">Not empty. Value={{{mStorage.payload}}}</DisplayString>
     <Expand>
       <Item Condition="!mStorage.isEmptyFlag" Name="value (not empty)">mStorage.payload</Item>
-      <Item Condition="mStorage.isEmptyFlag" Name="value (is empty)">std::nullopt</Item>
+      <Item Condition="mStorage.isEmptyFlag" Name="value (is empty)">"nullopt",sb</Item>
       <Item Name="is_compressed">(*this).is_compressed</Item>
     </Expand>
   </Type>
@@ -48,7 +48,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
     <DisplayString Condition="IsEmpty()">nullopt (optional is empty)</DisplayString>
     <DisplayString Condition="!IsEmpty()">Not empty. Value={{{mStorage.storage}}}</DisplayString>
     <Expand>
-      <Item Condition="IsEmpty()" Name="value (is empty)">std::nullopt</Item>
+      <Item Condition="IsEmpty()" Name="value (is empty)">"nullopt",sb</Item>
       <Item Condition="!IsEmpty()" Name="value (not empty)">mStorage.storage</Item>
       <Item Name="is_compressed">(*this).is_compressed</Item>
     </Expand>
