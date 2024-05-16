@@ -28,10 +28,18 @@ jobs:
             cpp_version: c++20
 
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@v4
+
+    # gcc 13 was removed from the runner (https://github.com/actions/runner-images/issues/9679), so install it manually.
+    - name: Install gcc 13 if required
+      if: ${{ matrix.gcc_version == 13 }}
+      run: |
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+        sudo apt update -y
+        sudo apt install g++-13
 
     - name: Install gcc-multilib for x86 if required
       # Creating a 32 bit executable on a 64 bit OS requires the gcc multilib. 
