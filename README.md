@@ -31,6 +31,8 @@
     - [Storing the empty flag in only part of the payload](#storing-the-empty-flag-in-only-part-of-the-payload)
     - [Enumerations](#enumerations)
     - [Types that you have not authored](#types-that-you-have-not-authored)
+      - [Generic alternative](#generic-alternative)
+      - [Alternative for `static constexpr`](#alternative-for-static-constexpr)
   - [Natvis](#natvis)
 - [Performance results](#performance-results)
   - [Runtime](#runtime)
@@ -526,6 +528,8 @@ A hacky workaround would be to create a dedicated header file, say `my_vector.h`
 Or the other way around, create a custom `my_tiny_optional.h` header file, and always include it.
 I really do not recommend either of these solutions.
 
+#### Generic alternative
+
 Instead of relying on the automatism of `tiny::optional`, you can instead use `tiny::optional_inplace` which accepts a `FlagManipulator`:
 ```C++
 namespace tiny {
@@ -609,6 +613,24 @@ int main()
     //o = Iterator{};
 }
 ```
+
+#### Alternative for `static constexpr`
+A simpler alternative is possible via `tiny::optional_sentinel_via_type` if the sentinel can be stored in a `static constexpr` variable of a class, the sentinel value can be compared with `operator==` and it can be assigned with `operator=`.
+For example:
+```C++
+struct MicroSecondsSentinel
+{
+  // The sentinel value.
+  static constexpr auto value = std::chrono::microseconds::min();
+};
+
+tiny::optional_sentinel_via_type<std::chrono::microseconds, MicroSecondsSentinel> o;
+static_assert(sizeof(o) == sizeof(std::chrono::microseconds));
+```
+In this example the value `std::chrono::microseconds::min()` is used to indicate an empty optional.
+Hence, it is no longer a valid value to store in the optional.
+
+Note: E.g. `tiny::optional<std::chrono::microseconds, std::chrono::microseconds::min()>` would be invalid C++20 because `std::chrono::duration` (and thus `std::chrono::microseconds::min()`) is not a literal class type.
 
 
 ## Natvis
