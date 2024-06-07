@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        clang_version: [16, 17]
+        clang_version: [17, 18]
         cpp_version: [c++17, c++20]
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
 
@@ -27,7 +27,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install clang
-      uses: KyleMayes/install-llvm-action@v1.9.0
+      uses: KyleMayes/install-llvm-action@v2.0.3
       with:
         version: ${{ matrix.clang_version }}
     - name: Build and run tests
