@@ -300,7 +300,7 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
   {
     EXERCISE_OPTIONAL(
         (tiny::optional<Class2, &Class2::member2>{}),
-        EXPECT_INPLACE,
+        cInPlaceExpectationForMemPtr,
         Class2(42, "val1"),
         Class2(43, "val2"));
   }
@@ -311,13 +311,13 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
   {
     EXERCISE_OPTIONAL(
         (tiny::optional<Test::Class1, &Test::Class1::someDouble>{}),
-        EXPECT_INPLACE,
+        cInPlaceExpectationForMemPtr,
         Test::Class1(CLASS1_SENTINEL),
         Test::Class1("val2"));
 
     EXERCISE_OPTIONAL(
         (tiny::optional<Test::Class1, &Test::Class1::someInt, -1>{}),
-        EXPECT_INPLACE,
+        cInPlaceExpectationForMemPtr,
         Test::Class1(CLASS1_SENTINEL),
         Test::Class1("val2"));
   }

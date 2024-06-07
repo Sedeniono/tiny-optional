@@ -22,11 +22,12 @@ void test_ExpressionsThatShouldNotCompile()
     
     ,
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
     {/*code*/ "struct TestClassForInplace { int someValue1 = -1; };\n"
               "tiny::optional<TestClassForInplace, &TestClassForInplace::someValue1> o;",
      /*expected regex*/ "The type of the member variable given by the member-pointer cannot be used as flag if you do not specify a custom SentinelValue"}
-    
     ,
+#endif
 
     {/*code*/ "struct TestClassForInplace { double someValue1 = 0.0; };\n"
               "struct TestClass{};\n"

@@ -11,28 +11,44 @@
 
 void test_TinyOptionalPayload_Bool()
 {
-  EXERCISE_OPTIONAL((tiny::optional<bool>{}), EXPECT_INPLACE, false, true);
-  EXERCISE_OPTIONAL((tiny::optional<bool>{}), EXPECT_INPLACE, true, false);
+  EXERCISE_OPTIONAL((tiny::optional<bool>{}), cInPlaceExpectationForUnusedBits, false, true);
+  EXERCISE_OPTIONAL((tiny::optional<bool>{}), cInPlaceExpectationForUnusedBits, true, false);
   EXERCISE_OPTIONAL_WITH_CONSTRUCTOR_ARGS((tiny::optional<bool, true>{}), EXPECT_INPLACE, false, false, false);
   EXERCISE_OPTIONAL_WITH_CONSTRUCTOR_ARGS((tiny::optional<bool, false>{}), EXPECT_INPLACE, true, true, true);
-  EXERCISE_OPTIONAL((tiny::optional{false}), EXPECT_INPLACE, false, true); // Uses deduction guide
+  EXERCISE_OPTIONAL((tiny::optional{false}), cInPlaceExpectationForUnusedBits, false, true); // Uses deduction guide
 }
 
 
 void test_TinyOptionalPayload_FloatingPoint()
 {
-  EXERCISE_OPTIONAL((tiny::optional<double>{}), EXPECT_INPLACE, 43.0, 44.0);
-  EXERCISE_OPTIONAL((tiny::optional<double>{}), EXPECT_INPLACE, std::numeric_limits<double>::quiet_NaN(), 44.0);
-  EXERCISE_OPTIONAL((tiny::optional<double>{}), EXPECT_INPLACE, std::numeric_limits<double>::signaling_NaN(), 44.0);
-  EXERCISE_OPTIONAL((tiny::optional{100.0}), EXPECT_INPLACE, 43.0, 44.0); // Uses deduction guide
+  EXERCISE_OPTIONAL((tiny::optional<double>{}), cInPlaceExpectationForUnusedBits, 43.0, 44.0);
+  EXERCISE_OPTIONAL(
+      (tiny::optional<double>{}),
+      cInPlaceExpectationForUnusedBits,
+      std::numeric_limits<double>::quiet_NaN(),
+      44.0);
+  EXERCISE_OPTIONAL(
+      (tiny::optional<double>{}),
+      cInPlaceExpectationForUnusedBits,
+      std::numeric_limits<double>::signaling_NaN(),
+      44.0);
+  EXERCISE_OPTIONAL((tiny::optional{100.0}), cInPlaceExpectationForUnusedBits, 43.0, 44.0); // Uses deduction guide
 
-  EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, 43.0f, 44.0f);
-  EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, std::numeric_limits<float>::quiet_NaN(), 44.0f);
+  EXERCISE_OPTIONAL((tiny::optional<float>{}), cInPlaceExpectationForUnusedBits, 43.0f, 44.0f);
+  EXERCISE_OPTIONAL(
+      (tiny::optional<float>{}),
+      cInPlaceExpectationForUnusedBits,
+      std::numeric_limits<float>::quiet_NaN(),
+      44.0f);
 #ifndef __FAST_MATH__ // NAN is broken with -ffast-math; clang issues -Wnan-infinity-disabled
-  EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, NAN, 44.0f);
+  EXERCISE_OPTIONAL((tiny::optional<float>{}), cInPlaceExpectationForUnusedBits, NAN, 44.0f);
 #endif
-  EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, std::numeric_limits<float>::signaling_NaN(), 44.0f);
-  EXERCISE_OPTIONAL((tiny::optional{100.0f}), EXPECT_INPLACE, 43.0f, 44.0f); // Uses deduction guide
+  EXERCISE_OPTIONAL(
+      (tiny::optional<float>{}),
+      cInPlaceExpectationForUnusedBits,
+      std::numeric_limits<float>::signaling_NaN(),
+      44.0f);
+  EXERCISE_OPTIONAL((tiny::optional{100.0f}), cInPlaceExpectationForUnusedBits, 43.0f, 44.0f); // Uses deduction guide
 
   EXERCISE_OPTIONAL((tiny::optional<long double>{}), EXPECT_SEPARATE, 43.0L, 44.0L);
 }
@@ -63,7 +79,7 @@ void test_TinyOptionalPayload_IsEmptyFlagInMember()
 
   EXERCISE_OPTIONAL_WITH_CONSTRUCTOR_ARGS(
       (tiny::optional<TestClassForInplace, &TestClassForInplace::someInt, 42>{}),
-      EXPECT_INPLACE,
+      cInPlaceExpectationForMemPtr,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr),
       2,
@@ -73,13 +89,13 @@ void test_TinyOptionalPayload_IsEmptyFlagInMember()
 
   EXERCISE_OPTIONAL(
       (tiny::optional<TestClassForInplace, &TestClassForInplace::someDouble>{}),
-      EXPECT_INPLACE,
+      cInPlaceExpectationForMemPtr,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));
 
   EXERCISE_OPTIONAL(
       (tiny::optional<TestClassForInplace, &TestClassForInplace::somePtr>{}),
-      EXPECT_INPLACE,
+      cInPlaceExpectationForMemPtr,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));
 }
@@ -90,12 +106,12 @@ void test_TinyOptionalPayload_Pointers()
   // Ordinary pointers
   {
     TestClass c1, c2;
-    EXERCISE_OPTIONAL((tiny::optional<TestClass *>{}), EXPECT_INPLACE, &c1, &c2);
-    EXERCISE_OPTIONAL((tiny::optional<TestClass *>{}), EXPECT_INPLACE, nullptr, &c1);
-    EXERCISE_OPTIONAL((tiny::optional{&c1}), EXPECT_INPLACE, &c1, &c2); // Uses deduction guide
-    EXERCISE_OPTIONAL((tiny::optional<TestClass const *>{}), EXPECT_INPLACE, nullptr, &c1);
-    EXERCISE_OPTIONAL((tiny::optional<TestClass volatile const *>{}), EXPECT_INPLACE, nullptr, &c1);
-    EXERCISE_OPTIONAL((tiny::optional<TestClass volatile *>{}), EXPECT_INPLACE, nullptr, &c1);
+    EXERCISE_OPTIONAL((tiny::optional<TestClass *>{}), cInPlaceExpectationForUnusedBits, &c1, &c2);
+    EXERCISE_OPTIONAL((tiny::optional<TestClass *>{}), cInPlaceExpectationForUnusedBits, nullptr, &c1);
+    EXERCISE_OPTIONAL((tiny::optional{&c1}), cInPlaceExpectationForUnusedBits, &c1, &c2); // Uses deduction guide
+    EXERCISE_OPTIONAL((tiny::optional<TestClass const *>{}), cInPlaceExpectationForUnusedBits, nullptr, &c1);
+    EXERCISE_OPTIONAL((tiny::optional<TestClass volatile const *>{}), cInPlaceExpectationForUnusedBits, nullptr, &c1);
+    EXERCISE_OPTIONAL((tiny::optional<TestClass volatile *>{}), cInPlaceExpectationForUnusedBits, nullptr, &c1);
   }
 
   {
@@ -109,14 +125,14 @@ void test_TinyOptionalPayload_Pointers()
   {
     int i = 0;
     int j = 42;
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, static_cast<void *>(&i), &j);
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, nullptr, static_cast<void *>(&i));
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, static_cast<void *>(&i), &j);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, nullptr, static_cast<void *>(&i));
   }
 
   // Function pointers
   {
-    EXERCISE_OPTIONAL((tiny::optional<TestFuncPtr>{}), EXPECT_INPLACE, &TestFunc1, &TestFunc2);
-    EXERCISE_OPTIONAL((tiny::optional<TestFuncPtr>{}), EXPECT_INPLACE, nullptr, &TestFunc2);
+    EXERCISE_OPTIONAL((tiny::optional<TestFuncPtr>{}), cInPlaceExpectationForUnusedBits, &TestFunc1, &TestFunc2);
+    EXERCISE_OPTIONAL((tiny::optional<TestFuncPtr>{}), cInPlaceExpectationForUnusedBits, nullptr, &TestFunc2);
   }
 
   // Member pointers

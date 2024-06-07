@@ -8,11 +8,27 @@
 
 void test_OptionalEmptyViaType()
 {
-  EXERCISE_OPTIONAL((tiny::optional_sentinel_via_type<bool, tiny::UseDefaultType>{}), EXPECT_INPLACE, false, true);
-  EXERCISE_OPTIONAL((tiny::optional_sentinel_via_type<bool, tiny::UseDefaultType>{}), EXPECT_INPLACE, true, false);
+  EXERCISE_OPTIONAL(
+      (tiny::optional_sentinel_via_type<bool, tiny::UseDefaultType>{}),
+      cInPlaceExpectationForUnusedBits,
+      false,
+      true);
+  EXERCISE_OPTIONAL(
+      (tiny::optional_sentinel_via_type<bool, tiny::UseDefaultType>{}),
+      cInPlaceExpectationForUnusedBits,
+      true,
+      false);
 
-  EXERCISE_OPTIONAL((tiny::optional_sentinel_via_type<double, tiny::UseDefaultType>{}), EXPECT_INPLACE, 43.0, 44.0);
-  EXERCISE_OPTIONAL((tiny::optional_sentinel_via_type<float, tiny::UseDefaultType>{}), EXPECT_INPLACE, 43.0f, 44.0f);
+  EXERCISE_OPTIONAL(
+      (tiny::optional_sentinel_via_type<double, tiny::UseDefaultType>{}),
+      cInPlaceExpectationForUnusedBits,
+      43.0,
+      44.0);
+  EXERCISE_OPTIONAL(
+      (tiny::optional_sentinel_via_type<float, tiny::UseDefaultType>{}),
+      cInPlaceExpectationForUnusedBits,
+      43.0f,
+      44.0f);
 
   EXERCISE_OPTIONAL((tiny::optional_sentinel_via_type<int, tiny::UseDefaultType>{}), EXPECT_SEPARATE, 43, 44);
   EXERCISE_OPTIONAL((tiny::optional_sentinel_via_type<int, std::integral_constant<int, 42>>{}), EXPECT_INPLACE, 43, 44);
@@ -22,7 +38,7 @@ void test_OptionalEmptyViaType()
           TestClassForInplace,
           std::integral_constant<int, 42>,
           &TestClassForInplace::someInt>{}),
-      EXPECT_INPLACE,
+      cInPlaceExpectationForMemPtr,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));
 
@@ -36,7 +52,7 @@ void test_OptionalEmptyViaType()
 
   EXERCISE_OPTIONAL(
       (tiny::optional_sentinel_via_type<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someDouble>{}),
-      EXPECT_INPLACE,
+      cInPlaceExpectationForMemPtr,
       TestClassForInplace{},
       TestClassForInplace(43, 44.0, 45, nullptr));
 

@@ -11,6 +11,8 @@ Global
 		Msvc Debug C++17 permissive|x64 = Msvc Debug C++17 permissive|x64
 		Msvc Debug C++17|Win32 = Msvc Debug C++17|Win32
 		Msvc Debug C++17|x64 = Msvc Debug C++17|x64
+		Msvc Debug C++20 No UB|Win32 = Msvc Debug C++20 No UB|Win32
+		Msvc Debug C++20 No UB|x64 = Msvc Debug C++20 No UB|x64
 		Msvc Debug C++20 permissive|Win32 = Msvc Debug C++20 permissive|Win32
 		Msvc Debug C++20 permissive|x64 = Msvc Debug C++20 permissive|x64
 		Msvc Debug C++20|Win32 = Msvc Debug C++20|Win32
@@ -29,6 +31,10 @@ Global
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|Win32.Build.0 = Msvc Debug C++17|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|x64.ActiveCfg = Msvc Debug C++17|x64
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++17|x64.Build.0 = Msvc Debug C++17|x64
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20 No UB|Win32.ActiveCfg = Msvc Debug C++20 No UB|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20 No UB|Win32.Build.0 = Msvc Debug C++20 No UB|Win32
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20 No UB|x64.ActiveCfg = Msvc Debug C++20 No UB|x64
+		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20 No UB|x64.Build.0 = Msvc Debug C++20 No UB|x64
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20 permissive|Win32.ActiveCfg = Msvc Debug C++20 permissive|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20 permissive|Win32.Build.0 = Msvc Debug C++20 permissive|Win32
 		{67F2DCFE-B0F2-429F-864E-AA7962BC981F}.Msvc Debug C++20 permissive|x64.ActiveCfg = Msvc Debug C++20 permissive|x64

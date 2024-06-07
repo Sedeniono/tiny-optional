@@ -31,6 +31,21 @@ enum InPlaceExpectation
 };
 
 
+inline static constexpr InPlaceExpectation cInPlaceExpectationForUnusedBits =
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
+    EXPECT_INPLACE;
+#else
+    EXPECT_SEPARATE;
+#endif
+
+inline static constexpr InPlaceExpectation cInPlaceExpectationForMemPtr =
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
+    EXPECT_INPLACE;
+#else
+    EXPECT_SEPARATE;
+#endif
+
+
 // The function ExerciseOptional() below is called with all sorts of optional types (including std::optional) and
 // payloads. For each one, ExerciseOptional() tests most of the operations provided by the optional.
 // The macro here mainly exists to stringify the arguments for readable test outputs.

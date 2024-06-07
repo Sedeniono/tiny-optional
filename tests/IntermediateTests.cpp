@@ -44,12 +44,13 @@ void test_NanExploit()
 {
   using namespace tiny::impl;
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
   {
-#ifndef __FAST_MATH__ // std::isnan is broken with -ffast-math
+  #ifndef __FAST_MATH__ // std::isnan is broken with -ffast-math
     float testValue;
     std::memcpy(&testValue, &SentinelForExploitingUnusedBits<float>::value, sizeof(float));
     ASSERT_TRUE(std::isnan(testValue));
-#endif
+  #endif
 
     constexpr float sNaN = std::numeric_limits<float>::signaling_NaN();
     ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<float>::value, &sNaN, sizeof(float)) != 0);
@@ -57,17 +58,18 @@ void test_NanExploit()
     ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<float>::value, &qNaN, sizeof(float)) != 0);
   }
   {
-#ifndef __FAST_MATH__ // std::isnan is broken with -ffast-math
+  #ifndef __FAST_MATH__ // std::isnan is broken with -ffast-math
     double testValue;
     std::memcpy(&testValue, &SentinelForExploitingUnusedBits<double>::value, sizeof(double));
     ASSERT_TRUE(std::isnan(testValue));
-#endif
+  #endif
 
     constexpr double sNaN = std::numeric_limits<double>::signaling_NaN();
     ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<double>::value, &sNaN, sizeof(double)) != 0);
     constexpr double qNaN = std::numeric_limits<double>::quiet_NaN();
     ASSERT_TRUE(std::memcmp(&SentinelForExploitingUnusedBits<double>::value, &qNaN, sizeof(double)) != 0);
   }
+#endif
 }
 
 
@@ -79,13 +81,23 @@ void test_SelectDecomposition()
   // clang-format off
   static_assert(NoArgsAndBehavesAsStdOptional == SelectDecomposition<int, tiny::UseDefaultType, UseDefaultValue>::test);
   static_assert(NoArgsAndBehavesAsStdOptional == SelectDecomposition<TestClass, tiny::UseDefaultType, UseDefaultValue>::test);
-  static_assert(NoArgsAndHasCustomFlagManipulator == SelectDecomposition<double, tiny::UseDefaultType, UseDefaultValue>::test);
   static_assert(SentinelValueSpecifiedForInplaceSwallowing == SelectDecomposition<int, std::integral_constant<int, 42>, UseDefaultValue>::test);
-  static_assert(SentinelValueSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator == SelectDecomposition<double, TestDoubleValue, UseDefaultValue>::test);
-  static_assert(MemPtrSpecifiedToVariableWithCustomFlagManipulator == SelectDecomposition<TestClassForInplace, tiny::UseDefaultType, &TestClassForInplace::someDouble>::test);
-  static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator == SelectDecomposition<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someDouble>::test);
   static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowing == SelectDecomposition<TestClassForInplace, std::integral_constant<int, 42>, &TestClassForInplace::someInt>::test);
   
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
+  static_assert(NoArgsAndHasCustomFlagManipulator == SelectDecomposition<double, tiny::UseDefaultType, UseDefaultValue>::test);
+  static_assert(SentinelValueSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator == SelectDecomposition<double, TestDoubleValue, UseDefaultValue>::test);
+  static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator == SelectDecomposition<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someDouble>::test);
+  static_assert(MemPtrSpecifiedToVariableWithCustomFlagManipulator == SelectDecomposition<TestClassForInplace, tiny::UseDefaultType, &TestClassForInplace::someDouble>::test);
+#else
+  static_assert(NoArgsAndBehavesAsStdOptional == SelectDecomposition<double, tiny::UseDefaultType, UseDefaultValue>::test);
+  static_assert(SentinelValueSpecifiedForInplaceSwallowing == SelectDecomposition<double, TestDoubleValue, UseDefaultValue>::test);
+  static_assert(SentinelValueAndMemPtrSpecifiedForInplaceSwallowing == SelectDecomposition<TestClassForInplace, TestDoubleValue, &TestClassForInplace::someDouble>::test);
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
+  static_assert(MemPtrSpecifiedToVariableWithoutCustomFlagManipulator == SelectDecomposition<TestClassForInplace, tiny::UseDefaultType, &TestClassForInplace::someDouble>::test);
+#endif
+#endif
+
   // Should not compile:
   //static_assert(3 == SelectDecomposition<TestClass, std::integral_constant<int, 42>, UseDefaultValue>::test);
   //std::cout << "F = " << SelectDecomposition<TestClassForInplace, tiny::UseDefaultType, &TestClassForInplace::someValue1>::test << std::endl; // someValue1 is int, no default value possible

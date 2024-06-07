@@ -63,6 +63,21 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #define TINY_OPTIONAL_x86
 #endif
 
+// The user can define TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS to disable the exploits of undefined
+// behavior. This allows compilation on non x86/x64 platforms. This means that the only remaining feature of this
+// library that sets it apart from std::optional is the ability to use a custom sentinel (and the stuff with
+// optional_flag_manipulator).
+#ifdef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+// Disable exploits of unused bits e.g. for double, pointers, etc, and use a separate bool instead.
+  #ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
+    #define TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
+  #endif
+// Disable storing the empty state in members and use a separate bool instead.
+  #ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
+    #define TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
+  #endif
+#endif
+
 #ifdef __cpp_lib_three_way_comparison
   #define TINY_OPTIONAL_ENABLE_THREEWAY_COMPARISON
   #if !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
@@ -330,15 +345,9 @@ namespace impl
   };
 
 
-//====================================================================================
-// SentinelForExploitingUnusedBits
-//====================================================================================
-
-// So far the implementation defined exploits are only implemented and tested for x64 and x86.
-#if !defined(TINY_OPTIONAL_x86) && !defined(TINY_OPTIONAL_x64)
-  #error "Exploiting of unused bits is not implemented for the target architecture."
-#endif
-
+  //====================================================================================
+  // SentinelForExploitingUnusedBits
+  //====================================================================================
 
   // The specializations of SentinelForExploitingUnusedBits define the bit pattern to use to indicate an empty value
   // when the 'IsEmpty'-flag is stored inplace for various standard types. Which standard types are supported is
@@ -351,8 +360,17 @@ namespace impl
     static_assert(
         always_false<T>,
         "Instantiation of SentinelForExploitingUnusedBits with unknown type. Either an explicit specialization of "
-        "SentinelForExploitingUnusedBits is missing, or it should not have been instantiated in the first place. Bug.");
+        "SentinelForExploitingUnusedBits is missing, or it should not have been instantiated in the first place. "
+        "This is a bug in the tiny-optional library. Please report it!");
   };
+
+
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
+
+  // So far the implementation defined exploits are only implemented and tested for x64 and x86.
+  #if !defined(TINY_OPTIONAL_x86) && !defined(TINY_OPTIONAL_x64)
+    #error "Exploiting of unused bits is not implemented for the target architecture."
+  #endif
 
 
   template <>
@@ -426,23 +444,24 @@ namespace impl
     //   not divisible by 4, or even better not divisible by 2, we minimize the chance that the chosen sentinel value is
     //   encountered as valid address in practice.
 
-#ifdef TINY_OPTIONAL_x64
+  #ifdef TINY_OPTIONAL_x64
     // We simply use the highest non-canonical address on 64 bit.
     static constexpr std::uintptr_t value = 0xffff'8000'0000'0000ull - 1;
-#elif defined(TINY_OPTIONAL_x86)
+  #elif defined(TINY_OPTIONAL_x86)
     // >= 0xffff'ffff-5 are not possible due to the pseudo handles on Windows. 0xffff'ffff-6 would be possible. Just to
     // get a bit more distance to the space of pseudo handles (in case another one will be introduced), we use
     // 0xffff'ffff-8. The value 0xffff'ffff-7 is not used to satisfy the note about alignment above.
     static constexpr std::uintptr_t value = 0xffff'ffff - 8;
-#else
-  #error Unknown architecture.
-#endif
+  #else
+    #error Unknown architecture.
+  #endif
 
     static_assert(sizeof(value) == sizeof(T *));
 
     // Cross-check the thoughts about alignment explained above: Value should not be divisible by 2.
     static_assert(value % 2 == 1);
   };
+#endif // #ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
 
 
   //====================================================================================
@@ -546,6 +565,7 @@ namespace impl
   };
 
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
   // Decomposition used when the StoredType and the PayloadType are the same and identify a class/struct,
   // where the 'IsEmpty'-flag is stored inplace of one of the member variables of that class/struct.
   // This member variable is identified by the member pointer 'memPtrToIsEmptyFlag'.
@@ -560,6 +580,11 @@ namespace impl
   template <class PayloadType_, auto memPtrToIsEmptyFlag>
   struct InplaceDecompositionViaMemPtr
   {
+  // As explained above, we exploit undefined behavior here. I have tested this only on x86/x64 platforms.
+  #if !defined(TINY_OPTIONAL_x86) && !defined(TINY_OPTIONAL_x64)
+    #error "Storing the empty state in a member is not supported on the target architecture."
+  #endif
+
     static_assert(std::is_member_object_pointer_v<decltype(memPtrToIsEmptyFlag)>);
     static_assert(memPtrToIsEmptyFlag != nullptr);
 
@@ -576,6 +601,7 @@ namespace impl
       return v.storage;
     }
   };
+#endif
 
 
   //====================================================================================
@@ -791,12 +817,17 @@ namespace impl
   // True if the tiny optional library knows a special sentinel for the given payload type that exploits the type's
   // unused bit patterns to represent the empty state.
   template <class PayloadType>
-  inline constexpr bool SentinelForExploitingUnusedBitsIsKnown
-      = (std::is_floating_point_v<PayloadType> && !std::is_same_v<std::remove_cv_t<PayloadType>, long double>)
-        || std::is_same_v<std::remove_cv_t<PayloadType>, bool>
-        || std::is_pointer_v<PayloadType>; // Pointers and function pointers, but not member pointers or member
-                                           // function pointers.
+  inline constexpr bool SentinelForExploitingUnusedBitsIsKnown =
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
+      (std::is_floating_point_v<PayloadType> && !std::is_same_v<std::remove_cv_t<PayloadType>, long double>)
+      || std::is_same_v<std::remove_cv_t<PayloadType>, bool>
+      || std::is_pointer_v<PayloadType>; // Pointers and function pointers, but not member pointers or member
+                                         // function pointers.
+#else
+      false;
+#endif
 } // namespace impl
+
 
 // Specialization of optional_flag_manipulator for floats, doubles, bools, pointers and functions pointers. The
 // library exploits unused bit patterns for these types to encode the 'IsEmpty' flag without removing any value from
@@ -1796,6 +1827,7 @@ namespace impl
     SentinelValueSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator,
     SentinelValueSpecifiedForInplaceSwallowing,
     MemPtrSpecifiedToVariableWithCustomFlagManipulator,
+    MemPtrSpecifiedToVariableWithoutCustomFlagManipulator,
     SentinelValueAndMemPtrSpecifiedForInplaceSwallowing,
     SentinelValueAndMemPtrSpecifiedForInplaceSwallowingForTypeWithCustomFlagManipulator
   };
@@ -1901,8 +1933,13 @@ namespace impl
         "The flag given by the member-pointer is not a member of the payload type.");
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
     using FlagManipulator = optional_flag_manipulator<MemVarType>;
+#else
+    using StoredTypeDecomposition = DecompositionForSeparateFlag<PayloadType>;
+    using FlagManipulator = SeparateFlagManipulator;
+#endif
   };
 
 
@@ -1917,9 +1954,21 @@ namespace impl
           && !HasCustomInplaceFlagManipulator<typename MemberPointerFragments<memPtrToFlag>::VariableType>>>
   // clang-format on
   {
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
+    // The empty state cannot be stored in a member variable if we do not know a sentinel value (i.e. if the assert
+    // triggers, we do know neither a builtin sentinel nor the user specified a custom one).
     static_assert(
         always_false<PayloadType>,
         "The type of the member variable given by the member-pointer cannot be used as flag if you do not specify a custom SentinelValue.");
+#else
+    static constexpr auto test = SelectedDecompositionTest::MemPtrSpecifiedToVariableWithoutCustomFlagManipulator;
+    static_assert(
+        std::is_same_v<PayloadType, typename MemberPointerFragments<memPtrToFlag>::ClassType>,
+        "The flag given by the member-pointer is not a member of the payload type.");
+
+    using StoredTypeDecomposition = DecompositionForSeparateFlag<PayloadType>;
+    using FlagManipulator = SeparateFlagManipulator;
+#endif
   };
 
 
@@ -1949,8 +1998,13 @@ namespace impl
         "The flag given by the member-pointer is not a member of the payload type.");
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
     using FlagManipulator = AssignmentFlagManipulator<MemVarType, SentinelValue>;
+#else
+    using StoredTypeDecomposition = DecompositionForSeparateFlag<PayloadType>;
+    using FlagManipulator = SeparateFlagManipulator;
+#endif
   };
 
 
@@ -1973,8 +2027,13 @@ namespace impl
         "The flag given by the member-pointer is not a member of the payload type.");
     using MemVarType = typename MemberPointerFragments<memPtrToFlag>::VariableType;
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
     using StoredTypeDecomposition = InplaceDecompositionViaMemPtr<PayloadType, memPtrToFlag>;
     using FlagManipulator = AssignmentFlagManipulator<MemVarType, SentinelValue>;
+#else
+    using StoredTypeDecomposition = DecompositionForSeparateFlag<PayloadType>;
+    using FlagManipulator = SeparateFlagManipulator;
+#endif
   };
 
 
@@ -2217,7 +2276,8 @@ namespace impl
   {
     static_assert(
         always_false<PayloadType>,
-        "optional_aip: No automatic sentinel for the PayloadType available. You need to specify one manually, e.g. optional_aip<char, 0>, or specialize tiny::optional_flag_manipulator.");
+        "optional_aip: No automatic sentinel for the PayloadType available. You need to specify one manually, e.g. optional_aip<char, 0>, "
+        "or specialize tiny::optional_flag_manipulator. (By definition, optional_aip always may never use a separate bool to store the empty state.)");
   };
 
 

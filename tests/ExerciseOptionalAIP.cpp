@@ -9,7 +9,9 @@ void test_OptionalAIP()
   //----------------------
   // Tests with automatic selection of the sentinel
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
   EXERCISE_OPTIONAL((tiny::optional_aip<double>{}), EXPECT_INPLACE, 43.0, 44.0);
+#endif
 
   EXERCISE_OPTIONAL((tiny::optional_aip<short>{}), EXPECT_INPLACE, static_cast<short>(-10), static_cast<short>(42));
   EXERCISE_OPTIONAL(
@@ -27,9 +29,10 @@ void test_OptionalAIP()
   EXERCISE_OPTIONAL((tiny::optional_aip<long long>{}), EXPECT_INPLACE, -10ll, 42ll);
   EXERCISE_OPTIONAL((tiny::optional_aip<unsigned long long>{}), EXPECT_INPLACE, 10ull, 42ull);
 
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
   TestClass c1, c2;
   EXERCISE_OPTIONAL((tiny::optional_aip<TestClass *>{}), EXPECT_INPLACE, &c1, &c2);
-
+#endif
 
   //----------------------
   // Tests with manual specification of sentinel

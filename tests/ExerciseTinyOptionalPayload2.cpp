@@ -33,11 +33,11 @@ void test_TinyOptionalPayload_NestedOptionals()
 void test_TinyOptionalPayload_ConstAndVolatile()
 {
   // Tests of const and volatile
-  EXERCISE_OPTIONAL((tiny::optional<double const>{}), EXPECT_INPLACE, 43.0, 44.0);
+  EXERCISE_OPTIONAL((tiny::optional<double const>{}), cInPlaceExpectationForUnusedBits, 43.0, 44.0);
   static_assert(std::is_same_v<tiny::optional<double const>::value_type, double const>);
-  EXERCISE_OPTIONAL((tiny::optional<double volatile>{}), EXPECT_INPLACE, 43.0, 44.0);
+  EXERCISE_OPTIONAL((tiny::optional<double volatile>{}), cInPlaceExpectationForUnusedBits, 43.0, 44.0);
   static_assert(std::is_same_v<tiny::optional<double volatile>::value_type, double volatile>);
-  EXERCISE_OPTIONAL((tiny::optional<double volatile const>{}), EXPECT_INPLACE, 43.0, 44.0);
+  EXERCISE_OPTIONAL((tiny::optional<double volatile const>{}), cInPlaceExpectationForUnusedBits, 43.0, 44.0);
   static_assert(std::is_same_v<tiny::optional<double volatile const>::value_type, double volatile const>);
 
   EXERCISE_OPTIONAL((tiny::optional<int const, 42>{}), EXPECT_INPLACE, 43, 44);
@@ -70,7 +70,7 @@ void test_TinyOptionalPayload_Cpp20NTTP()
     // Floating point, stored in member.
     EXERCISE_OPTIONAL(
         (tiny::optional<TestClassForInplace, &TestClassForInplace::someDouble, 42.0>{}),
-        EXPECT_INPLACE,
+        cInPlaceExpectationForMemPtr,
         TestClassForInplace{},
         TestClassForInplace(43, 44.0, 45, nullptr));
 
@@ -83,7 +83,7 @@ void test_TinyOptionalPayload_Cpp20NTTP()
     // Literal class, stored in member.
     EXERCISE_OPTIONAL(
         (tiny::optional<TestClassWithLiteralClass, &TestClassWithLiteralClass::lc, lc1>{}),
-        EXPECT_INPLACE,
+        cInPlaceExpectationForMemPtr,
         TestClassWithLiteralClass{},
         TestClassWithLiteralClass(43, 44.0, 45));
   }
@@ -93,18 +93,20 @@ void test_TinyOptionalPayload_Cpp20NTTP()
 void test_TinyOptionalPayload_WindowsHandles()
 {
   // On Windows, there are various handle types (HANDLE, HINSTANCE, HWND, etc). They are essentially void*. The problem
-  // is that there various special HANDLE values that the WinAPI can return. These tests here essentially test that we
+  // is that there special HANDLE values that the WinAPI can return. These tests here essentially test that we
   // do not use one of those special values as sentinel to indicate the empty state. See
   // https://stackoverflow.com/a/3905643/3740047 and https://stackoverflow.com/a/45632388/3740047.
 
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
   {
+    // clang-format off
+    
     // Some error codes returned by common WinAPI functions.
     // https://devblogs.microsoft.com/oldnewthing/20040302-00/?p=40443
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, static_cast<HANDLE>(NULL), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, static_cast<HANDLE>(0), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, reinterpret_cast<HANDLE>(-1), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, static_cast<HANDLE>(NULL), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, static_cast<HANDLE>(0), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<HANDLE>(-1), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, INVALID_HANDLE_VALUE, INVALID_HANDLE_VALUE);
 
     // Pseudo handles:
     // https://github.com/winsiderss/systeminformer/blob/c19d69317a8eedcce773eb7317462eac8dfebf66/phnt/include/ntpsapi.h#L1294
@@ -118,55 +120,57 @@ void test_TinyOptionalPayload_WindowsHandles()
     //     NtCurrentThreadEffectiveToken() ((HANDLE)(LONG_PTR)-6) // NtOpenThreadToken(NtCurrentThread())
     //                                                               + NtOpenProcessToken(NtCurrentProcess())
     //     NtCurrentSilo() ((HANDLE)(LONG_PTR)-1)
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentProcess(), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentThread(), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ::GetCurrentProcess(), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ::GetCurrentThread(), INVALID_HANDLE_VALUE);
   #ifndef TINY_OPTIONAL_GCC_BUILD // Functions are unknown to mingw for some reason.
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentProcessToken(), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ::GetCurrentThreadToken(), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL(
-        (tiny::optional<HANDLE>{}),
-        EXPECT_INPLACE,
-        ::GetCurrentThreadEffectiveToken(),
-        INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ::GetCurrentProcessToken(), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ::GetCurrentThreadToken(), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ::GetCurrentThreadEffectiveToken(), INVALID_HANDLE_VALUE);
   #endif
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-1)), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-2)), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-3)), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-4)), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-5)), INVALID_HANDLE_VALUE);
-    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), EXPECT_INPLACE, ((HANDLE)(LONG_PTR)(-6)), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ((HANDLE)(LONG_PTR)(-1)), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ((HANDLE)(LONG_PTR)(-2)), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ((HANDLE)(LONG_PTR)(-3)), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ((HANDLE)(LONG_PTR)(-4)), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ((HANDLE)(LONG_PTR)(-5)), INVALID_HANDLE_VALUE);
+    EXERCISE_OPTIONAL((tiny::optional<HANDLE>{}), cInPlaceExpectationForUnusedBits, ((HANDLE)(LONG_PTR)(-6)), INVALID_HANDLE_VALUE);
 
 
     // Some return values of ShellExecute().
     EXERCISE_OPTIONAL(
         (tiny::optional<HINSTANCE>{}),
-        EXPECT_INPLACE,
+        cInPlaceExpectationForUnusedBits,
         reinterpret_cast<HINSTANCE>(ERROR_FILE_NOT_FOUND),
         static_cast<HINSTANCE>(0));
     EXERCISE_OPTIONAL(
         (tiny::optional<HINSTANCE>{}),
-        EXPECT_INPLACE,
+        cInPlaceExpectationForUnusedBits,
         reinterpret_cast<HINSTANCE>(SE_ERR_SHARE),
         static_cast<HINSTANCE>(0));
+
+    // clang-format on
   }
 #endif
 
   // Same as above, but instead of using the Windows specific types, we directly use void*. Less direct, but that way we
   // can also run these tests on non-Windows builds, to ensure some behavior consistency between the operating systems.
   {
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, static_cast<void *>(0), nullptr);
+    // clang-format off
+
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, static_cast<void *>(0), nullptr);
 
     // Pseudo handles. The -1 is additionally INVALID_HANDLE_VALUE.
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(-1), nullptr);
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(-2), nullptr);
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(-3), nullptr);
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(-4), nullptr);
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(-5), nullptr);
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(-6), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(-1), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(-2), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(-3), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(-4), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(-5), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(-6), nullptr);
 
     // As for ShellExecute() above.
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(2), nullptr);
-    EXERCISE_OPTIONAL((tiny::optional<void *>{}), EXPECT_INPLACE, reinterpret_cast<void *>(26), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(2), nullptr);
+    EXERCISE_OPTIONAL((tiny::optional<void *>{}), cInPlaceExpectationForUnusedBits, reinterpret_cast<void *>(26), nullptr);
+
+    // clang-format on
   }
 }
 
@@ -175,7 +179,7 @@ void test_TinyOptionalPayload_OtherTypes()
   // We befriended the present function
   EXERCISE_OPTIONAL(
       (tiny::optional<TestClassPrivate, &TestClassPrivate::someValue>{}),
-      EXPECT_INPLACE,
+      cInPlaceExpectationForMemPtr,
       TestClassPrivate{42.0},
       TestClassPrivate{43.0});
 
@@ -214,7 +218,7 @@ void test_TinyOptionalPayload_OtherTypes()
     int arr1[2] = {1, 2};
     int arr2[2] = {3, 4};
     static_assert(std::is_same_v<decltype(tiny::optional{arr1})::value_type, int *>);
-    EXERCISE_OPTIONAL((tiny::optional{arr1}), EXPECT_INPLACE, arr1, arr2);
+    EXERCISE_OPTIONAL((tiny::optional{arr1}), cInPlaceExpectationForUnusedBits, arr1, arr2);
 
     struct NonCopyable
     {

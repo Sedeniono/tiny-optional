@@ -611,7 +611,11 @@ void test_MakeOptional()
   //--------- Test first version of make_optional
   {
     auto o = tiny::make_optional(42.0);
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
     static_assert(sizeof(o) == sizeof(double));
+#else
+    static_assert(sizeof(o) == sizeof(std::optional<double>));
+#endif
     static_assert(std::is_same_v<decltype(o)::value_type, double>);
     ASSERT_TRUE(o.value() == 42.0); // NOLINT(clang-analyzer-core.UndefinedBinaryOperatorResult) (false positive)
   }
@@ -630,7 +634,11 @@ void test_MakeOptional()
   {
     TestClassForInplace const testValue{};
     auto o = tiny::make_optional<TestClassForInplace, &TestClassForInplace::someInt, 42>(testValue);
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
     static_assert(sizeof(o) == sizeof(TestClassForInplace));
+#else
+    static_assert(sizeof(o) == sizeof(std::optional<TestClassForInplace>));
+#endif
     static_assert(std::is_same_v<decltype(o)::value_type, TestClassForInplace>);
     ASSERT_TRUE(o.value() == testValue);
   }
@@ -650,7 +658,11 @@ void test_MakeOptional()
   }
   {
     auto o = tiny::make_optional<TestClassForInplace, &TestClassForInplace::someInt, 42>(2, 5.0, 43u, nullptr);
+#ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
     static_assert(sizeof(o) == sizeof(TestClassForInplace));
+#else
+    static_assert(sizeof(o) == sizeof(std::optional<TestClassForInplace>));
+#endif
     static_assert(std::is_same_v<decltype(o)::value_type, TestClassForInplace>);
     ASSERT_TRUE(o.value() == TestClassForInplace(2, 5.0, 43u, nullptr));
   }
