@@ -28,7 +28,9 @@ void test_TinyOptionalPayload_FloatingPoint()
 
   EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, 43.0f, 44.0f);
   EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, std::numeric_limits<float>::quiet_NaN(), 44.0f);
+#ifndef __FAST_MATH__ // NAN is broken with -ffast-math; clang issues -Wnan-infinity-disabled
   EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, NAN, 44.0f);
+#endif
   EXERCISE_OPTIONAL((tiny::optional<float>{}), EXPECT_INPLACE, std::numeric_limits<float>::signaling_NaN(), 44.0f);
   EXERCISE_OPTIONAL((tiny::optional{100.0f}), EXPECT_INPLACE, 43.0f, 44.0f); // Uses deduction guide
 
