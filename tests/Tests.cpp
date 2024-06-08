@@ -81,6 +81,11 @@ int main()
   _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
 #endif
 
+#ifdef TINY_OPTIONAL_MSVC_BUILD
+  std::cout << "Microsoft compiler version (_MSC_FULL_VER): " << _MSC_FULL_VER << std::endl;
+  std::cout << "Microsoft STL version (_MSVC_STL_UPDATE): " << _MSVC_STL_UPDATE << std::endl;
+#endif
+
   try {
     std::cout << "Running tests..." << std::endl;
     RunTests();
