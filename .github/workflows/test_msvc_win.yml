@@ -43,4 +43,4 @@ jobs:
     - name: Execute
       working-directory: ${{env.TEST_DIR}}
       run: |
-        & "../bin/Msvc ${{ matrix.buildmode }} ${{ matrix.cpp_version }} ${{matrix.platform}}/Tests.exe"
+        & "../bin/Msvc ${{ matrix.buildmode }} ${{ matrix.cpp_version }} ${{matrix.platform}}/Tests.exe" 2>&1
