@@ -19,7 +19,12 @@ jobs:
       matrix:
         cpp_version: [C++17, C++20]
         platform: [x64, Win32]
-        buildmode: [Debug, Release]
+        # The Windows GitHub runner is broken for release builds. There are crashes in std::mutex
+        # because they haven't installed the latest Visual C++ Redistributable after updating 
+        # Visual Studio to 17.10. See https://github.com/actions/runner-images/issues/10004
+        # Until GitHub updates the runner, we simply disable release builds.
+        buildmode: [Debug]
+        #buildmode: [Debug, Release]
 
         include:
         - cpp_version: "C++17 permissive"
