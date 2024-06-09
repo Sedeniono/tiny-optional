@@ -23,6 +23,13 @@ jobs:
         arch: [m64, m32] # 64 and 32 bit
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
     
+        # Also include a few variations with disabled UB tricks (not for all to limit resource consumption).
+        include:
+        - clang_version: 15
+          cpp_version: c++20
+          arch: m64
+          buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 

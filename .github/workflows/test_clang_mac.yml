@@ -20,7 +20,12 @@ jobs:
         # Note: No clang version variation since the macOS runners to not have versioned executables (e.g. clang++-13).
         cpp_version: [c++17, c++20]
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
-    
+        
+        # Also include a few variations with disabled UB tricks (not for all to limit resource consumption).
+        include:
+          - cpp_version: c++20
+            buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+            
     runs-on: macos-12
     timeout-minutes: 10
 

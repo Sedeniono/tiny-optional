@@ -21,6 +21,12 @@ jobs:
         cpp_version: [c++17, c++20]
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
 
+        # Also include a few variations with disabled UB tricks (not for all to limit resource consumption).
+        include:
+          - clang_version: 18
+            cpp_version: c++20
+            buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+        
     runs-on: windows-2022
     timeout-minutes: 10
 

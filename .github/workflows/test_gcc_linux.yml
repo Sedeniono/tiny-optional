@@ -27,6 +27,13 @@ jobs:
           - gcc_version: 9
             cpp_version: c++20
 
+        # Also include a few variations with disabled UB tricks (not for all to limit resource consumption).
+        include:
+        - gcc_version: 13
+          cpp_version: c++20
+          arch: m64
+          buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 

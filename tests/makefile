@@ -84,6 +84,11 @@ clang_x64_cpp17_gcclib_debug: $(CPP_FILES)
 	$(CXX_AND_RUN_COMMAND)
 
 
+clang_x64_cpp20_libcpp_debug_noUB: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -stdlib=libc++ -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS)
+	$(CXX_AND_RUN_COMMAND)
+
 
 #---------------------------------------------------------------------
 # gcc
@@ -127,6 +132,11 @@ gcc_x64_cpp20_fastmath_release: $(CPP_FILES)
 gcc_x64_cpp17_release: $(CPP_FILES)
 	$(eval CXX = $(CXX_GCC))
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++17 -O3 -DNDEBUG)
+	$(CXX_AND_RUN_COMMAND)
+
+gcc_x64_cpp20_release_noUB: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -O3 -DNDEBUG -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS)
 	$(CXX_AND_RUN_COMMAND)
 
 

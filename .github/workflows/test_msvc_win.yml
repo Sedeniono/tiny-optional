@@ -17,8 +17,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cpp_version: [C++17, C++20]
         platform: [x64, Win32]
+
+        # The values of 'cpp_version' and 'buildmode' are used to build the name of the configuration
+        # in the solution file. In other words, the values do not correspond directly to compiler
+        # switches but instead to parts of the configuration names from the .sln file.
+        cpp_version: [C++17, C++20]
         # The Windows GitHub runner is broken for release builds. There are crashes in std::mutex
         # because they haven't installed the latest Visual C++ Redistributable after updating 
         # Visual Studio to 17.10. See https://github.com/actions/runner-images/issues/10004
@@ -33,7 +37,10 @@ jobs:
         - cpp_version: "C++20 permissive"
           platform: x64
           buildmode: Debug
-
+          # Also include a variation with disabled UB tricks (not for all to limit resource consumption).
+        - cpp_version: "C++20 No UB"
+          platform: x64
+          buildmode: Debug
 
     runs-on: windows-2022
     timeout-minutes: 10
