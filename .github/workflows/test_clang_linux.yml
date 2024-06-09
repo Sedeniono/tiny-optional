@@ -27,6 +27,12 @@ jobs:
         include:
         - clang_version: 15
           cpp_version: c++20
+          stdlib: libc++
+          arch: m64
+          buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+        - clang_version: 15
+          cpp_version: c++20
+          stdlib: libstdc++
           arch: m64
           buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
 
