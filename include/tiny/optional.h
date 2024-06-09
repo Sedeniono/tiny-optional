@@ -48,6 +48,13 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // #include <utility> // Required for std::move, std::swap, etc.
 
 
+// TINY_OPTIONAL_VERSION % 100 is the patch level
+// TINY_OPTIONAL_VERSION / 100 % 1000 is the minor version
+// TINY_OPTIONAL_VERSION / 100000 is the major version
+// So the format is:          MmmmPP, where 'M'=major, 'm'=minor and 'P'=patch.
+#define TINY_OPTIONAL_VERSION 100300
+
+
 #if (!defined(__cplusplus) || __cplusplus < 201703L) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
   #error "The tiny::optional library requires at least C++17"
 #endif
@@ -95,6 +102,34 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #define TINY_OPTIONAL_ENABLE_ORELSE
 #endif
 
+
+#ifdef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
+  #define TINY_OPTIONAL_UNUSED_BITS_NS_PART noBit
+#else
+  #define TINY_OPTIONAL_UNUSED_BITS_NS_PART bit
+#endif
+
+#ifdef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_MEMBER
+  #define TINY_OPTIONAL_MEMBER_NS_PART noMem
+#else
+  #define TINY_OPTIONAL_MEMBER_NS_PART mem
+#endif
+
+#define TINY_OPTIONAL_CONCAT_NS_IMPL(a, b, c) tiny##a##_##b##_##c
+#define TINY_OPTIONAL_CONCAT_NS(a, b, c) TINY_OPTIONAL_CONCAT_NS_IMPL(a, b, c)
+
+// We use an inline namespace to prevent mixing of symbols from different versions of the library or
+// different TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS settings.
+#define TINY_OPTIONAL_INLINE_NS_BEGIN                                                                                  \
+  inline namespace TINY_OPTIONAL_CONCAT_NS(                                                                            \
+      TINY_OPTIONAL_VERSION,                                                                                           \
+      TINY_OPTIONAL_UNUSED_BITS_NS_PART,                                                                               \
+      TINY_OPTIONAL_MEMBER_NS_PART)                                                                                    \
+  {
+
+#define TINY_OPTIONAL_INLINE_NS_END }
+
+
 #if defined(__GNUG__) && !defined(__clang__)
 // Disable incorrect warning for gcc that occurs in release builds. It sometimes fails to realize that certain branches
 // (such as calls to DestroyPayload()) are protected by a has_value() check, and thus cannot actually perform any
@@ -123,6 +158,7 @@ struct optional_flag_manipulator;
 
 namespace tiny
 {
+TINY_OPTIONAL_INLINE_NS_BEGIN
 // Special type and value to indicate that the user did not specify a certain template parameter type/value.
 enum UseDefaultType
 {
@@ -142,6 +178,8 @@ namespace impl
   {
   };
 } // namespace impl
+TINY_OPTIONAL_INLINE_NS_END
+
 
 // The user can specialize the optional_flag_manipulator template to 'inject' a custom FlagManipulator for some
 // payload type or types. If the user provides one, tiny::optional assumes that the 'IsEmpty' flag is stored inplace
@@ -173,12 +211,16 @@ namespace impl
 // The 'Enable' parameter can be used in conjunction with std::enable_if to provide a specialization for multiple types
 // at once satisfying a common concept. Compare the library's specialization for floating point types. Note that it has
 // the default value 'void' (defined at the declaration of the template).
+//
+// Note: Outside of the inline namespace (TINY_OPTIONAL_INLINE_NS_BEGIN) because we don't want to add a dependency on
+// the version and configuration to the optional_flag_manipulator_fwd.h file.
 template <class PayloadType, class Enable>
 struct optional_flag_manipulator : impl::NoCustomInplaceFlagManipulator
 {
 };
 
 
+TINY_OPTIONAL_INLINE_NS_BEGIN
 // Helper to allow the user to implement an optional_flag_manipulator specialization more easily in case it is a simple
 // comparison with a sentinel value. This can be especially useful for enumerations: Instead of writing e.g.
 // tiny::optional<EnumType, EnumType::InvalidValue> always, the user can simply once define the specialization
@@ -225,12 +267,13 @@ namespace impl
 // (i.e. tiny::optional, tiny::optional_inplace, tiny::optional_aip or tiny::optional_sentinel_via_type).
 template <class U>
 inline constexpr bool is_tiny_optional_v = impl::IsTinyOptionalHelper<U>(nullptr);
-
+TINY_OPTIONAL_INLINE_NS_END
 } // namespace tiny
 
 
 namespace tiny
 {
+TINY_OPTIONAL_INLINE_NS_BEGIN
 namespace impl
 {
 
@@ -806,12 +849,14 @@ namespace impl
     }
   };
 } // namespace impl
+TINY_OPTIONAL_INLINE_NS_END
 
 
 //====================================================================================
 // optional_flag_manipulator: Library specialization and helpers
 //====================================================================================
 
+TINY_OPTIONAL_INLINE_NS_BEGIN
 namespace impl
 {
   // True if the tiny optional library knows a special sentinel for the given payload type that exploits the type's
@@ -827,6 +872,7 @@ namespace impl
       false;
 #endif
 } // namespace impl
+TINY_OPTIONAL_INLINE_NS_END
 
 
 // Specialization of optional_flag_manipulator for floats, doubles, bools, pointers and functions pointers. The
@@ -843,6 +889,7 @@ struct optional_flag_manipulator<
 };
 
 
+TINY_OPTIONAL_INLINE_NS_BEGIN
 namespace impl
 {
   // True if there is a custom flag manipulator was 'registered' for the given payload type.
@@ -850,12 +897,14 @@ namespace impl
   inline constexpr bool HasCustomInplaceFlagManipulator
       = !std::is_base_of_v<NoCustomInplaceFlagManipulator, optional_flag_manipulator<PayloadType>>;
 } // namespace impl
+TINY_OPTIONAL_INLINE_NS_END
 
 
 //====================================================================================
 // StorageBase
 //====================================================================================
 
+TINY_OPTIONAL_INLINE_NS_BEGIN
 namespace impl
 {
   // This is the lowest base for TinyOptionalImpl and contains the actual data and some basic manipulation functions.
@@ -1807,12 +1856,14 @@ namespace impl
   // clang-format on
 
 } // namespace impl
+TINY_OPTIONAL_INLINE_NS_END
 
 
 //====================================================================================
 // SelectDecomposition
 //====================================================================================
 
+TINY_OPTIONAL_INLINE_NS_BEGIN
 namespace impl
 {
 
@@ -2079,12 +2130,14 @@ namespace impl
             value;
   };
 } // namespace impl
+TINY_OPTIONAL_INLINE_NS_END
 
 
 //====================================================================================
 // optional_sentinel_via_type
 //====================================================================================
 
+TINY_OPTIONAL_INLINE_NS_BEGIN
 namespace impl
 {
 
@@ -2101,15 +2154,16 @@ namespace impl
 template <class PayloadType, class SentinelValue, auto memPtr = UseDefaultValue>
 using optional_sentinel_via_type
     = impl::TinyOptionalImplCombined<impl::SelectDecomposition<PayloadType, SentinelValue, memPtr>>;
+TINY_OPTIONAL_INLINE_NS_END
 
 
 //====================================================================================
 // optional
 //====================================================================================
 
+TINY_OPTIONAL_INLINE_NS_BEGIN
 namespace impl
 {
-
   // Shortcut for optional definition below so that the SelectSentinelValueAndMemPtrFromConstants
   // needs to be specified only once.
   template <class Selection>
@@ -2710,6 +2764,7 @@ namespace impl
 } // namespace impl
 
 #endif
+TINY_OPTIONAL_INLINE_NS_END
 } // namespace tiny
 
 
