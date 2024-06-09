@@ -369,7 +369,7 @@ namespace impl
 
   // So far the implementation defined exploits are only implemented and tested for x64 and x86.
   #if !defined(TINY_OPTIONAL_x86) && !defined(TINY_OPTIONAL_x64)
-    #error "Exploiting of unused bits is not implemented for the target architecture."
+    #error Exploiting of unused bits is not implemented for the target architecture. Note that you can disable UB-tricks via TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS. See Readme.
   #endif
 
 
@@ -582,7 +582,7 @@ namespace impl
   {
   // As explained above, we exploit undefined behavior here. I have tested this only on x86/x64 platforms.
   #if !defined(TINY_OPTIONAL_x86) && !defined(TINY_OPTIONAL_x64)
-    #error "Storing the empty state in a member is not supported on the target architecture."
+    #error Storing the empty state in a member is not supported on the target architecture. Note that you can disable UB-tricks via TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS. See Readme.
   #endif
 
     static_assert(std::is_member_object_pointer_v<decltype(memPtrToIsEmptyFlag)>);
