@@ -14,6 +14,8 @@
   - [Use case 2: Using sentinel values](#use-case-2-using-sentinel-values)
 - [Requirements](#requirements)
 - [Limitations](#limitations)
+  - [Platform specific behavior](#platform-specific-behavior)
+  - [Compatibility with `std::optional`](#compatibility-with-stdoptional)
 - [Usage](#usage)
   - [Installation](#installation)
   - [Using `tiny::optional` as `std::optional` replacement](#using-tinyoptional-as-stdoptional-replacement)
@@ -33,6 +35,7 @@
     - [Types that you have not authored](#types-that-you-have-not-authored)
       - [Generic alternative](#generic-alternative)
       - [Alternative for `static constexpr`](#alternative-for-static-constexpr)
+  - [Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)
   - [Natvis](#natvis)
 - [Performance results](#performance-results)
   - [Runtime](#runtime)
@@ -43,11 +46,11 @@
 
 # Introduction
 The goal of this library is to provide the functionality of [`std::optional`](https://en.cppreference.com/w/cpp/utility/optional) while not wasting any memory unnecessarily for 
-* types with unused bits (currently `double`, `float`, `bool`, raw pointers; note that NaNs, `nullptr` etc. are still valid non-empty values!), or
-* custom types with unused states, or 
-* where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
+1. types with unused bits (currently `double`, `float`, `bool`, raw pointers; note that NaNs, `nullptr` etc. are still valid non-empty values!), or
+2. custom types with unused states, or 
+3. where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
 
-> ⚠️ **Warning:** This library exploits undefined/platform specific behavior on x86/x64 architectures. See below for more details.
+> ⚠️ **Warning:** This library exploits undefined/platform specific behavior on x86/x64 architectures to implement the first case. However, this first case can be disabled to allow using the second and third cases also on other architectures. See chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more details.
 
 For a quick start, see the following example, also available [live on godbolt](https://godbolt.org/z/83xo9hdxT):
 ```C++
@@ -112,6 +115,11 @@ See the end of the readme for details on how the library achieves this.
 The results below show that in memory bound applications this can result in a significant performance improvement.
 This optimization is similar to what Rust is doing for [booleans](https://stackoverflow.com/a/73181003/3740047) and [references](https://stackoverflow.com/a/16515488/3740047).
 
+**Note:** The built-in exploitation of unused bit patterns is available only on x86/x64.
+If you try to compile the library on any other platform you get a compiler error.
+To allow the following use cases on other platforms, you can disable the platform specific tricks as explained in the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)".
+
+
 
 ## Use case 2: Using sentinel values
 Sometimes one wants to use special "sentinel" or "flag" values to indicate that a certain variable does not contain any information. Think about a raw integer `int index` that stores an index into some array and where the special value `-1` should indicate that the index does not refer to anything. Looking at such a variable, it is not immediately clear that it can have such a special "empty" state. This makes code harder to understand and might introduce subtle bugs. 
@@ -123,14 +131,24 @@ So `-1` cannot be stored in `tiny::optional<int, -1>`.
 
 
 # Requirements
-The library currently supports x64 and x86 architectures on Windows, Linux and Mac. It is tested on MSVC, clang and gcc (see the github actions). Besides the C++ standard library, there are no external dependencies.
-
+Besides the C++ standard library, there are no external dependencies.
 The library requires at least C++17. The monadic operations `and_then()` and `transform()` are always defined (although the C++ standard introduced them starting only with C++23). When C++20 is enabled, the three-way comparison operator `operator<=>()` and the monadic operation `or_else()` are additionally implemented.
+
+The full functionality of the library is supported only on **x64 and x86** architectures on Windows, Linux and Mac.
+By disabling tricks relying on undefined behavior, as explained in "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)", any standard conforming platform should work.
+
+The library is regularly tested on MSVC, clang and gcc on Windows, Linux and Mac (see the github actions).
 
 
 # Limitations
-This library exploits **platform specific behavior** (i.e. undefined behavior). So if your own code also uses platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained.
 
+## Platform specific behavior
+This library exploits **platform specific behavior** (i.e. undefined behavior). So if your own code also uses platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained. 
+
+Note that you can disable them by defining `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`, as explained in the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)".
+
+
+## Compatibility with `std::optional`
 Currently, the following components of the interface of `std::optional` are not yet supported:
 * No converting constructors and assignment operators implemented. The major issue here is to decide what to do with conversions such as `tiny::optional<int, -1>` to `tiny::optional<unsigned, 42>`: What if the source contains a `42`? Should an exception be thrown? Should this be asserted in debug? Should this specific conversion be forbidden?
 * Constructors and destructors are not trivial, even if the payload type `T` would allow it.
@@ -150,8 +168,10 @@ The library uses the standard [`assert()` macro](https://en.cppreference.com/w/c
 ## Using `tiny::optional` as `std::optional` replacement
 Instead of writing `std::optional<T>`, use `tiny::optional<T>` in your code.
 If the payload `T` is a `float`, `double`, `bool` or a pointer/function pointer (in the sense of `std::is_pointer`), the optional will not require additional space. E.g.: `sizeof(tiny::optional<double>) == sizeof(double)`.  
-**Note:** For pointers, `nullptr` remains a valid value! I.e. the optional `tiny::optional<int*> o = nullptr;` is **not** empty!  
-**Note:** The type `long double` requires additional space at the moment, simply because the differing characteristics on the various supported platforms are not yet implemented.
+**Notes:**
+* This is only true if `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS` is not defined. See the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more information.
+* For pointers, `nullptr` remains a valid value! I.e. the optional `tiny::optional<int*> o = nullptr;` is **not** empty!
+* The type `long double` requires additional space at the moment, simply because the differing characteristics on the various supported platforms are not yet implemented.  
 
 For other types (where the automatic "tiny" state is not possible), the size of `tiny::optional` is equal to that of `std::optional`. E.g. `sizeof(tiny::optional<int>) == sizeof(std::optional<int>)`, or `sizeof(tiny::optional<SomeStruct>) == sizeof(std::optional<SomeStruct>)`.  
 But note that you can **teach** the library about custom types, see the chapter about `tiny::optional_flag_manipulator` below.
@@ -188,12 +208,15 @@ Moreover, all members for which a specialization of `tiny::optional_flag_manipul
 
 Additionally, there is the option to use a sentinel value for the empty state and instruct the library to store it in one of the members. The sentinel value is specified as the third template parameter. For example, if you know that `Data::var1` can never be negative, you can instruct the library to use the value `-1` as sentinel: `tiny::optional<Data, &Data::var1, -1>`. Again the resulting `tiny::optional` will not require additional memory compared to a plain `Data`.
 
-Note: When storing the flag in a member variable, gcc with optimizations turned on likes to warn about possible uninitialized accesses (`-Wmaybe-uninitialized`).
+**Note:** When storing the flag in a member variable, gcc with optimizations turned on likes to warn about possible uninitialized accesses (`-Wmaybe-uninitialized`).
 These are false positives.
 gcc fails to figure out that certain branches that would lead to access of uninitialized memory cannot occur because these branches are protected by `has_value()` calls.
 Unfortunately, gcc sometimes still attributes the warnings to a location in the user code rather than the library, so although the library actually by itself disables the warning locally (in the `tiny/optional.h` header file), it might still occur.
 In fact, even the standard stdlibc++ implementation of [`std::optional` at least until gcc 13 can trigger this warning](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635#c69).
 If it happens to you, I suggest to [disable the warning locally](https://stackoverflow.com/a/26003732/3740047).
+
+**Note:** Using a member like this is actually undefined behavior. Hence it is available only on x86/x64. To allow compilation on other platforms, see the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)". In this case the member pointer argument is ignored and a separate `bool` is used.
+
 
 ## The full signature of `tiny::optional`
 Given the explanations above, the full signature of `tiny::optional` is:
@@ -240,6 +263,7 @@ There are a few helpers available which facilitate checks at compile-time:
 * `tiny::optional<T>::is_compressed` is true if the optional has the same size as the payload `T`, and false otherwise. It is also defined for all other optional types defined by this library.
 * `tiny::is_tiny_optional_v<T>` is true if `T` is an optional defined by this library (`tiny::optional`, `tiny::optional_inplace` or `tiny::optional_aip`, compare below). It is false for any other type, including `std::optional`.
 * Every optional defined by this library defines a static boolean member `is_tiny_optional` with value true. For example, `tiny::optional<T>::is_tiny_optional` is true for **every** type `T`. The value is never false. It can be used to determine whether something is a tiny optional. But it is most likely more convenient to use `tiny::is_tiny_optional_v`, which yields false for any type that is not a tiny optional instead of resulting in compilation error. Nevertheless, the member `is_tiny_optional` might be useful in SFINAE contexts.
+* The macro `TINY_OPTIONAL_VERSION` indicates the version of the library.
 
 
 ## Specifying a sentinel value via a type
@@ -633,6 +657,25 @@ Hence, it is no longer a valid value to store in the optional.
 Note: E.g. `tiny::optional<std::chrono::microseconds, std::chrono::microseconds::min()>` would be invalid C++20 because `std::chrono::duration` (and thus `std::chrono::microseconds::min()`) is not a literal class type.
 
 
+## Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)
+The built-in exploitation of unused bit patterns and the built-in use of member variables as location for the empty state is only available on x86/x64.
+The reason is that I have not enough experience for e.g. ARM to be confident that similar exploitations of undefined behavior works reliably there.
+If you try to compile the library on any other platform you get a compiler error.
+
+However, because the custom sentinel functionality and custom specializations of `tiny::optional_flag_manipulator` do not rely on undefined behavior, you can disable any tricks that rely on undefined behavior by compiling your program with `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`.
+The code is then completely C++ standard compliant and works on any platform.
+
+Defining `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS` will have the following effects:
+* Unused bit patterns are no longer exploited. This means that `tiny::optional<bool>`, `tiny::optional<double>`, `tiny::optional<float>` and `tiny::optional<T*>` will use a separate `bool` internally to store the empty state. Consequently, their sizes will be the same as their `std::optional` counterpart.
+* The member pointer template parameter of `tiny::optional` will be ignored. In most cases this will mean that a separate `bool` will be used to store the empty state. Thus, the size will be the same as the `std::optional` counterpart.
+
+If `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS` is defined, you can still specify custom sentinels via the template parameter of `tiny::optional`.
+Moreover, specializations of `tiny::optional_flag_manipulator` still work. (Any undefined behavior you might exploit in these specializations, such as storing the empty state in a member, is your responsibility!)
+
+Mixing code that was compiled with and without `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS` would lead to incorrect behavior because the involved types have different sizes.
+To prevent this, the types defined by the library are implemented in an [inline namespace](https://en.cppreference.com/w/cpp/language/namespace#Inline_namespaces) that encodes the configuration. If you try to mix different configurations, you will get errors related to missing or mismatching symbols.
+
+
 ## Natvis
 The `include` directory contains a Natvis file which improves the display of the optionals in the Visual Studio debugger considerably.
 Copy and add the Natvis file to your project, or append its content to your existing Natvis file.
@@ -760,6 +803,7 @@ This holds of course only as long as a program does not do any tricks by itself.
 **Note 2:** Having a `tiny::optional<T*>` is probably not that often useful. But if you have a POD like type with a pointer in it as member, you can instruct `tiny::optional` to use that member as storage for the sentinel value (see above) and save the memory of the additional `bool`. To this end, the library implements the trick for pointers.  
 **Note 3:** The `nullptr` is not used as sentinel, and thus remains a valid value. So assigning `nullptr` to a `tiny::optional` results in a non-empty optional!
 
+* Members: Storing the empty state in a member variable is also exploiting undefined behavior because the code writes and reads from memory locations where no "proper" C++ object has been constructed yet (only the raw memory has been allocated).
 
 
 Additional ideas (not yet implemented!):
