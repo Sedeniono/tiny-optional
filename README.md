@@ -686,6 +686,9 @@ Unfortunately, when you specialize `tiny::optional_flag_manipulator` (see above)
 So you need to add additional visualizers for each custom specialization yourself.
 The same holds true for `tiny::optional_inplace`.
 
+Notes:
+* If you update to a more recent version of `tiny::optional`, you also need to update your copy of the Natvis file. Reason: It contains the name of the inline namespace in which all types are defined, and the name includes the version number.
+* If you compile with `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`, the types are defined in an inline namespace with a different name than the one expected by default by Natvis. So you need to replace all occurrences of the inline namespace name with the new one. See the top of the Natvis file for more information.
 
 
 # Performance results

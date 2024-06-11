@@ -29,9 +29,25 @@ DEALINGS IN THE SOFTWARE.
 Original repository: https://github.com/Sedeniono/tiny-optional-->
 
 
+<!--
+====================================================================================
+Copy and add this Natvis file to your Visual Studio project, or append the content
+of this file to your existing Natvis file.
+
+NOTES: 
+- If you update tiny::optional, you must also update the Natvis file so that the
+  inline namespace contains a matching version number.
+- If you build with TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS, the inline
+  namespace is not 'tiny100301_bit_mem' but has a different name. Namely, it becomes
+     tiny100301_noBit_noMem
+  So replace all occurrences of 'tiny100301_bit_mem' in this Natvis file with it.
+====================================================================================
+-->
+
+
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <!--Visualizer when storing the IsEmpty-Flag in a separate bool. I.e. when tiny::optional behaves just like std::optional.-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::DecompositionForSeparateFlag&lt;*&gt;, tiny::impl::SeparateFlagManipulator&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::DecompositionForSeparateFlag&lt;*&gt;, tiny::tiny100301_bit_mem::impl::SeparateFlagManipulator&gt;">
     <DisplayString Condition="mStorage.isEmptyFlag">nullopt (optional is empty)</DisplayString>
     <DisplayString Condition="!mStorage.isEmptyFlag">Not empty. Value={{{mStorage.payload}}}</DisplayString>
     <Expand>
@@ -42,9 +58,9 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   </Type>
 
   
-  <!--Helper view to reduce code duplication in case tiny::impl::InplaceStorage is used.
+  <!--Helper view to reduce code duplication in case tiny::tiny100301_bit_mem::impl::InplaceStorage is used.
   It relies on that a natvis instrinsic IsEmpty() is defined.-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;*, *&gt;" IncludeView="TinyOptionalInplaceStorageView">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;*, *&gt;" IncludeView="TinyOptionalInplaceStorageView">
     <DisplayString Condition="IsEmpty()">nullopt (optional is empty)</DisplayString>
     <DisplayString Condition="!IsEmpty()">Not empty. Value={{{mStorage.storage}}}</DisplayString>
     <Expand>
@@ -56,7 +72,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   
   
   <!--tiny::optional<bool>-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;bool, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;bool, void&gt;&gt;">
     <Intrinsic Name="IsEmpty" Expression="(*(unsigned char*)&amp;mStorage.storage) == 0xfe"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
     <Expand>
@@ -65,7 +81,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   </Type>
 
   <!--tiny::optional<SomeClass, &SomeClass::someBool>-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;bool, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;bool, void&gt;&gt;">
     <!--Note: $T2 is the offset of the member in the class.-->
     <Intrinsic Name="IsEmpty" Expression="*(((unsigned char*)&amp;mStorage.storage) + $T2) == 0xfe"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
@@ -76,7 +92,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   
   
   <!--tiny::optional<double>-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;double, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;double, void&gt;&gt;">
     <Intrinsic Name="IsEmpty" Expression="(*(unsigned long long*)&amp;mStorage.storage) == 0x7ff8fedcba987654"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
     <Expand>
@@ -85,7 +101,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   </Type>
 
   <!--tiny::optional<SomeClass, &SomeClass::someDouble>-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;double, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;double, void&gt;&gt;">
     <!--Note: $T2 is the offset of the member in the class.-->
     <Intrinsic Name="IsEmpty" Expression="*(unsigned long long*)(((unsigned char*)&amp;mStorage.storage) + $T2) == 0x7ff8fedcba987654"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
@@ -96,7 +112,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   
   
   <!--tiny::optional<float>-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;float, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;float, void&gt;&gt;">
     <Intrinsic Name="IsEmpty" Expression="(*(unsigned int*)&amp;mStorage.storage) == 0x7fedcba9"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
     <Expand>
@@ -105,7 +121,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   </Type>
   
   <!--tiny::optional<SomeClass, &SomeClass::someFloat>-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;float, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;float, void&gt;&gt;">
     <!--Note: $T2 is the offset of the member in the class.-->
     <Intrinsic Name="IsEmpty" Expression="*(unsigned int*)(((unsigned char*)&amp;mStorage.storage) + $T2) == 0x7fedcba9"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
@@ -132,7 +148,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   even constexpr ones. It is afraid of potential side effects. So for custom optional_flag_manipulator specializations,
   the best we can do is to show the raw storage.
   -->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;*, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceStoredTypeDecomposition&lt;*&gt;, tiny::optional_flag_manipulator&lt;*, void&gt;&gt;">
     <Intrinsic Name="IsEmpty" Optional="true" Expression="
                sizeof(&amp;*mStorage.storage) == 4
                ? ((unsigned int)(void*)mStorage.storage) == 0xffffffff - 8
@@ -155,7 +171,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
          - tiny::optional<SomeClass, &SomeClass::someMember>, where the type of someMember has a custom specialized tiny::optional_flag_manipulator.
   See the above visualizer for tiny::optional<T*> for an explanation.
   -->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;*, void&gt;&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, tiny::optional_flag_manipulator&lt;*, void&gt;&gt;">
     <!--Note: $T2 is the offset of the member in the class.-->
     <Intrinsic Name="IsEmpty" Optional="true" Expression="
                sizeof(&amp;**(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 4
@@ -177,7 +193,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   <!--tiny::optional<unsigned, 999>. 
   Used when a sentinel has been specified explicitly, i.e. when the 2nd template argument is a AssignmentFlagManipulator.
   We cannot explicitly write AssignmentFlagManipulator because then we wouldn't be able to access valueToIndicateEmpty here in natvis.-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceStoredTypeDecomposition&lt;*&gt;, *&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceStoredTypeDecomposition&lt;*&gt;, *&gt;">
     <Intrinsic Name="IsEmpty" Expression="mStorage.storage == $T2::valueToIndicateEmpty"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
     <Expand>
@@ -186,7 +202,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   </Type>
 
   <!--tiny::optional<SomeClass, &SomeClass::someUnsigned, 42>-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;tiny::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, *&gt;">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;tiny::tiny100301_bit_mem::impl::InplaceDecompositionViaMemPtr&lt;*, *&gt;, *&gt;">
     <!--Note: $T2 is the offset of the member in the class.-->
     <Intrinsic Name="IsEmpty" Expression="*(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2) == $T3::valueToIndicateEmpty"/>
     <DisplayString>{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
@@ -197,7 +213,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional-->
   
   
   <!--Fall back for any other optionals: Simply display the raw storage.-->
-  <Type Name="tiny::impl::TinyOptionalImpl&lt;*, *&gt;" Priority="Low">
+  <Type Name="tiny::tiny100301_bit_mem::impl::TinyOptionalImpl&lt;*, *&gt;" Priority="Low">
     <DisplayString>(Preview is not supported)</DisplayString>
     <Expand>
       <Item Name="Raw storage">mStorage.storage</Item>

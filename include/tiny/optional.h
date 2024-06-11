@@ -52,7 +52,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // TINY_OPTIONAL_VERSION / 100 % 1000 is the minor version
 // TINY_OPTIONAL_VERSION / 100000 is the major version
 // So the format is:          MmmmPP, where 'M'=major, 'm'=minor and 'P'=patch.
-#define TINY_OPTIONAL_VERSION 100300
+#define TINY_OPTIONAL_VERSION 100301 // If you change this, adapt Natvis, too!
 
 
 #if (!defined(__cplusplus) || __cplusplus < 201703L) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
