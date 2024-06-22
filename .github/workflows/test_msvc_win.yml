@@ -23,12 +23,7 @@ jobs:
         # in the solution file. In other words, the values do not correspond directly to compiler
         # switches but instead to parts of the configuration names from the .sln file.
         cpp_version: [C++17, C++20]
-        # The Windows GitHub runner is broken for release builds. There are crashes in std::mutex
-        # because they haven't installed the latest Visual C++ Redistributable after updating 
-        # Visual Studio to 17.10. See https://github.com/actions/runner-images/issues/10004
-        # Until GitHub updates the runner, we simply disable release builds.
-        buildmode: [Debug]
-        #buildmode: [Debug, Release]
+        buildmode: [Debug, Release]
 
         include:
         - cpp_version: "C++17 permissive"
