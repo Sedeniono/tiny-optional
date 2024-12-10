@@ -18,6 +18,9 @@
   - [Compatibility with `std::optional`](#compatibility-with-stdoptional)
 - [Usage](#usage)
   - [Installation](#installation)
+    - [cmake](#cmake)
+    - [Manually](#manually)
+    - [Preprocessor flags](#preprocessor-flags)
   - [Using `tiny::optional` as `std::optional` replacement](#using-tinyoptional-as-stdoptional-replacement)
   - [Using a sentinel value](#using-a-sentinel-value)
   - [Storing the empty state in a member variable](#storing-the-empty-state-in-a-member-variable)
@@ -160,9 +163,49 @@ Moreover, the monadic operation `transform()` always returns a `tiny::optional<T
 # Usage
 
 ## Installation
+
+### cmake
+
+Via [`find_package`](https://cmake.org/cmake/help/latest/command/find_package.html) (recommended):
+1. Clone or download the `tiny-optional` repository.
+1. In its root directory, execute 
+   ```sh
+   cmake -B build
+   sudo cmake --install build
+   ```
+   to generate the files in the folder `build` and then install them to the default location (e.g. `/usr/local/` on linux, `C:\Program Files` on Windows).
+   Alternatively, to install into some custom directory:
+   ```sh
+   cmake -B build -DCMAKE_INSTALL_PREFIX="/path/to/custom/tiny/optional/install/dir"
+   cmake --install build
+   ```
+1. In your own project's CMakeLists.txt, add:
+   ```cmake
+   find_package(tiny-optional CONFIG REQUIRED)
+   target_link_libraries(<target> PRIVATE tiny-optional::tiny-optional)
+   ```
+   where `<target>` is the cmake target that uses the library.
+   If you had installed the library in a custom location, you need tell cmake about it, e.g. via [`CMAKE_PREFIX_PATH`](https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html) (for example, run cmake as `cmake <path> -DCMAKE_PREFIX_PATH="/path/to/custom/tiny/optional/install/dir"`).
+
+
+Alternative via [`add_subdirectory`](https://cmake.org/cmake/help/latest/command/add_subdirectory.html):
+1. Put all files of the `tiny-optional` library in a subdirectory of your own project, so that you end up with `own_project/tiny-optional/CMakeLists.txt` and `own_project/tiny-optional/include/`.
+1. In your own project's `own_project/CMakeLists.txt`, add:
+   ```cmake
+   add_subdirectory(tiny-optional)
+   target_link_libraries(<target> PRIVATE tiny-optional::tiny-optional)
+   ```
+
+
+### Manually
 This is a header-only library. Just copy the folder from the include directory containing the header to your project. Include it via `#include <tiny/optional>`.
 
-The library uses the standard [`assert()` macro](https://en.cppreference.com/w/cpp/error/assert) in a few places, which can be disabled as usual by defining `NDEBUG` for release builds.
+
+### Preprocessor flags
+* The library uses the standard [`assert()` macro](https://en.cppreference.com/w/cpp/error/assert) in a few places, which can be disabled as usual by defining `NDEBUG` for release builds.
+* If you like to disable the use of platform specific tricks at the cost of most of the features, see the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)".
+
+
 
 
 ## Using `tiny::optional` as `std::optional` replacement
