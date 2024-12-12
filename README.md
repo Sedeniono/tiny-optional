@@ -871,9 +871,7 @@ The [discussion on reddit](https://www.reddit.com/r/cpp/comments/ybc4lf/tinyopti
 * [foonathan/tiny](https://github.com/foonathan/tiny): Seems to be abandoned and to not implement a fully fledged `std::optional` replacement.
 
 Moreover, a few years after the initial release of `tiny::optional`, the [`opt::option`](https://github.com/NUCLEAR-BOMB/option) library has been published (discussion on [reddit](https://www.reddit.com/r/cpp/comments/1fgjhvu/optoption_a_replacement_for_stdoptional/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)).
-It shares one of the motivations for `tiny::optional`, namely to not waste memory unnecessarily. It supports more types out-of-the-box than `tiny::optional`, where the empty state is stored in-place.
-In contrast, `tiny::optional` also has the sentinel use-case as motivation (`tiny::optional<int, -1>`).
-I have not studied `opt::option` in detail, nor have I seen any compile-time or runtime benchmarks on how the two libraries compare.
+It supports more types out-of-the-box than `tiny::optional`, where the empty state is stored in-place.
 
 
 Also, Rust's `Option` implements some magic for [references](https://stackoverflow.com/q/16504643/3740047) and [bools](https://stackoverflow.com/q/73180983/3740047).
