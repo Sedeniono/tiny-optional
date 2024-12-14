@@ -48,11 +48,15 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // #include <utility> // Required for std::move, std::swap, etc.
 
 
-// TINY_OPTIONAL_VERSION % 100 is the patch level
+// TINY_OPTIONAL_VERSION % 100 is the patch level == TINY_OPTIONAL_VERSION_PATCH
 // TINY_OPTIONAL_VERSION / 100 % 1000 is the minor version
 // TINY_OPTIONAL_VERSION / 100000 is the major version
 // So the format is:          MmmmPP, where 'M'=major, 'm'=minor and 'P'=patch.
-#define TINY_OPTIONAL_VERSION 100301 // If you change this, adapt Natvis, too!
+// E.g. TINY_OPTIONAL_VERSION 100301
+//
+#define TINY_OPTIONAL_VERSION_MAJOR_MINOR 1004 // If you change this, adapt Natvis, too!
+#define TINY_OPTIONAL_VERSION_PATCH 0
+#define TINY_OPTIONAL_VERSION (TINY_OPTIONAL_VERSION_MAJOR_MINOR * 100 + TINY_OPTIONAL_VERSION_PATCH)
 
 
 #if (!defined(__cplusplus) || __cplusplus < 201703L) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201703L)
@@ -122,7 +126,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // different TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS settings.
 #define TINY_OPTIONAL_INLINE_NS_BEGIN                                                                                  \
   inline namespace TINY_OPTIONAL_CONCAT_NS(                                                                            \
-      TINY_OPTIONAL_VERSION,                                                                                           \
+      TINY_OPTIONAL_VERSION_MAJOR_MINOR,                                                                               \
       TINY_OPTIONAL_UNUSED_BITS_NS_PART,                                                                               \
       TINY_OPTIONAL_MEMBER_NS_PART)                                                                                    \
   {

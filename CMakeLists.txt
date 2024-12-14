@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 project(
     tiny-optional
-    VERSION 1.3.1
+    VERSION 1.4.0
     DESCRIPTION "Replacement for std::optional that does not waste memory unnecessarily."
     HOMEPAGE_URL "https://github.com/Sedeniono/tiny-optional"
     LANGUAGES CXX
@@ -38,9 +38,9 @@ install(
 write_basic_package_version_file(
     "tiny-optionalConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
-    # Different versions of tiny::optional cannot be mixed. It is 
-    # actively prevented by the use of inline namespaces.
-    COMPATIBILITY ExactVersion)
+    # Different major and minor versions of tiny::optional cannot be mixed.
+    # It is actively prevented by the use of inline namespaces.
+    COMPATIBILITY SameMinorVersion)
 
 configure_package_config_file(
     "${PROJECT_SOURCE_DIR}/cmake/tiny-optionalConfig.cmake.in"

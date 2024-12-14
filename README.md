@@ -16,11 +16,13 @@
 - [Limitations](#limitations)
   - [Platform specific behavior](#platform-specific-behavior)
   - [Compatibility with `std::optional`](#compatibility-with-stdoptional)
+- [Installation](#installation)
+  - [Installation using cmake](#installation-using-cmake)
+  - [Manual installation](#manual-installation)
+  - [Preprocessor flags](#preprocessor-flags)
+  - [Compatibility between different versions](#compatibility-between-different-versions)
+  - [Natvis](#natvis)
 - [Usage](#usage)
-  - [Installation](#installation)
-    - [cmake](#cmake)
-    - [Manually](#manually)
-    - [Preprocessor flags](#preprocessor-flags)
   - [Using `tiny::optional` as `std::optional` replacement](#using-tinyoptional-as-stdoptional-replacement)
   - [Using a sentinel value](#using-a-sentinel-value)
   - [Storing the empty state in a member variable](#storing-the-empty-state-in-a-member-variable)
@@ -39,7 +41,6 @@
       - [Generic alternative](#generic-alternative)
       - [Alternative for `static constexpr`](#alternative-for-static-constexpr)
   - [Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)
-  - [Natvis](#natvis)
 - [Performance results](#performance-results)
   - [Runtime](#runtime)
   - [Build time](#build-time)
@@ -160,11 +161,12 @@ Currently, the following components of the interface of `std::optional` are not 
 Moreover, the monadic operation `transform()` always returns a `tiny::optional<T>`, i.e. specification of a sentinel or some other optional as return type (`tiny::optional_sentinel_via_type` etc.) is not possible. As a workaround, you can use `and_then()`.
 
 
-# Usage
 
-## Installation
+# Installation
 
-### cmake
+This is a **header-only** library.
+
+## Installation using cmake
 
 Via [`find_package`](https://cmake.org/cmake/help/latest/command/find_package.html) (recommended):
 1. Clone or download the `tiny-optional` repository.
@@ -189,7 +191,8 @@ Via [`find_package`](https://cmake.org/cmake/help/latest/command/find_package.ht
 
 
 Alternative via [`add_subdirectory`](https://cmake.org/cmake/help/latest/command/add_subdirectory.html):
-1. Put all files of the `tiny-optional` library in a subdirectory of your own project, so that you end up with `own_project/tiny-optional/CMakeLists.txt` and `own_project/tiny-optional/include/`.
+1. Put all files of the `tiny-optional` library in a subdirectory of your own project, so that you end up with `own_project/tiny-optional/CMakeLists.txt` and `own_project/tiny-optional/include/`.  
+(Actually, not all files but only those in `tiny-optional/CMakeLists.txt` and `tiny-optional/include/` are required.)
 1. In your own project's `own_project/CMakeLists.txt`, add:
    ```cmake
    add_subdirectory(tiny-optional)
@@ -197,16 +200,41 @@ Alternative via [`add_subdirectory`](https://cmake.org/cmake/help/latest/command
    ```
 
 
-### Manually
-This is a header-only library. Just copy the folder from the include directory containing the header to your project. Include it via `#include <tiny/optional>`.
+## Manual installation
+Just copy the folder from the `include` directory containing the headers to your project. Include it via `#include <tiny/optional>`.
 
 
-### Preprocessor flags
+## Preprocessor flags
 * The library uses the standard [`assert()` macro](https://en.cppreference.com/w/cpp/error/assert) in a few places, which can be disabled as usual by defining `NDEBUG` for release builds.
 * If you like to disable the use of platform specific tricks at the cost of most of the features, see the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)".
 
 
+## Compatibility between different versions
+Different versions of `tiny::optional` are only guaranteed to be API and ABI compatible between different patch versions.
+Different major and different minor versions are not compatible.
+This breaks with usual semantic versioning rules (where newer minor versions are compatible with older ones), mainly because most updates to `tiny::optional` are breaking changes and therefore would lead to very high major versions fast (which look "weird").
 
+The types defined by the library are in an [inline namespace](https://en.cppreference.com/w/cpp/language/namespace#Inline_namespaces) that encodes the major and the minor version numbers, causing build time errors when mixing different versions.
+
+Also see chapter "[Helpers to distinguish types at compile-time (metaprogramming)](#helpers-to-distinguish-types-at-compile-time-metaprogramming)".
+
+
+## Natvis
+The `include` directory contains a Natvis file which improves the display of the optionals in the Visual Studio debugger considerably.
+Copy and add the Natvis file to your project, or append its content to your existing Natvis file.
+See the [official Microsoft documentation](https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects) for more information on Natvis.
+
+The Natvis visualizers show whether the optional contains a value or not, and if it does, the contained value.
+Unfortunately, when you specialize `tiny::optional_flag_manipulator`, it is not reasonably possible to write a generic Natvis visualizer because Natvis does not allow to call any functions (even if they are `constexpr`).
+So you need to add additional visualizers for each custom specialization yourself.
+The same holds true for `tiny::optional_inplace`.
+
+Notes:
+* If you update to a more recent version of `tiny::optional`, you also need to update your copy of the Natvis file. Reason: It contains the name of the inline namespace in which all types are defined, and the name includes the version number.
+* If you compile with `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`, the types are defined in an inline namespace with a different name than the one expected by default by Natvis. So you need to replace all occurrences of the inline namespace name with the new one. See the top of the Natvis file for more information.
+
+
+# Usage
 
 ## Using `tiny::optional` as `std::optional` replacement
 Instead of writing `std::optional<T>`, use `tiny::optional<T>` in your code.
@@ -306,7 +334,8 @@ There are a few helpers available which facilitate checks at compile-time:
 * `tiny::optional<T>::is_compressed` is true if the optional has the same size as the payload `T`, and false otherwise. It is also defined for all other optional types defined by this library.
 * `tiny::is_tiny_optional_v<T>` is true if `T` is an optional defined by this library (`tiny::optional`, `tiny::optional_inplace` or `tiny::optional_aip`, compare below). It is false for any other type, including `std::optional`.
 * Every optional defined by this library defines a static boolean member `is_tiny_optional` with value true. For example, `tiny::optional<T>::is_tiny_optional` is true for **every** type `T`. The value is never false. It can be used to determine whether something is a tiny optional. But it is most likely more convenient to use `tiny::is_tiny_optional_v`, which yields false for any type that is not a tiny optional instead of resulting in compilation error. Nevertheless, the member `is_tiny_optional` might be useful in SFINAE contexts.
-* The macro `TINY_OPTIONAL_VERSION` indicates the version of the library.
+* The macro `TINY_OPTIONAL_VERSION` indicates the version of the library. It is in the format `MmmmPP`, where `M` is the major version, `mmm` the minor version and `PP` the patch level. For example, `100301` means version `1.3.1`. 
+* Additionally, there is the macro `TINY_OPTIONAL_VERSION_MAJOR_MINOR` which is in the format `Mmmm`. For example, `1004` means any version `1.4.x`. This macro is significant because versions with identical major and minor but different patch versions are compatible (see "[Compatibility between different versions](#compatibility-between-different-versions)").
 
 
 ## Specifying a sentinel value via a type
@@ -718,20 +747,6 @@ Moreover, specializations of `tiny::optional_flag_manipulator` still work. (Any 
 Mixing code that was compiled with and without `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS` would lead to incorrect behavior because the involved types have different sizes.
 To prevent this, the types defined by the library are implemented in an [inline namespace](https://en.cppreference.com/w/cpp/language/namespace#Inline_namespaces) that encodes the configuration. If you try to mix different configurations, you will get errors related to missing or mismatching symbols.
 
-
-## Natvis
-The `include` directory contains a Natvis file which improves the display of the optionals in the Visual Studio debugger considerably.
-Copy and add the Natvis file to your project, or append its content to your existing Natvis file.
-See the [official Microsoft documentation](https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects) for more information on Natvis.
-
-The Natvis visualizers show whether the optional contains a value or not, and if it does, the contained value.
-Unfortunately, when you specialize `tiny::optional_flag_manipulator` (see above), it is not reasonably possible to write a generic Natvis visualizer because Natvis does not allow to call any functions (even if they are `constexpr`).
-So you need to add additional visualizers for each custom specialization yourself.
-The same holds true for `tiny::optional_inplace`.
-
-Notes:
-* If you update to a more recent version of `tiny::optional`, you also need to update your copy of the Natvis file. Reason: It contains the name of the inline namespace in which all types are defined, and the name includes the version number.
-* If you compile with `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`, the types are defined in an inline namespace with a different name than the one expected by default by Natvis. So you need to replace all occurrences of the inline namespace name with the new one. See the top of the Natvis file for more information.
 
 
 # Performance results
