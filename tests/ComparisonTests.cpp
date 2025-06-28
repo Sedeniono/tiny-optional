@@ -35,6 +35,16 @@ void TestCompareOptWithOpt(Val1 val1, Val2 val2, Comparer comparer)
   std::optional<typename Opt1::value_type> const std1{val1};
   std::optional<typename Opt2::value_type> const std2{val2};
 
+  // Workaround some miscompilation bug seen in clang 20.1.4 on Windows with
+  // the flags "-std=c++20 -O3 -DNDEBUG -ffast-math" for the call
+  // (TestCompareOptWithOpt<std::optional<int>, std::optional<double>>(42, NaN, comparer), ...)
+  // The compilation succeeds, but the ASSERTs fail. 
+  // I guess it has something to do with the use of a NaN and -ffast-math; this is notoriously broken.
+  // Adding the following dummy line works around the issue for some reason.
+#if defined(TINY_OPTIONAL_CLANG_BUILD) && __clang_major__ == 20 && defined(__FAST_MATH__) && defined(NDEBUG)
+  [[maybe_unused]] auto volatile const dummy = (comparer(opt1, opt2) < 0 ? "<" : comparer(opt1, opt2) > 0 ? ">" : "==");
+#endif
+
   ASSERT_TRUE(comparer(opt1, opt2) == comparer(std1, std2));
   ASSERT_TRUE(comparer(opt2, opt1) == comparer(std2, std1));
 }
