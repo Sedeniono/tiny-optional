@@ -116,6 +116,12 @@ void ExerciseOptional(
     }
   }
 
+#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+  static_assert(
+      std::is_trivially_destructible_v<typename Optional::value_type> == std::is_trivially_destructible_v<Optional>,
+      "Test failure: Expected the tiny::optional to be trivially destructible if and only if the payload is, too");
+#endif
+
   static_assert(noexcept(Optional{}.has_value()));
 
   std::cout << "\tExercising " << optionalStr << " with validValueToAssign1='" << validValueToAssign1Str

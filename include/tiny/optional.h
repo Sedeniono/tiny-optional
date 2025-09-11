@@ -101,11 +101,18 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #endif
 #endif
 
+// The implementation of or_else() uses C++20 concepts.
 #if defined(__cpp_concepts) && defined(__cpp_lib_concepts)
-  // The implementation of or_else() uses C++20 concepts.
   #define TINY_OPTIONAL_ENABLE_ORELSE
 #endif
 
+// In C++20 the tiny::optional destructor becomes trivial if the destructor of the payload is trivial.
+// It would be possible to do this also in C++17, however, this requires more conditional inheritance
+// and for simplicity we do not implement it. In C++20 it is much easier thanks to `requires`.
+// clang <=14 does not support multiple destructors (https://github.com/llvm/llvm-project/issues/45614).
+#if defined(__cpp_concepts) && (!defined(__clang__) || __clang_major__ >= 15)
+  #define TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+#endif
 
 #ifdef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
   #define TINY_OPTIONAL_UNUSED_BITS_NS_PART noBit
@@ -528,7 +535,21 @@ namespace impl
     bool isEmptyFlag; // True if the optional is empty, false otherwise.
 
     SeparateFlagStorage() { }
+
+#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+    // Non-trivial destructor required if the payload is non-trivally destructible due to the union.
+    ~SeparateFlagStorage()
+      requires(!std::is_trivially_destructible_v<PayloadType>)
+    {
+    }
+
+    // Trivial destructor.
+    ~SeparateFlagStorage()
+      requires(std::is_trivially_destructible_v<PayloadType>)
+    = default;
+#else
     ~SeparateFlagStorage() { }
+#endif
   };
 
 
@@ -544,7 +565,21 @@ namespace impl
     };
 
     InplaceStorage() { }
+
+#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+    // Non-trivial destructor required if the payload is non-trivally destructible due to the union.
+    ~InplaceStorage()
+      requires(!std::is_trivially_destructible_v<PayloadType>)
+    {
+    }
+
+    // Trivial destructor.
+    ~InplaceStorage()
+      requires(std::is_trivially_destructible_v<PayloadType>)
+    = default;
+#else
     ~InplaceStorage() { }
+#endif
   };
 
 
@@ -978,13 +1013,23 @@ namespace impl
       ConstructPayloadFromFunction(std::forward<FuncT>(func), std::forward<ArgT>(arg));
     }
 
-    // TODO: The standard wants a trivial destructor if possible.
+    // Non-trivial destructor.
     ~StorageBase()
+#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+      requires(!std::is_trivially_destructible_v<PayloadType>)
+#endif
     {
       if (has_value()) {
         DestroyPayload();
       }
     }
+
+#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+    // Trivial destructor.
+    ~StorageBase()
+      requires(std::is_trivially_destructible_v<PayloadType>)
+    = default;
+#endif
 
     // The proper implemention of the following are defined in the derived classes.
     // It cannot be done here because depending on the payload they need to be different, and in C++17
