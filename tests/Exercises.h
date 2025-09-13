@@ -99,9 +99,11 @@ void ExerciseOptional(
     TestValue2T const validValueToAssign2,
     ConstructorArgsT const... constructorArgs)
 {
+  using PayloadType = typename Optional::value_type;
+
   if constexpr (inPlaceExpectation == EXPECT_INPLACE) {
     static_assert(
-        sizeof(Optional) == sizeof(typename Optional::value_type),
+        sizeof(Optional) == sizeof(PayloadType),
         "Test failure: Expected the tiny::optional to be tiny, i.e. to not require additional memory.");
     if constexpr (tiny::is_tiny_optional_v<Optional>) {
       static_assert(Optional::is_compressed);
@@ -109,16 +111,30 @@ void ExerciseOptional(
   }
   else {
     static_assert(
-        sizeof(Optional) == sizeof(std::optional<typename Optional::value_type>),
+        sizeof(Optional) == sizeof(std::optional<PayloadType>),
         "Test failure: Expected the tiny::optional to be the same size as std::optional.");
     if constexpr (tiny::is_tiny_optional_v<Optional>) {
       static_assert(!Optional::is_compressed);
     }
   }
 
+  static_assert(std::is_move_constructible_v<Optional> == std::is_move_constructible_v<PayloadType>);
+  static_assert(std::is_nothrow_move_constructible_v<Optional> == std::is_nothrow_move_constructible_v<PayloadType>);
+  static_assert(std::is_copy_constructible_v<Optional> == std::is_copy_constructible_v<PayloadType>);
+
+  static_assert(
+      std::is_move_assignable_v<Optional>
+      == (std::is_move_assignable_v<PayloadType> && std::is_move_constructible_v<PayloadType>));
+  static_assert(
+      std::is_nothrow_move_assignable_v<Optional>
+      == (std::is_nothrow_move_assignable_v<PayloadType> && std::is_nothrow_move_constructible_v<PayloadType>));
+  static_assert(
+      std::is_copy_assignable_v<Optional>
+      == (std::is_copy_assignable_v<PayloadType> && std::is_copy_constructible_v<PayloadType>));
+
 #ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
   static_assert(
-      std::is_trivially_destructible_v<typename Optional::value_type> == std::is_trivially_destructible_v<Optional>,
+      std::is_trivially_destructible_v<PayloadType> == std::is_trivially_destructible_v<Optional>,
       "Test failure: Expected the tiny::optional to be trivially destructible if and only if the payload is, too");
 #endif
 
