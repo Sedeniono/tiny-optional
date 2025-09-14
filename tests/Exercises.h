@@ -132,10 +132,21 @@ void ExerciseOptional(
       std::is_copy_assignable_v<Optional>
       == (std::is_copy_assignable_v<PayloadType> && std::is_copy_constructible_v<PayloadType>));
 
-#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
   static_assert(
-      std::is_trivially_destructible_v<PayloadType> == std::is_trivially_destructible_v<Optional>,
+      std::is_trivially_destructible_v<Optional> == std::is_trivially_destructible_v<PayloadType>,
       "Test failure: Expected the tiny::optional to be trivially destructible if and only if the payload is, too");
+
+  static_assert(
+      std::is_trivially_move_constructible_v<Optional>
+      == (std::is_trivially_move_constructible_v<PayloadType>
+          && (inPlaceExpectation == EXPECT_SEPARATE || std::is_fundamental_v<PayloadType>)));
+#else
+  // Triviality not implemented, so these should be always false for tiny::optional.
+  if constexpr (tiny::is_tiny_optional_v<Optional>) {
+    static_assert(!std::is_trivially_destructible_v<Optional>);
+    static_assert(!std::is_trivially_move_constructible_v<Optional>);
+  }
 #endif
 
   static_assert(noexcept(Optional{}.has_value()));

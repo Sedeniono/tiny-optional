@@ -101,17 +101,21 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #endif
 #endif
 
-// The implementation of or_else() uses C++20 concepts.
+// The implementation of or_else() needs C++20 concepts to implement the overload participation requirements of the
+// C++ standard. It would probably be possible to do it via SFINAE or conditional inheritance, but for simplicity we
+// do not do it.
 #if defined(__cpp_concepts) && defined(__cpp_lib_concepts)
   #define TINY_OPTIONAL_ENABLE_ORELSE
 #endif
 
-// In C++20 the tiny::optional destructor becomes trivial if the destructor of the payload is trivial.
+// In C++20 the tiny::optional destructor becomes trivial if the destructor of the payload is trivial, as required by
+// the C++ standard for std::optional. Similarly, we make the copy/move constructor and copy/move assignment trivial if
+// possible; additional conditions apply there, however (see IsCandidateForInplaceTrivialCopyAndMove).
 // It would be possible to do this also in C++17, however, this requires more conditional inheritance
 // and for simplicity we do not implement it. In C++20 it is much easier thanks to `requires`.
 // clang <=14 does not support multiple destructors (https://github.com/llvm/llvm-project/issues/45614).
 #if defined(__cpp_concepts) && (!defined(__clang__) || __clang_major__ >= 15)
-  #define TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+  #define TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
 #endif
 
 #ifdef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
@@ -351,7 +355,7 @@ namespace impl
   template <auto memberPointer>
   struct MemberPointerFragments;
 
-  template <typename ClassType_, typename VariableType_, VariableType_ ClassType_::*memberPointer>
+  template <typename ClassType_, typename VariableType_, VariableType_ ClassType_::* memberPointer>
   struct MemberPointerFragments<memberPointer>
   {
     using ClassType = ClassType_;
@@ -397,6 +401,37 @@ namespace impl
   struct DirectInitializationFromFunctionTag
   {
   };
+
+
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+  // The C++ standard requires for the move/copy construction and move/copy assignments triviality if the corresponding
+  // functions of the payload are trivial. We want to implement this, too, since libraries might use the information to
+  // implement more efficient code (e.g. std::vector might use memcpy instead of doing a loop over all members).
+  //
+  // If tiny::optional uses a separate bool for the 'IsEmpty' flag, we can simply do it the same way as std::optional.
+  // (IsCandidateForInplaceTrivialCopyAndMove is NOT queried in this case.)
+  //
+  // But: For tiny::optional we need to be more careful if the flag is stored inplace: Assume that the user has a some
+  // POD-like struct with padding bytes that has trival special member functions. The user specializes
+  // tiny::optional_flag_manipulator and decides to pack the 'IsEmpty'-flag into one of the padding bytes. In this case
+  // tiny::optional needs to take care of moving/copying the value itself because there no guarantee that the compiler
+  // generated move/copy operation copies the values of the padding bytes, too (see e.g.
+  // https://stackoverflow.com/a/46875219/3740047).
+  //
+  // This template here tells tiny::optional which types are safe to copy/move trivially. We could be more intelligent
+  // in the future and query some marker on tiny::optional_flag_manipulator if it declares that it is save, but for
+  // simplicity we do not do this right now. Instead, we just whiteliste all fundamental types.
+  //
+  // Note: That this works for doubles and floats is quite tricky in general. In 32 bit on x86, floats and doubles are
+  // returned from functions via the x87 FPU. That has the nasty side effect that signaling NaNs are converted to quiet
+  // NaNs, i.e. the value is actually modified by the CPU in the return statement. However, from what I could find this
+  // is all that normal x86 CPUs by AMD and Intel (which is the target of this library) do: They convert the signaling
+  // to a quiet NaN by flipping the necessary bit, and leave the remaning bit pattern untouched. Since we use quiet NaNs
+  // (see SentinelForExploitingUnusedBits) we should be fine. See e.g. https://github.com/rust-lang/rust/issues/115567
+  // or https://github.com/llvm/llvm-project/issues/66803#issuecomment-1856428859.
+  template <class PayloadType>
+  inline constexpr bool IsCandidateForInplaceTrivialCopyAndMove = std::is_fundamental_v<PayloadType>;
+#endif
 
 
   //====================================================================================
@@ -529,6 +564,8 @@ namespace impl
   template <class PayloadType>
   struct SeparateFlagStorage
   {
+    // Union to prevent automatic initialization of mStorage. I.e. this only allocates the memory without
+    // calling the constructor of PayloadType.
     union
     {
       std::remove_const_t<PayloadType> payload;
@@ -536,9 +573,28 @@ namespace impl
 
     bool isEmptyFlag; // True if the optional is empty, false otherwise.
 
-    SeparateFlagStorage() { }
 
-#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // Non-trivial constructor required if the payload is non-trivally constructible due to the union.
+    SeparateFlagStorage()
+      requires(!std::is_trivially_constructible_v<PayloadType>)
+    {
+    }
+
+    // Trivial constructor.
+    SeparateFlagStorage()
+      requires(std::is_trivially_constructible_v<PayloadType>)
+    = default;
+
+    // These are called only for the trivial construction/assignments of tiny::optional, in which case they are also
+    // trivial. We still need to default the move constructor/assignment explicitly because we have a destructor, and
+    // thus they would be deleted otherwise.
+    // For the non-trivial construction/assignment, tiny::optional handles copying manually.
+    SeparateFlagStorage(SeparateFlagStorage const &) = default;
+    SeparateFlagStorage(SeparateFlagStorage &&) = default;
+    SeparateFlagStorage & operator=(SeparateFlagStorage const &) = default;
+    SeparateFlagStorage & operator=(SeparateFlagStorage &&) = default;
+
     // Non-trivial destructor required if the payload is non-trivally destructible due to the union.
     ~SeparateFlagStorage()
       requires(!std::is_trivially_destructible_v<PayloadType>)
@@ -550,6 +606,7 @@ namespace impl
       requires(std::is_trivially_destructible_v<PayloadType>)
     = default;
 #else
+    SeparateFlagStorage() { }
     ~SeparateFlagStorage() { }
 #endif
   };
@@ -559,16 +616,31 @@ namespace impl
   template <class PayloadType>
   struct InplaceStorage
   {
-    // Union to prevent automatic initialization of mStorage. I.e. this only allocates the memory without
-    // calling the constructor of PayloadType.
+    // In analogy to SeparateFlagStorage.
     union
     {
       std::remove_const_t<PayloadType> storage;
     };
 
-    InplaceStorage() { }
 
-#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+    // In analogy to SeparateFlagStorage: Used for trivial versions.
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // Non-trivial constructor required if the payload is non-trivally constructible due to the union.
+    InplaceStorage()
+      requires(!std::is_trivially_constructible_v<PayloadType>)
+    {
+    }
+
+    // Trivial constructor.
+    InplaceStorage()
+      requires(std::is_trivially_constructible_v<PayloadType>)
+    = default;
+
+    InplaceStorage(InplaceStorage const &) = default;
+    InplaceStorage(InplaceStorage &&) = default;
+    InplaceStorage & operator=(InplaceStorage const &) = default;
+    InplaceStorage & operator=(InplaceStorage &&) = default;
+
     // Non-trivial destructor required if the payload is non-trivally destructible due to the union.
     ~InplaceStorage()
       requires(!std::is_trivially_destructible_v<PayloadType>)
@@ -580,6 +652,7 @@ namespace impl
       requires(std::is_trivially_destructible_v<PayloadType>)
     = default;
 #else
+    InplaceStorage() { }
     ~InplaceStorage() { }
 #endif
   };
@@ -1017,7 +1090,7 @@ namespace impl
 
     // Non-trivial destructor.
     ~StorageBase()
-#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
       requires(!std::is_trivially_destructible_v<PayloadType>)
 #endif
     {
@@ -1026,20 +1099,22 @@ namespace impl
       }
     }
 
-#ifdef TINY_OPTIONAL_TRIVIAL_DESTRUCTOR
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
     // Trivial destructor.
     ~StorageBase()
       requires(std::is_trivially_destructible_v<PayloadType>)
     = default;
 #endif
 
-    // The proper implemention of the following are defined in the derived classes.
-    // It cannot be done here because depending on the payload they need to be different, and in C++17
-    // there is no way to have multiple versions of each depending on the payload type.
-    StorageBase(StorageBase const &) = delete;
-    StorageBase(StorageBase &&) = delete;
-    StorageBase & operator=(StorageBase const &) = delete;
-    StorageBase & operator=(StorageBase &&) = delete;
+    // The proper implemention of the following special functions are defined in the derived classes for the non-trivial
+    // versions. We need the inheritance hierarchy in C++17 because that is the only way to conditionally define or
+    // delete them based on the payload, as required by the C++ standard for std::optional. But in C++20 we additionally
+    // make them trivial if possible; for this to work we need to default them. So, for the non-trivial case these are
+    // not actually used. For the trivial case, they are trivial and used. Also see SeparateFlagStorage.
+    StorageBase(StorageBase const &) = default;
+    StorageBase(StorageBase &&) = default;
+    StorageBase & operator=(StorageBase const &) = default;
+    StorageBase & operator=(StorageBase &&) = default;
 
     [[nodiscard]] bool has_value() const noexcept
     {
@@ -1223,13 +1298,24 @@ namespace impl
     using Base::Base;
     using PayloadType = typename Base::PayloadType;
 
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // See IsCandidateForInplaceTrivialCopyAndMove for an explanation.
+    static constexpr bool trivialMoveConstructor
+        = std::is_trivially_move_constructible_v<PayloadType>
+          && (!Base::is_compressed || IsCandidateForInplaceTrivialCopyAndMove<PayloadType>);
+#endif
+
+
     MoveConstructionBase() = default;
     MoveConstructionBase(MoveConstructionBase const &) = default;
 
-    // TODO: It is a trivial constructor if std::is_trivially_move_constructible_v<T> is true
+    // Non-trivial move constructor.
     MoveConstructionBase(MoveConstructionBase && rhs) noexcept(std::is_nothrow_move_constructible_v<PayloadType>)
-      // Call Base's default constructor since the whole purpose of the present class is to implement
-      // the proper move constructor (so the base class does not have a proper one).
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+      requires(!trivialMoveConstructor)
+#endif
+      // Call Base's **default** constructor (not the move constructor, since it is deleted). The whole purpose of the
+      // present class is to implement the proper non-trival move constructor.
       : Base()
     {
       if (rhs.has_value()) {
@@ -1243,6 +1329,13 @@ namespace impl
       // Also, we might run into problems with deallocations if an optional becomes empty 'magically'.
       assert(this->has_value() == rhs.has_value());
     }
+
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // Trivial move constructor.
+    MoveConstructionBase(MoveConstructionBase && rhs)
+      requires(trivialMoveConstructor)
+    = default;
+#endif
   };
 
 
