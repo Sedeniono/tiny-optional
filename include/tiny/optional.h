@@ -1088,33 +1088,114 @@ namespace impl
       ConstructPayloadFromFunction(std::forward<FuncT>(func), std::forward<ArgT>(arg));
     }
 
+
+    // In C++20 we don't need the conditional inheritance hierarchy; instead we use `requires`.
+    // Moreover, we implement trivial special member functions since it is easily possible.
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
     // Non-trivial destructor.
     ~StorageBase()
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
       requires(!std::is_trivially_destructible_v<PayloadType>)
-#endif
     {
       if (has_value()) {
         DestroyPayload();
       }
     }
 
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
     // Trivial destructor.
     ~StorageBase()
       requires(std::is_trivially_destructible_v<PayloadType>)
     = default;
-#endif
 
-    // The proper implemention of the following special functions are defined in the derived classes for the non-trivial
-    // versions. We need the inheritance hierarchy in C++17 because that is the only way to conditionally define or
-    // delete them based on the payload, as required by the C++ standard for std::optional. But in C++20 we additionally
-    // make them trivial if possible; for this to work we need to default them. So, for the non-trivial case these are
-    // not actually used. For the trivial case, they are trivial and used. Also see SeparateFlagStorage.
-    StorageBase(StorageBase const &) = default;
-    StorageBase(StorageBase &&) = default;
-    StorageBase & operator=(StorageBase const &) = default;
-    StorageBase & operator=(StorageBase &&) = default;
+    // See IsCandidateForInplaceTrivialCopyAndMove for an explanation.
+    static constexpr bool hasTrivialMoveConstructor
+        = std::is_trivially_move_constructible_v<PayloadType>
+          && (!is_compressed || IsCandidateForInplaceTrivialCopyAndMove<PayloadType>);
+
+    static constexpr bool hasMoveConstructor = std::is_move_constructible_v<PayloadType>;
+
+    // Deleted move constructor
+    StorageBase(StorageBase && rhs)
+      requires(!hasMoveConstructor)
+    = delete;
+
+    // Trivial move constructor
+    StorageBase(StorageBase && rhs)
+      requires(hasMoveConstructor && hasTrivialMoveConstructor)
+    = default;
+
+    // Non-trivial move constructor
+    StorageBase(StorageBase && rhs) noexcept(std::is_nothrow_move_constructible_v<PayloadType>)
+      requires(hasMoveConstructor && !hasTrivialMoveConstructor)
+      : StorageBase() // Basic initialization via default constructor
+    {
+      MoveConstructorImpl(std::move(rhs));
+    }
+
+
+    static constexpr bool hasCopyConstructor = std::is_copy_constructible_v<PayloadType>;
+
+    StorageBase(StorageBase const & rhs)
+      requires(!hasCopyConstructor)
+    = delete;
+
+    StorageBase(StorageBase const & rhs)
+      requires(hasCopyConstructor)
+      : StorageBase() // Basic initialization via default constructor
+    {
+      CopyConstructorImpl(rhs);
+    }
+
+
+    static constexpr bool hasMoveAssignment
+        = std::is_move_constructible_v<typename StoredTypeDecomposition::PayloadType>
+          && std::is_move_assignable_v<typename StoredTypeDecomposition::PayloadType>;
+
+    StorageBase & operator=(StorageBase && rhs)
+      requires(!hasMoveAssignment)
+    = delete;
+
+    StorageBase & operator=(StorageBase && rhs) noexcept(
+        std::is_nothrow_move_assignable_v<PayloadType> && std::is_nothrow_move_constructible_v<PayloadType>)
+      requires(hasMoveAssignment)
+    {
+      MoveAssignmentImpl(std::move(rhs));
+      return *this;
+    }
+
+
+    static constexpr bool hasCopyAssignment
+        = std::is_copy_constructible_v<typename StoredTypeDecomposition::PayloadType>
+          && std::is_copy_assignable_v<typename StoredTypeDecomposition::PayloadType>;
+
+    StorageBase & operator=(StorageBase const & rhs)
+      requires(!hasCopyAssignment)
+    = delete;
+
+    StorageBase & operator=(StorageBase const & rhs)
+      requires(hasCopyAssignment)
+    {
+      CopyAssignmentImpl(rhs);
+      return *this;
+    }
+
+#else // TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // C++17 version. Trivial versions of the member functions are not implemented for simplicity.
+
+    ~StorageBase()
+    {
+      if (has_value()) {
+        DestroyPayload();
+      }
+    }
+
+    // The proper implemention of the special member functions are defined in the derived classes.
+    // We delete the special member functions to ensure that they really are not called.
+    StorageBase(StorageBase const &) = delete;
+    StorageBase(StorageBase &&) = delete;
+    StorageBase & operator=(StorageBase const &) = delete;
+    StorageBase & operator=(StorageBase &&) = delete;
+#endif // TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+
 
     [[nodiscard]] bool has_value() const noexcept
     {
@@ -1269,54 +1350,7 @@ namespace impl
     }
 
 
-  private:
-    std::remove_const_t<StoredType> mStorage;
-  };
-
-
-  //====================================================================================
-  // MoveConstructionBase
-  //====================================================================================
-
-  // If the payload is not move constructible then the move constructor of TinyOptionalImpl must not participate in
-  // overload resolution, meaning that the copy constructor should be called instead. Without C++20 concepts, there is
-  // no way to let the move constructor participate conditionally in overload resolution if it gets defined directly in
-  // TinyOptionalImpl. Therefore, TinyOptionalImpl simply defaults the move constructor and inherits from
-  // MoveConstructionBase. Using template specialization, MoveConstructionBase either implements the move constructor or
-  // deletes it, depending on whether the payload is move constructible or not. The defaulted move constructor of
-  // TinyOptionalImpl will then automatically participate in overload resolution or not.
-
-  // First version of MoveConstructionBase if the payload is move constructible.
-  template <
-      class StoredTypeDecomposition,
-      class FlagManipulator,
-      bool = std::is_move_constructible_v<typename StoredTypeDecomposition::PayloadType>>
-  struct MoveConstructionBase : StorageBase<StoredTypeDecomposition, FlagManipulator>
-  {
-    using Base = StorageBase<StoredTypeDecomposition, FlagManipulator>;
-
-    using Base::Base;
-    using PayloadType = typename Base::PayloadType;
-
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-    // See IsCandidateForInplaceTrivialCopyAndMove for an explanation.
-    static constexpr bool trivialMoveConstructor
-        = std::is_trivially_move_constructible_v<PayloadType>
-          && (!Base::is_compressed || IsCandidateForInplaceTrivialCopyAndMove<PayloadType>);
-#endif
-
-
-    MoveConstructionBase() = default;
-    MoveConstructionBase(MoveConstructionBase const &) = default;
-
-    // Non-trivial move constructor.
-    MoveConstructionBase(MoveConstructionBase && rhs) noexcept(std::is_nothrow_move_constructible_v<PayloadType>)
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-      requires(!trivialMoveConstructor)
-#endif
-      // Call Base's **default** constructor (not the move constructor, since it is deleted). The whole purpose of the
-      // present class is to implement the proper non-trival move constructor.
-      : Base()
+    void MoveConstructorImpl(StorageBase && rhs) noexcept(std::is_nothrow_move_constructible_v<PayloadType>)
     {
       if (rhs.has_value()) {
         this->ConstructPayload(std::move(rhs.GetPayload()));
@@ -1330,12 +1364,90 @@ namespace impl
       assert(this->has_value() == rhs.has_value());
     }
 
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-    // Trivial move constructor.
-    MoveConstructionBase(MoveConstructionBase && rhs)
-      requires(trivialMoveConstructor)
-    = default;
-#endif
+
+    void CopyConstructorImpl(StorageBase const & rhs)
+    {
+      if (rhs.has_value()) {
+        this->ConstructPayload(rhs.GetPayload());
+      }
+      else {
+        assert(!this->has_value());
+      }
+      assert(this->has_value() == rhs.has_value());
+    }
+
+
+    void MoveAssignmentImpl(StorageBase && rhs) noexcept(
+        std::is_nothrow_move_assignable_v<PayloadType> && std::is_nothrow_move_constructible_v<PayloadType>)
+    {
+      if (rhs.has_value()) {
+        this->AssignValue(std::move(rhs.GetPayload()));
+      }
+      else {
+        this->reset();
+      }
+
+      // The C++ standard requires the moved-from optional to be non-empty if it was non-empty before.
+      // Also, we might run into problems with deallocations if an optional becomes empty 'magically'.
+      assert(this->has_value() == rhs.has_value());
+    }
+
+    void CopyAssignmentImpl(StorageBase const & rhs)
+    {
+      if (rhs.has_value()) {
+        this->AssignValue(rhs.GetPayload());
+      }
+      else {
+        this->reset();
+      }
+
+      assert(this->has_value() == rhs.has_value());
+    }
+
+
+  private:
+    std::remove_const_t<StoredType> mStorage;
+  };
+
+
+#ifndef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+
+  //====================================================================================
+  // MoveConstructionBase
+  //====================================================================================
+
+  // If the payload is not move constructible then the move constructor of TinyOptionalImpl must not participate in
+  // overload resolution, meaning that the copy constructor should be called instead. Without C++20 concepts, there is
+  // no way to let the move constructor participate conditionally in overload resolution if it gets defined directly in
+  // TinyOptionalImpl. Therefore, TinyOptionalImpl simply defaults the move constructor and inherits from
+  // MoveConstructionBase. Using template specialization, MoveConstructionBase either implements the move constructor or
+  // deletes it, depending on whether the payload is move constructible or not. The defaulted move constructor of
+  // TinyOptionalImpl will then automatically participate in overload resolution or not.
+  //
+  // In C++20 we implement everything via `requires` and therefore do not need the whole hierarchy.
+
+  // First version of MoveConstructionBase if the payload is move constructible.
+  template <
+      class StoredTypeDecomposition,
+      class FlagManipulator,
+      bool = std::is_move_constructible_v<typename StoredTypeDecomposition::PayloadType>>
+  struct MoveConstructionBase : StorageBase<StoredTypeDecomposition, FlagManipulator>
+  {
+    using Base = StorageBase<StoredTypeDecomposition, FlagManipulator>;
+
+    using Base::Base;
+    using PayloadType = typename Base::PayloadType;
+
+    MoveConstructionBase() = default;
+    MoveConstructionBase(MoveConstructionBase const &) = default;
+
+    MoveConstructionBase(MoveConstructionBase && rhs) noexcept(std::is_nothrow_move_constructible_v<PayloadType>)
+      // Call Base's **default** constructor (not the move constructor, since it is deleted). The whole purpose of the
+      // present class is to implement the proper non-trival move constructor.
+      : Base()
+    {
+      this->MoveConstructorImpl(std::move(rhs));
+    }
   };
 
 
@@ -1376,19 +1488,12 @@ namespace impl
     CopyConstructionBase() = default;
     CopyConstructionBase(CopyConstructionBase &&) = default;
 
-    // TODO: It is a trivial constructor if std::is_trivially_copy_constructible_v<T> is true.
     CopyConstructionBase(CopyConstructionBase const & rhs)
       // Call Base's default constructor since the whole purpose of the present class is to implement
       // the proper copy constructor (so the base class does not have a proper one).
       : Base()
     {
-      if (rhs.has_value()) {
-        this->ConstructPayload(rhs.GetPayload());
-      }
-      else {
-        assert(!this->has_value());
-      }
-      assert(this->has_value() == rhs.has_value());
+      this->CopyConstructorImpl(rhs);
     }
   };
 
@@ -1433,21 +1538,10 @@ namespace impl
     MoveAssignmentBase(MoveAssignmentBase &&) = default;
     MoveAssignmentBase & operator=(MoveAssignmentBase const &) = default;
 
-    // TODO: It should be trivial if certain conditions are met.
     MoveAssignmentBase & operator=(MoveAssignmentBase && rhs) noexcept(
         std::is_nothrow_move_assignable_v<PayloadType> && std::is_nothrow_move_constructible_v<PayloadType>)
     {
-      if (rhs.has_value()) {
-        this->AssignValue(std::move(rhs.GetPayload()));
-      }
-      else {
-        this->reset();
-      }
-
-      // The C++ standard requires the moved-from optional to be non-empty if it was non-empty before.
-      // Also, we might run into problems with deallocations if an optional becomes empty 'magically'.
-      assert(this->has_value() == rhs.has_value());
-
+      this->MoveAssignmentImpl(std::move(rhs));
       return *this;
     }
   };
@@ -1493,17 +1587,9 @@ namespace impl
     CopyAssignmentBase(CopyAssignmentBase const &) = default;
     CopyAssignmentBase & operator=(CopyAssignmentBase &&) = default;
 
-    // TODO: It should be trivial if certain conditions are met.
     CopyAssignmentBase & operator=(CopyAssignmentBase const & rhs)
     {
-      if (rhs.has_value()) {
-        this->AssignValue(rhs.GetPayload());
-      }
-      else {
-        this->reset();
-      }
-
-      assert(this->has_value() == rhs.has_value());
+      this->CopyAssignmentImpl(rhs);
       return *this;
     }
   };
@@ -1525,6 +1611,7 @@ namespace impl
     CopyAssignmentBase & operator=(CopyAssignmentBase const & rhs) = delete;
   };
 
+#endif // TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
 
   //====================================================================================
   // TinyOptionalImpl
@@ -1532,10 +1619,23 @@ namespace impl
 
   // Actual implementation of optional.
   template <class StoredTypeDecomposition, class FlagManipulator>
-  class TinyOptionalImpl : private CopyAssignmentBase<StoredTypeDecomposition, FlagManipulator>
+  class TinyOptionalImpl
+  // In C++17 we need a conditional inheritance hierarchy to implement the special member functions. For simplicity, we
+  // do not implement the triviality requirement of std::optional there.
+  // In C++20 we can implement the various versions of the special member functions via `requires`. This bypasses quite
+  // a lot of complexity, and compile times might benefit from it, too.
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    : private StorageBase<StoredTypeDecomposition, FlagManipulator>
+#else
+    : private CopyAssignmentBase<StoredTypeDecomposition, FlagManipulator>
+#endif
   {
   private:
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    using Base = StorageBase<StoredTypeDecomposition, FlagManipulator>;
+#else
     using Base = CopyAssignmentBase<StoredTypeDecomposition, FlagManipulator>;
+#endif
 
     using PayloadType = typename Base::PayloadType;
 
