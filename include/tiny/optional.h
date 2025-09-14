@@ -444,7 +444,8 @@ namespace impl
   {
     // Compare https://cwiki.apache.org/confluence/display/stdcxx/FloatingPoint
     // We use a NaN value that is not used by default as signaling or quiet NaN on any platform.
-    // A quiet NaN is used to prevent accidental generation of a floating point exception when loaded into a register.
+    // A quiet NaN is used because returning a signaling NaN from a function on x86 32bit is done via the x87 FPU,
+    // and that converts it to a quiet NaN.
     static constexpr std::uint64_t value = 0x7ff8fedcba987654;
     static_assert(sizeof(value) == sizeof(double));
     static_assert(std::numeric_limits<double>::is_iec559);
@@ -458,7 +459,8 @@ namespace impl
     // and https://www.doc.ic.ac.uk/~eedwards/compsys/float/nan.html
 
     // We use a quiet NaN value that is not used by default as signaling or quiet NaN on any platform.
-    // A quiet NaN is used to prevent accidental generation of a floating point exception when loaded into a register.
+    // A quiet NaN is used because returning a signaling NaN from a function on x86 32bit is done via the x87 FPU,
+    // and that converts it to a quiet NaN.
     static constexpr std::uint32_t value = 0x7fedcba9;
     static_assert(sizeof(value) == sizeof(float));
     static_assert(std::numeric_limits<float>::is_iec559);
