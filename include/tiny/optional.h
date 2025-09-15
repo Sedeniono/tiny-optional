@@ -1107,9 +1107,12 @@ namespace impl
     = default;
 
     // See IsCandidateForInplaceTrivialCopyAndMove for an explanation.
+    static constexpr bool tivialMoveCopyPossible
+        = !is_compressed || IsCandidateForInplaceTrivialCopyAndMove<PayloadType>;
     static constexpr bool hasTrivialMoveConstructor
-        = std::is_trivially_move_constructible_v<PayloadType>
-          && (!is_compressed || IsCandidateForInplaceTrivialCopyAndMove<PayloadType>);
+        = std::is_trivially_move_constructible_v<PayloadType> && tivialMoveCopyPossible;
+    static constexpr bool hasTrivialCopyConstructor
+        = std::is_trivially_copy_constructible_v<PayloadType> && tivialMoveCopyPossible;
 
     static constexpr bool hasMoveConstructor = std::is_move_constructible_v<PayloadType>;
 
@@ -1134,12 +1137,19 @@ namespace impl
 
     static constexpr bool hasCopyConstructor = std::is_copy_constructible_v<PayloadType>;
 
+    // Deleted copy constructor
     StorageBase(StorageBase const & rhs)
       requires(!hasCopyConstructor)
     = delete;
 
+    // Trivial copy constructor
     StorageBase(StorageBase const & rhs)
-      requires(hasCopyConstructor)
+      requires(hasCopyConstructor && hasTrivialCopyConstructor)
+    = default;
+
+    // Non-trivial copy constructor
+    StorageBase(StorageBase const & rhs)
+      requires(hasCopyConstructor && !hasTrivialCopyConstructor)
       : StorageBase() // Basic initialization via default constructor
     {
       CopyConstructorImpl(rhs);
