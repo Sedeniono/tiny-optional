@@ -94,7 +94,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #if !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
     // With C++20, most of the comparison operators (==, <=, etc) that compare with a std::nullopt are no longer defined
     // in the standard. Instead, the code relies on the C++20 reversal of arguments or the three way comparison
-    // operator. Unfortunately, gcc (at least up to and including gcc 13.2) does not implemented CWG 2445, meaning that
+    // operator. Unfortunately, gcc (at least up to and including gcc 15.2) does not implemented CWG 2445, meaning that
     // e.g. std::nullopt==someOptional calls the wrong function. See https://stackoverflow.com/q/74330356/3740047.
     // To work around this issue, we define all operators for gcc.
     #define TINY_OPTIONAL_GCC_WORKAROUND_CWG2445
