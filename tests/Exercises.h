@@ -148,12 +148,18 @@ void ExerciseOptional(
       std::is_trivially_move_assignable_v<Optional>
       == (trivialMoveCopyPossible && std::is_trivially_move_constructible_v<PayloadType>
           && std::is_trivially_move_assignable_v<PayloadType> && std::is_trivially_destructible_v<PayloadType>));
+  static_assert(
+      std::is_trivially_copy_assignable_v<Optional>
+      == (trivialMoveCopyPossible && std::is_trivially_copy_constructible_v<PayloadType>
+          && std::is_trivially_copy_assignable_v<PayloadType> && std::is_trivially_destructible_v<PayloadType>));
 
 #else
   // Triviality not implemented, so these should be always false for tiny::optional.
   if constexpr (tiny::is_tiny_optional_v<Optional>) {
     static_assert(!std::is_trivially_destructible_v<Optional>);
     static_assert(!std::is_trivially_move_constructible_v<Optional>);
+    static_assert(!std::is_trivially_move_assignable_v<Optional>);
+    static_assert(!std::is_trivially_copy_assignable_v<Optional>);
   }
 #endif
 

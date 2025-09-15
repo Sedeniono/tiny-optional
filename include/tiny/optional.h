@@ -1116,7 +1116,9 @@ namespace impl
     static constexpr bool hasTrivialMoveAssignment
         = trivialMoveCopyPossible && std::is_trivially_move_constructible_v<PayloadType>
           && std::is_trivially_move_assignable_v<PayloadType> && std::is_trivially_destructible_v<PayloadType>;
-
+    static constexpr bool hasTrivialCopyAssignment
+        = trivialMoveCopyPossible && std::is_trivially_copy_constructible_v<PayloadType>
+          && std::is_trivially_copy_assignable_v<PayloadType> && std::is_trivially_destructible_v<PayloadType>;
 
     static constexpr bool hasMoveConstructor = std::is_move_constructible_v<PayloadType>;
 
@@ -1188,12 +1190,19 @@ namespace impl
         = std::is_copy_constructible_v<typename StoredTypeDecomposition::PayloadType>
           && std::is_copy_assignable_v<typename StoredTypeDecomposition::PayloadType>;
 
+    // Deleted copy assignment
     StorageBase & operator=(StorageBase const & rhs)
       requires(!hasCopyAssignment)
     = delete;
 
+    // Trivial copy assignment
     StorageBase & operator=(StorageBase const & rhs)
-      requires(hasCopyAssignment)
+      requires(hasCopyAssignment && hasTrivialCopyAssignment)
+    = default;
+
+    // Non-trivial copy assignment
+    StorageBase & operator=(StorageBase const & rhs)
+      requires(hasCopyAssignment && !hasTrivialCopyAssignment)
     {
       CopyAssignmentImpl(rhs);
       return *this;
