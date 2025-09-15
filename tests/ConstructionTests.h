@@ -9,6 +9,8 @@ void test_TinyOptionalMoveConstruction();
 void test_TinyOptionalCopyAssignment();
 void test_TinyOptionalMoveAssignment();
 
+void test_TinyOptionalDestruction();
+
 void test_TinyOptionalConversions();
 
 void test_MakeOptional();

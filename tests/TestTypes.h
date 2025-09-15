@@ -288,6 +288,12 @@ inline bool operator==(TestClassWithLiteralClass const & lhs, TestClassWithLiter
   return lhs.lc == rhs.lc && lhs.someInt == rhs.someInt;
 }
 
+
+
+struct TrivialStruct
+{
+};
+
 #if defined(__GNUG__) && !defined(__clang__)
   #pragma GCC diagnostic pop
 #endif

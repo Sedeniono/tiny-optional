@@ -240,6 +240,16 @@ void test_TinyOptionalCopyConstruction()
     static_assert(!std::is_copy_constructible_v<tiny::optional<DeletedCopy>>);
     static_assert(std::is_swappable_v<tiny::optional<DeletedCopy>>);
   }
+
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+  {
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<int, -1>>);
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<int>>);
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<TrivialStruct>>);
+    static_assert(!std::is_trivially_copy_constructible_v<tiny::optional<std::vector<int>>>);
+  }
+#endif
 }
 
 
@@ -317,6 +327,16 @@ void test_TinyOptionalMoveConstruction()
     tiny::optional<DeletedCopy> orig;
     [[maybe_unused]] tiny::optional<DeletedCopy> moveTarget(std::move(orig));
   }
+
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+  {
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<int, -1>>);
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<int>>);
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<TrivialStruct>>);
+    static_assert(!std::is_trivially_move_constructible_v<tiny::optional<std::vector<int>>>);
+  }
+#endif
 }
 
 
@@ -385,6 +405,16 @@ void test_TinyOptionalCopyAssignment()
     // Actual check: swappable
     static_assert(std::is_swappable_v<tiny::optional<NotCopyAssignable>>);
   }
+
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+  {
+    static_assert(std::is_trivially_copy_assignable_v<tiny::optional<int, -1>>);
+    static_assert(std::is_trivially_copy_assignable_v<tiny::optional<int>>);
+    static_assert(std::is_trivially_copy_assignable_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_copy_assignable_v<tiny::optional<TrivialStruct>>);
+    static_assert(!std::is_trivially_copy_assignable_v<tiny::optional<std::vector<int>>>);
+  }
+#endif
 }
 
 
@@ -533,6 +563,31 @@ void test_TinyOptionalMoveAssignment()
     tiny::optional<DeletedCopy> moveTarget;
     moveTarget = std::move(orig);
   }
+
+
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+  {
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<int, -1>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<int>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<TrivialStruct>>);
+    static_assert(!std::is_trivially_move_assignable_v<tiny::optional<std::vector<int>>>);
+  }
+#endif
+}
+
+
+void test_TinyOptionalDestruction()
+{
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+  {
+    static_assert(std::is_trivially_destructible_v<tiny::optional<int, -1>>);
+    static_assert(std::is_trivially_destructible_v<tiny::optional<int>>);
+    static_assert(std::is_trivially_destructible_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_destructible_v<tiny::optional<TrivialStruct>>);
+    static_assert(!std::is_trivially_destructible_v<tiny::optional<std::vector<int>>>);
+  }
+#endif
 }
 
 

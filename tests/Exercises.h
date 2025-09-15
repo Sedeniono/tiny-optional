@@ -132,12 +132,20 @@ void ExerciseOptional(
       std::is_copy_assignable_v<Optional>
       == (std::is_copy_assignable_v<PayloadType> && std::is_copy_constructible_v<PayloadType>));
 
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-  static_assert(
-      std::is_trivially_destructible_v<Optional> == std::is_trivially_destructible_v<PayloadType>,
-      "Test failure: Expected the tiny::optional to be trivially destructible if and only if the payload is, too");
+  constexpr bool trivialDestructorExpected = std::is_trivially_destructible_v<PayloadType>
+#ifndef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+                                             && !tiny::is_tiny_optional_v<Optional>
+#endif
+      ;
+  static_assert(std::is_trivially_destructible_v<Optional> == trivialDestructorExpected);
 
-  constexpr bool trivialMoveCopyPossible = inPlaceExpectation == EXPECT_SEPARATE || std::is_fundamental_v<PayloadType>;
+  constexpr bool trivialMoveCopyPossible = !tiny::is_tiny_optional_v<Optional>
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+                                           || inPlaceExpectation == EXPECT_SEPARATE
+                                           || std::is_fundamental_v<PayloadType>
+#endif
+      ;
+
   static_assert(
       std::is_trivially_move_constructible_v<Optional>
       == (trivialMoveCopyPossible && std::is_trivially_move_constructible_v<PayloadType>));
@@ -152,16 +160,6 @@ void ExerciseOptional(
       std::is_trivially_copy_assignable_v<Optional>
       == (trivialMoveCopyPossible && std::is_trivially_copy_constructible_v<PayloadType>
           && std::is_trivially_copy_assignable_v<PayloadType> && std::is_trivially_destructible_v<PayloadType>));
-
-#else
-  // Triviality not implemented, so these should be always false for tiny::optional.
-  if constexpr (tiny::is_tiny_optional_v<Optional>) {
-    static_assert(!std::is_trivially_destructible_v<Optional>);
-    static_assert(!std::is_trivially_move_constructible_v<Optional>);
-    static_assert(!std::is_trivially_move_assignable_v<Optional>);
-    static_assert(!std::is_trivially_copy_assignable_v<Optional>);
-  }
-#endif
 
   static_assert(noexcept(Optional{}.has_value()));
 

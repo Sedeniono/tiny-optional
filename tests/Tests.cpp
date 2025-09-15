@@ -49,6 +49,7 @@ void RunTests()
          ADD_TEST(test_TinyOptionalMoveConstruction),
          ADD_TEST(test_TinyOptionalCopyAssignment),
          ADD_TEST(test_TinyOptionalMoveAssignment),
+         ADD_TEST(test_TinyOptionalDestruction),
          ADD_TEST(test_TinyOptionalConversions),
          ADD_TEST(test_TinyOptionalWithRegisteredCustomFlagManipulator),
          ADD_TEST(test_OptionalEmptyViaType),
