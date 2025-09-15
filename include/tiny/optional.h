@@ -404,9 +404,10 @@ namespace impl
 
 
 #ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-  // The C++ standard requires for the move/copy construction and move/copy assignments triviality if the corresponding
-  // functions of the payload are trivial. We want to implement this, too, since libraries might use the information to
-  // implement more efficient code (e.g. std::vector might use memcpy instead of doing a loop over all members).
+  // The C++ standard requires the move/copy constructor and move/copy assignment operators to be trival if the
+  // corresponding functions of the payload are trivial (roughly speaking). We want to implement this, too, since
+  // libraries might use the information to implement more efficient code (e.g. std::vector might use memcpy instead of
+  // doing a loop over all members).
   //
   // If tiny::optional uses a separate bool for the 'IsEmpty' flag, we can simply do it the same way as std::optional.
   // (IsCandidateForInplaceTrivialCopyAndMove is NOT queried in this case.)
@@ -414,13 +415,13 @@ namespace impl
   // But: For tiny::optional we need to be more careful if the flag is stored inplace: Assume that the user has a some
   // POD-like struct with padding bytes that has trival special member functions. The user specializes
   // tiny::optional_flag_manipulator and decides to pack the 'IsEmpty'-flag into one of the padding bytes. In this case
-  // tiny::optional needs to take care of moving/copying the value itself because there no guarantee that the compiler
-  // generated move/copy operation copies the values of the padding bytes, too (see e.g.
+  // tiny::optional needs to take care of moving/copying the value itself because there is no guarantee that the
+  // compiler generated move/copy operation copies the values of the padding bytes, too (see e.g.
   // https://stackoverflow.com/a/46875219/3740047).
   //
   // This template here tells tiny::optional which types are safe to copy/move trivially. We could be more intelligent
-  // in the future and query some marker on tiny::optional_flag_manipulator if it declares that it is save, but for
-  // simplicity we do not do this right now. Instead, we just whiteliste all fundamental types.
+  // in the future and query some marker on tiny::optional_flag_manipulator if it declares that it is safe, but for
+  // simplicity we do not do this right now (TODO). Instead, we just whitelist certain types.
   //
   // Note: That this works for doubles and floats is quite tricky in general. In 32 bit on x86, floats and doubles are
   // returned from functions via the x87 FPU. That has the nasty side effect that signaling NaNs are converted to quiet
@@ -430,7 +431,8 @@ namespace impl
   // (see SentinelForExploitingUnusedBits) we should be fine. See e.g. https://github.com/rust-lang/rust/issues/115567
   // or https://github.com/llvm/llvm-project/issues/66803#issuecomment-1856428859.
   template <class PayloadType>
-  inline constexpr bool IsCandidateForInplaceTrivialCopyAndMove = std::is_fundamental_v<PayloadType>;
+  inline constexpr bool IsCandidateForInplaceTrivialCopyAndMove
+      = std::is_fundamental_v<PayloadType> || std::is_pointer_v<PayloadType>;
 #endif
 
 

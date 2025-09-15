@@ -142,7 +142,7 @@ void ExerciseOptional(
   constexpr bool trivialMoveCopyPossible = !tiny::is_tiny_optional_v<Optional>
 #ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
                                            || inPlaceExpectation == EXPECT_SEPARATE
-                                           || std::is_fundamental_v<PayloadType>
+                                           || std::is_fundamental_v<PayloadType> || std::is_pointer_v<PayloadType>
 #endif
       ;
 

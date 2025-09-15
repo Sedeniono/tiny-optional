@@ -246,6 +246,7 @@ void test_TinyOptionalCopyConstruction()
     static_assert(std::is_trivially_copy_constructible_v<tiny::optional<int, -1>>);
     static_assert(std::is_trivially_copy_constructible_v<tiny::optional<int>>);
     static_assert(std::is_trivially_copy_constructible_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<void *>>);
     static_assert(std::is_trivially_copy_constructible_v<tiny::optional<TrivialStruct>>);
     static_assert(!std::is_trivially_copy_constructible_v<tiny::optional<std::vector<int>>>);
   }
@@ -333,6 +334,7 @@ void test_TinyOptionalMoveConstruction()
     static_assert(std::is_trivially_move_constructible_v<tiny::optional<int, -1>>);
     static_assert(std::is_trivially_move_constructible_v<tiny::optional<int>>);
     static_assert(std::is_trivially_move_constructible_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<void *>>);
     static_assert(std::is_trivially_move_constructible_v<tiny::optional<TrivialStruct>>);
     static_assert(!std::is_trivially_move_constructible_v<tiny::optional<std::vector<int>>>);
   }
@@ -411,6 +413,7 @@ void test_TinyOptionalCopyAssignment()
     static_assert(std::is_trivially_copy_assignable_v<tiny::optional<int, -1>>);
     static_assert(std::is_trivially_copy_assignable_v<tiny::optional<int>>);
     static_assert(std::is_trivially_copy_assignable_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_copy_assignable_v<tiny::optional<void *>>);
     static_assert(std::is_trivially_copy_assignable_v<tiny::optional<TrivialStruct>>);
     static_assert(!std::is_trivially_copy_assignable_v<tiny::optional<std::vector<int>>>);
   }
@@ -570,6 +573,7 @@ void test_TinyOptionalMoveAssignment()
     static_assert(std::is_trivially_move_assignable_v<tiny::optional<int, -1>>);
     static_assert(std::is_trivially_move_assignable_v<tiny::optional<int>>);
     static_assert(std::is_trivially_move_assignable_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<void *>>);
     static_assert(std::is_trivially_move_assignable_v<tiny::optional<TrivialStruct>>);
     static_assert(!std::is_trivially_move_assignable_v<tiny::optional<std::vector<int>>>);
   }
@@ -584,6 +588,7 @@ void test_TinyOptionalDestruction()
     static_assert(std::is_trivially_destructible_v<tiny::optional<int, -1>>);
     static_assert(std::is_trivially_destructible_v<tiny::optional<int>>);
     static_assert(std::is_trivially_destructible_v<tiny::optional<double>>);
+    static_assert(std::is_trivially_destructible_v<tiny::optional<void *>>);
     static_assert(std::is_trivially_destructible_v<tiny::optional<TrivialStruct>>);
     static_assert(!std::is_trivially_destructible_v<tiny::optional<std::vector<int>>>);
   }
