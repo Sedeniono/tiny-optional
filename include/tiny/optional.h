@@ -422,14 +422,6 @@ namespace impl
   // This template here tells tiny::optional which types are safe to copy/move trivially. We could be more intelligent
   // in the future and query some marker on tiny::optional_flag_manipulator if it declares that it is safe, but for
   // simplicity we do not do this right now (TODO). Instead, we just whitelist certain types.
-  //
-  // Note: That this works for doubles and floats is quite tricky in general. In 32 bit on x86, floats and doubles are
-  // returned from functions via the x87 FPU. That has the nasty side effect that signaling NaNs are converted to quiet
-  // NaNs, i.e. the value is actually modified by the CPU in the return statement. However, from what I could find this
-  // is all that normal x86 CPUs by AMD and Intel (which is the target of this library) do: They convert the signaling
-  // to a quiet NaN by flipping the necessary bit, and leave the remaning bit pattern untouched. Since we use quiet NaNs
-  // (see SentinelForExploitingUnusedBits) we should be fine. See e.g. https://github.com/rust-lang/rust/issues/115567
-  // or https://github.com/llvm/llvm-project/issues/66803#issuecomment-1856428859.
   template <class PayloadType>
   inline constexpr bool IsCandidateForInplaceTrivialCopyAndMove
       = std::is_fundamental_v<PayloadType> || std::is_pointer_v<PayloadType>;
@@ -481,8 +473,15 @@ namespace impl
   {
     // Compare https://cwiki.apache.org/confluence/display/stdcxx/FloatingPoint
     // We use a NaN value that is not used by default as signaling or quiet NaN on any platform.
-    // A quiet NaN is used because returning a signaling NaN from a function on x86 32bit is done via the x87 FPU,
-    // and that converts it to a quiet NaN.
+    // Note: That this works for doubles is quite tricky in general. In 32 bit on x86, doubles are
+    // returned from functions via the x87 FPU. If you return a tiny::optional<double>, the
+    // optimizer might involve the FPU even though the return value is not directly a double. Involving the FPU
+    // has the nasty side effect that signaling NaNs are converted to quiet NaNs, i.e. the value is actually modified by
+    // the CPU in the return statement. However, from what I could find this is all that normal x86 CPUs by AMD and
+    // Intel (which are the target of this library) do: They convert the signaling to a quiet NaN by flipping the
+    // necessary bit, and leave the remaning bit pattern untouched. For this reason we use a quiet NaN. See e.g.
+    // https://github.com/rust-lang/rust/issues/115567 or
+    // https://github.com/llvm/llvm-project/issues/66803#issuecomment-1856428859.
     static constexpr std::uint64_t value = 0x7ff8fedcba987654;
     static_assert(sizeof(value) == sizeof(double));
     static_assert(std::numeric_limits<double>::is_iec559);
@@ -496,8 +495,7 @@ namespace impl
     // and https://www.doc.ic.ac.uk/~eedwards/compsys/float/nan.html
 
     // We use a quiet NaN value that is not used by default as signaling or quiet NaN on any platform.
-    // A quiet NaN is used because returning a signaling NaN from a function on x86 32bit is done via the x87 FPU,
-    // and that converts it to a quiet NaN.
+    // See the sentinal for doubles for more information and the potential pitfall of the x87 FPU.
     static constexpr std::uint32_t value = 0x7fedcba9;
     static_assert(sizeof(value) == sizeof(float));
     static_assert(std::numeric_limits<float>::is_iec559);
