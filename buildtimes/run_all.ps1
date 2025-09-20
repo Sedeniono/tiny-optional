@@ -16,7 +16,7 @@ echo "Compiling on linux"
 wsl ../compile_linux.sh
 
 echo "Merging results"
-python ..\merge_results.py
+python ..\postprocess_results.py
 
 echo "Plotting results"
 wsl gnuplot "../plot.plt"
