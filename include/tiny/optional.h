@@ -114,7 +114,8 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // It would be possible to do this also in C++17, however, this requires more conditional inheritance
 // and for simplicity we do not implement it. In C++20 it is much easier thanks to `requires`.
 // clang <=14 does not support multiple destructors (https://github.com/llvm/llvm-project/issues/45614).
-#if defined(__cpp_concepts) && (!defined(__clang__) || __clang_major__ >= 15)
+#if defined(__cpp_concepts) && (!defined(__clang__) || __clang_major__ >= 15)                                          \
+    && !defined(TINY_OPTIONAL_NO_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS)
   #define TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
 #endif
 

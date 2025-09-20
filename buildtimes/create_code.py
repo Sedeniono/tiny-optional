@@ -89,4 +89,4 @@ def generate_all(num_classes, use_unique_type):
 #generate_all(1000, False)
 
 # Generates classes with optional<impl> members, where impl is a class within each class.
-generate_all(500, True)
+generate_all(2000, True)
