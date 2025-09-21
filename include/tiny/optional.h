@@ -403,31 +403,6 @@ namespace impl
   };
 
 
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-  // The C++ standard requires the move/copy constructor and move/copy assignment operators to be trival if the
-  // corresponding functions of the payload are trivial (roughly speaking). We want to implement this, too, since
-  // libraries might use the information to implement more efficient code (e.g. std::vector might use memcpy instead of
-  // doing a loop over all members).
-  //
-  // If tiny::optional uses a separate bool for the 'IsEmpty' flag, we can simply do it the same way as std::optional.
-  // (IsCandidateForInplaceTrivialCopyAndMove is NOT queried in this case.)
-  //
-  // But: For tiny::optional we need to be more careful if the flag is stored inplace: Assume that the user has a some
-  // POD-like struct with padding bytes that has trival special member functions. The user specializes
-  // tiny::optional_flag_manipulator and decides to pack the 'IsEmpty'-flag into one of the padding bytes. In this case
-  // tiny::optional needs to take care of moving/copying the value itself because there is no guarantee that the
-  // compiler generated move/copy operation copies the values of the padding bytes, too (see e.g.
-  // https://stackoverflow.com/a/46875219/3740047).
-  //
-  // This template here tells tiny::optional which types are safe to copy/move trivially. We could be more intelligent
-  // in the future and query some marker on tiny::optional_flag_manipulator if it declares that it is safe, but for
-  // simplicity we do not do this right now (TODO). Instead, we just whitelist certain types.
-  template <class PayloadType>
-  inline constexpr bool IsCandidateForInplaceTrivialCopyAndMove
-      = std::is_fundamental_v<PayloadType> || std::is_pointer_v<PayloadType>;
-#endif
-
-
   //====================================================================================
   // SentinelForExploitingUnusedBits
   //====================================================================================
@@ -1106,9 +1081,24 @@ namespace impl
       requires(std::is_trivially_destructible_v<PayloadType>)
     = default;
 
-    // See IsCandidateForInplaceTrivialCopyAndMove for an explanation.
+    // The C++ standard requires the move/copy constructor and move/copy assignment operators to be trival if the
+    // corresponding functions of the payload are trivial (roughly speaking). We want to implement this, too, since
+    // libraries might use the information to implement more efficient code (e.g. std::vector might use memcpy instead
+    // of doing a loop over all members).
+    // 
+    // But: For tiny::optional we need to be more careful if the flag is stored inplace: Assume that the user has a some
+    // POD-like struct with padding bytes that has trival special member functions. The user specializes
+    // tiny::optional_flag_manipulator and decides to pack the 'IsEmpty'-flag into one of the padding bytes. In this
+    // case tiny::optional needs to take care of moving/copying the value itself because there is no guarantee that the
+    // compiler generated move/copy operation copies the values of the padding bytes, too (see e.g.
+    // https://stackoverflow.com/a/46875219/3740047).
+    //
+    // This template here tells tiny::optional which types are safe to copy/move trivially. We could be more intelligent
+    // in the future and query some marker on tiny::optional_flag_manipulator if it declares that it is safe, but for
+    // simplicity we do not do this right now (TODO). Instead, we just whitelist certain types.
     static constexpr bool trivialMoveCopyPossible
-        = !is_compressed || IsCandidateForInplaceTrivialCopyAndMove<PayloadType>;
+        = !is_compressed || std::is_fundamental_v<PayloadType> || std::is_pointer_v<PayloadType>;
+
     static constexpr bool hasTrivialMoveConstructor
         = trivialMoveCopyPossible && std::is_trivially_move_constructible_v<PayloadType>;
     static constexpr bool hasTrivialCopyConstructor
@@ -1209,7 +1199,8 @@ namespace impl
     }
 
 #else // TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-    // C++17 version. Trivial versions of the member functions are not implemented for simplicity.
+    // C++17 version. Trivial versions of the special member functions are not implemented for simplicity.
+    // It would require even more conditional inheritance.
 
     ~StorageBase()
     {
