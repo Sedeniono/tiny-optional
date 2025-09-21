@@ -224,6 +224,7 @@ template <>
 struct tiny::optional_flag_manipulator<EnumNamespace::TestUnscopedEnum>
   : tiny::sentinel_flag_manipulator<EnumNamespace::TestUnscopedEnum, EnumNamespace::INVALID>
 {
+  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = false;
 };
 
 
@@ -242,7 +243,6 @@ template <>
 struct tiny::optional_flag_manipulator<TestScopedEnum>
   : tiny::sentinel_flag_manipulator<TestScopedEnum, TestScopedEnum::MAX_NUM>
 {
-  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = true;
 };
 
 
@@ -273,6 +273,8 @@ struct tiny::optional_flag_manipulator<
     SpecialEnumType,
     std::enable_if_t<std::is_same_v<SpecialEnumType, SpecialEnum1> || std::is_same_v<SpecialEnumType, SpecialEnum2>>>
 {
+  static constexpr bool tiny_optional_allow_trivial_move_copy = true;
+
   static bool is_empty(SpecialEnumType const & payload) noexcept
   {
     return static_cast<int>(payload) == -1;
@@ -385,10 +387,10 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
     EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
         (tiny::optional<EnumNamespace::TestUnscopedEnum>{}),
         EXPECT_INPLACE,
-        EXPECT_NON_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is not defined
+        EXPECT_NON_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is defined as false
         EnumNamespace::UNSCOPED_VALUE1,
         EnumNamespace::UNSCOPED_VALUE2);
-    // tiny_optional_allow_trivial_move_copy is not defined
+    // tiny_optional_allow_trivial_move_copy is defined as false
     static_assert(!std::is_trivially_copy_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
     static_assert(!std::is_trivially_move_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
     static_assert(!std::is_trivially_move_assignable_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
@@ -397,11 +399,11 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
     EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
         (tiny::optional<TestScopedEnum>{}),
         EXPECT_INPLACE,
-        EXPECT_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is defined.
+        EXPECT_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is not defined -> defaults to true
         TestScopedEnum::VALUE1,
         TestScopedEnum::VALUE2);
 #ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-    // tiny_optional_allow_trivial_move_copy is defined
+    // tiny_optional_allow_trivial_move_copy is not defined -> should be true by default
     static_assert(std::is_trivially_copy_constructible_v<tiny::optional<TestScopedEnum>>);
     static_assert(std::is_trivially_move_constructible_v<tiny::optional<TestScopedEnum>>);
     static_assert(std::is_trivially_move_assignable_v<tiny::optional<TestScopedEnum>>);

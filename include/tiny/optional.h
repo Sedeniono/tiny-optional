@@ -192,6 +192,15 @@ namespace impl
   struct NoCustomInplaceFlagManipulator
   {
   };
+
+
+  // Used to determine if tiny::optional should have trivial copy/move constructors/assignment operators (assuming that
+  // the payload has trivial ones). If the T is a class, most of our standard FlagManipulator::init_empty_flag()
+  // implementations call the constructor of T, and that one might meddle with padding bytes (which would cause
+  // problems, see StorageBase::trivialMoveCopyPossible). So by default we disable trivial copies/moves for class types.
+  template <class T>
+  inline constexpr bool IsStandardTypeAllowingTrivialMoveCopy = !std::is_class_v<T> && !std::is_union_v<T>;
+
 } // namespace impl
 TINY_OPTIONAL_INLINE_NS_END
 
@@ -245,9 +254,8 @@ TINY_OPTIONAL_INLINE_NS_BEGIN
 template <class PayloadType, auto SentinelValue>
 struct sentinel_flag_manipulator
 {
-  // This is NOT defined since we do not know if the PayloadType's constructor in init_empty_flag() does weird things
-  // with padding bytes. The user must define it manually when deriving from sentinel_flag_manipulator.
-  //static constexpr bool tiny_optional_allow_trivial_move_copy = false;
+  static constexpr bool tiny_optional_allow_trivial_move_copy
+      = impl::IsStandardTypeAllowingTrivialMoveCopy<PayloadType>;
 
   static bool is_empty(PayloadType const & payload) noexcept
   {
@@ -762,10 +770,10 @@ namespace impl
    *   indicates that the optional contains no value, and 'false' if it indicates that some
    *   value is set.
    *
-   * Additionally, if `tiny_optional_allow_trivial_move_copy` is defined and a static bool that is 
+   * Additionally, if `tiny_optional_allow_trivial_move_copy` is defined and a static bool that is
    * true, trival copy/move constructors/assignment operators are enabled if the payload has trivial
    * ones. See StorageBase::trivialMoveCopyPossible for more information.
-   * 
+   *
    * We are using snake_case for the function names since users of the library might need to use
    * the concept (via tiny::optional_flag_manipulator or optional_inplace), and the whole public
    * interface of the library uses snake_case (because std::optional does).
@@ -777,7 +785,7 @@ namespace impl
   struct SeparateFlagManipulator
   {
     // As for std::optional, trivial copy/move constructor/assignment is always possible if the payload has trivial
-    // versions.
+    // versions. There is no chance that padding bytes of the payload are exploited to store the 'IsEmpty' flag.
     static constexpr bool tiny_optional_allow_trivial_move_copy = true;
 
     [[nodiscard]] static bool is_empty(bool isEmptyFlag) noexcept
@@ -827,10 +835,7 @@ namespace impl
     static_assert(std::is_trivial_v<FlagType>);
 
   public:
-    // Currently, MemcpyAndCmpFlagManipulator is only used with floats, bool and pointers. To be on the safe side, we
-    // explicitly list the allowed types here that allow trivial copying/moving.
-    static constexpr bool tiny_optional_allow_trivial_move_copy
-        = std::is_fundamental_v<FlagType> || std::is_pointer_v<FlagType>;
+    static constexpr bool tiny_optional_allow_trivial_move_copy = IsStandardTypeAllowingTrivialMoveCopy<FlagType>;
 
     [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
@@ -921,10 +926,7 @@ namespace impl
 
 
   public:
-    // If the FlagType is a user defined type, we do not know if it does weird things with padding bytes. So we allow
-    // trivial copying/moving only for some standard types.
-    static constexpr bool tiny_optional_allow_trivial_move_copy
-        = std::is_fundamental_v<FlagType> || std::is_pointer_v<FlagType>;
+    static constexpr bool tiny_optional_allow_trivial_move_copy = IsStandardTypeAllowingTrivialMoveCopy<FlagType>;
 
     [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
@@ -1107,7 +1109,7 @@ namespace impl
     // corresponding functions of the payload are trivial (roughly speaking). We want to implement this, too, since
     // libraries might use the information to implement more efficient code (e.g. std::vector might use memcpy instead
     // of doing a loop over all members).
-    // 
+    //
     // But: For tiny::optional we need to be more careful if the flag is stored inplace: Assume that the user has a some
     // POD-like struct with padding bytes that has trival special member functions. The user specializes
     // tiny::optional_flag_manipulator and decides to pack the 'IsEmpty'-flag into one of the padding bytes. In this

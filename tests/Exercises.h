@@ -187,7 +187,7 @@ void ExerciseOptional(
       // But for some tests which use a optional_flag_manipulator, we want to explicitly set the expectation.
       (moveCopyTrivialityExpectation == DEDUCE_COPY_MOVE_TRIVIALITY_EXPECTATION
        && (!tiny::is_tiny_optional_v<Optional> || inPlaceExpectation == EXPECT_SEPARATE
-           || std::is_fundamental_v<FlagType> || std::is_pointer_v<FlagType>))
+           || std::is_fundamental_v<FlagType> || std::is_pointer_v<FlagType> || std::is_enum_v<FlagType>))
       || moveCopyTrivialityExpectation == EXPECT_TRIVIAL_MOVE_COPY;
 #else
       !tiny::is_tiny_optional_v<Optional>;
