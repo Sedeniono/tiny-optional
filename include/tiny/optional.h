@@ -245,6 +245,10 @@ TINY_OPTIONAL_INLINE_NS_BEGIN
 template <class PayloadType, auto SentinelValue>
 struct sentinel_flag_manipulator
 {
+  // This is NOT defined since we do not know if the PayloadType's constructor in init_empty_flag() does weird things
+  // with padding bytes. The user must define it manually when deriving from sentinel_flag_manipulator.
+  //static constexpr bool tiny_optional_allow_trivial_move_copy = false;
+
   static bool is_empty(PayloadType const & payload) noexcept
   {
     return payload == SentinelValue;
@@ -758,6 +762,10 @@ namespace impl
    *   indicates that the optional contains no value, and 'false' if it indicates that some
    *   value is set.
    *
+   * Additionally, if `tiny_optional_allow_trivial_move_copy` is defined and a static bool that is 
+   * true, trival copy/move constructors/assignment operators are enabled if the payload has trivial
+   * ones. See StorageBase::trivialMoveCopyPossible for more information.
+   * 
    * We are using snake_case for the function names since users of the library might need to use
    * the concept (via tiny::optional_flag_manipulator or optional_inplace), and the whole public
    * interface of the library uses snake_case (because std::optional does).
@@ -768,6 +776,10 @@ namespace impl
   // stored in a separate bool variable (via SeparateFlagStorage).
   struct SeparateFlagManipulator
   {
+    // As for std::optional, trivial copy/move constructor/assignment is always possible if the payload has trivial
+    // versions.
+    static constexpr bool tiny_optional_allow_trivial_move_copy = true;
+
     [[nodiscard]] static bool is_empty(bool isEmptyFlag) noexcept
     {
       return isEmptyFlag;
@@ -815,6 +827,11 @@ namespace impl
     static_assert(std::is_trivial_v<FlagType>);
 
   public:
+    // Currently, MemcpyAndCmpFlagManipulator is only used with floats, bool and pointers. To be on the safe side, we
+    // explicitly list the allowed types here that allow trivial copying/moving.
+    static constexpr bool tiny_optional_allow_trivial_move_copy
+        = std::is_fundamental_v<FlagType> || std::is_pointer_v<FlagType>;
+
     [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
@@ -904,6 +921,11 @@ namespace impl
 
 
   public:
+    // If the FlagType is a user defined type, we do not know if it does weird things with padding bytes. So we allow
+    // trivial copying/moving only for some standard types.
+    static constexpr bool tiny_optional_allow_trivial_move_copy
+        = std::is_fundamental_v<FlagType> || std::is_pointer_v<FlagType>;
+
     [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
       // static_assert: Because tiny::optional requires is_empty() to be noexcept; otherwise, it could not give the same
@@ -1093,11 +1115,13 @@ namespace impl
     // compiler generated move/copy operation copies the values of the padding bytes, too (see e.g.
     // https://stackoverflow.com/a/46875219/3740047).
     //
-    // This template here tells tiny::optional which types are safe to copy/move trivially. We could be more intelligent
-    // in the future and query some marker on tiny::optional_flag_manipulator if it declares that it is safe, but for
-    // simplicity we do not do this right now (TODO). Instead, we just whitelist certain types.
-    static constexpr bool trivialMoveCopyPossible
-        = !is_compressed || std::is_fundamental_v<PayloadType> || std::is_pointer_v<PayloadType>;
+    // To implement this, we ask the FlagManipulator if trival copies/moves are fine. If
+    // `tiny_optional_allow_trivial_move_copy` is a static constexpr bool that is true, then we make the special member
+    // functions trivial if the payload's functions are trivial.
+    static constexpr bool trivialMoveCopyPossible = requires {
+      { FlagManipulator::tiny_optional_allow_trivial_move_copy } -> std::convertible_to<bool>;
+      requires FlagManipulator::tiny_optional_allow_trivial_move_copy;
+    };
 
     static constexpr bool hasTrivialMoveConstructor
         = trivialMoveCopyPossible && std::is_trivially_move_constructible_v<PayloadType>;
@@ -1659,6 +1683,7 @@ namespace impl
 #endif
 
     using PayloadType = typename Base::PayloadType;
+    using FlagType = typename Base::FlagType;
 
     using Base::ConstructPayload;
     using Base::GetIsEmptyFlag;
@@ -1692,6 +1717,7 @@ namespace impl
 
   public:
     using value_type = PayloadType;
+    using flag_type = FlagType;
     using Base::has_value;
     using Base::reset;
 
@@ -2472,6 +2498,7 @@ private:
 public:
   using typename Base::value_type;
   static_assert(std::is_same_v<PayloadType_, value_type>);
+  using typename Base::flag_type;
 
   optional() = default;
   optional(optional const &) = default;

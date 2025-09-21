@@ -127,6 +127,8 @@ struct OuterClass
 template <>
 struct tiny::optional_flag_manipulator<OuterClass::NestedClass>
 {
+  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = true;
+
   static bool is_empty(OuterClass::NestedClass const & payload) noexcept
   {
     return payload.isEmpty;
@@ -183,6 +185,9 @@ struct OutermostClass
 template <>
 struct tiny::optional_flag_manipulator<OutermostClass>
 {
+  // This should not do anything because OutermostClass is non-trivally copyable/moveable.
+  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = true;
+
   static bool is_empty(OutermostClass const & payload) noexcept
   {
     return payload.outerClass.nestedClass.isEmpty;
@@ -237,6 +242,7 @@ template <>
 struct tiny::optional_flag_manipulator<TestScopedEnum>
   : tiny::sentinel_flag_manipulator<TestScopedEnum, TestScopedEnum::MAX_NUM>
 {
+  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = true;
 };
 
 
@@ -324,11 +330,19 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
 
   // Test with a NestedClass.
   {
-    EXERCISE_OPTIONAL(
+    EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
         (tiny::optional<OuterClass::NestedClass>{}),
         EXPECT_INPLACE,
+        EXPECT_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is defined as true
         OuterClass::NestedClass{},
         OuterClass::NestedClass{});
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // tiny_optional_allow_trivial_move_copy is defined as true
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<OuterClass::NestedClass>>);
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<OuterClass::NestedClass>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<OuterClass::NestedClass>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<OuterClass::NestedClass>>);
+#endif
   }
 
   // Test where we exploit some undefined behavior so as not to construct the full payload while the optional is in the
@@ -340,6 +354,11 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
         OutermostClass{"val1"},
         OutermostClass{"val2"},
         "val3");
+    // tiny_optional_allow_trivial_move_copy is defined as true, but OutermostClass is not trivially copyable/moveable.
+    static_assert(!std::is_trivially_copy_constructible_v<tiny::optional<OutermostClass>>);
+    static_assert(!std::is_trivially_move_constructible_v<tiny::optional<OutermostClass>>);
+    static_assert(!std::is_trivially_move_assignable_v<tiny::optional<OutermostClass>>);
+    static_assert(!std::is_trivially_move_assignable_v<tiny::optional<OutermostClass>>);
   }
 
   // Version with a **const** payload: Since we do not provide a specialization of the flag manipulator for const
@@ -363,16 +382,31 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
 
   // Enums
   {
-    EXERCISE_OPTIONAL(
+    EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
         (tiny::optional<EnumNamespace::TestUnscopedEnum>{}),
         EXPECT_INPLACE,
+        EXPECT_NON_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is not defined
         EnumNamespace::UNSCOPED_VALUE1,
         EnumNamespace::UNSCOPED_VALUE2);
-    EXERCISE_OPTIONAL(
+    // tiny_optional_allow_trivial_move_copy is not defined
+    static_assert(!std::is_trivially_copy_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+    static_assert(!std::is_trivially_move_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+    static_assert(!std::is_trivially_move_assignable_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+    static_assert(!std::is_trivially_move_assignable_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+    
+    EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
         (tiny::optional<TestScopedEnum>{}),
         EXPECT_INPLACE,
+        EXPECT_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is defined.
         TestScopedEnum::VALUE1,
         TestScopedEnum::VALUE2);
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // tiny_optional_allow_trivial_move_copy is defined
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<TestScopedEnum>>);
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<TestScopedEnum>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<TestScopedEnum>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<TestScopedEnum>>);
+#endif
   }
 
   // Cases where the flag manipulator specialization was defined with the help of std::enable_if.
