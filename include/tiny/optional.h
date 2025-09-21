@@ -252,7 +252,7 @@ struct sentinel_flag_manipulator
 
   static void init_empty_flag(PayloadType & uninitializedPayloadMemory) noexcept
   {
-    ::new (&uninitializedPayloadMemory) PayloadType(SentinelValue);
+    ::new (std::addressof(uninitializedPayloadMemory)) PayloadType(SentinelValue);
   }
 
   static void invalidate_empty_flag(PayloadType & emptyPayload) noexcept
