@@ -33,16 +33,22 @@ Foreach-Object {
     for ($i=0; $i -lt $cmds.length; $i++){
         $cmd = $cmds[$i]
         $fullCmd = "$cmd /I../../include /nologo $filename"
-        echo "Compiling with: '$fullCmd'"
+        Write-Host -NoNewline $compileMsg "Compiling with: '$fullCmd'"
 
-        $timing = Measure-Command { iex $fullCmd }
+        $NUM_CALLS = 5
+        $totalSeconds = 0
+        for ($j = 0; $j -lt $NUM_CALLS; $j++) {
+            $timing = Measure-Command { iex $fullCmd }
+            $totalSeconds += $timing.TotalSeconds
+            Write-Host -NoNewline " - $($j + 1)/$NUM_CALLS ($([math]::Round($timing.TotalSeconds, 2)) s)"
+        }
+        $avgSeconds = $totalSeconds / $NUM_CALLS
+        Write-Host " = $([math]::Round($avgSeconds, 2)) s"
 
-        $elapsedInSeconds = $timing.TotalSeconds
-        echo ";$elapsedInSeconds" | Out-File -NoNewline -Append -FilePath $RESULT_NAME
+        echo ";$avgSeconds" | Out-File -NoNewline -Append -FilePath $RESULT_NAME
     } 
 
     echo "" | Out-File -Append -FilePath $RESULT_NAME
-    #echo "elapsedInSeconds = $elapsedInSeconds"
     echo " "
     echo " "
 }

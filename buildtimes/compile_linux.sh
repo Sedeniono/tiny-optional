@@ -47,9 +47,18 @@ for file in *.cpp; do
 
     printf "$file" >> "$RESULT_NAME"
     for cmd in "${cmds[@]}"; do
-        echo "Compiling with: $cmd"
-        timing=$(/usr/bin/time --format "%e" $cmd -I../../include "$file" 2>&1)
-        printf ";$timing" >> "$RESULT_NAME"
+        echo -n "Compiling with: $cmd"
+        NUM_CALLS=5
+        totalSeconds=0
+        for i in $(seq 1 $NUM_CALLS); do
+            timing=$(/usr/bin/time --format "%e" $cmd -I../../include "$file" 2>&1)
+            totalSeconds=$(echo "scale=4; $totalSeconds + $timing" | bc)
+            echo -n " - $i/$NUM_CALLS ($timing s)"
+        done
+        avgSeconds=$(echo "scale=4; $totalSeconds / $NUM_CALLS" | bc)
+        avgSeconds=$(printf "%.4f" "$avgSeconds")
+        echo " = $avgSeconds s"
+        printf ";$avgSeconds" >> "$RESULT_NAME"
     done
     printf "\n" >> "$RESULT_NAME"
     echo ""
