@@ -11,7 +11,7 @@
   #include <Windows.h>
 #endif
 
-#if defined(TINY_OPTIONAL_x64) || defined(TINY_OPTIONAL_x86)
+#ifdef TINY_OPTIONAL_X86_OR_X64
   #ifdef TINY_OPTIONAL_MSVC_BUILD
     #include <intrin.h>
   #elif defined(TINY_OPTIONAL_CLANG_BUILD) || defined(TINY_OPTIONAL_GCC_BUILD)
@@ -261,7 +261,7 @@ WindowsTemporaryCodeFileScope ::~WindowsTemporaryCodeFileScope()
 // cpuid stuff
 //======================================================================================
 
-#if defined(TINY_OPTIONAL_x64) || defined(TINY_OPTIONAL_x86)
+#ifdef TINY_OPTIONAL_X86_OR_X64
 
 // Calls cpuid, returning eax, ebx, ecx and edx in that order.
 static std::array<std::uint32_t, 4> cpuid(std::uint32_t function_id, std::uint32_t subfunction_id = 0)
