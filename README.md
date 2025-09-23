@@ -919,15 +919,23 @@ int main()
     s0.test();
 }
 ```
+So this code call and thus instantiates the most common functions.
 However, not only a single class `S0` but additional ones `S1`, `S2`, etc. get generated and used to achieve meaningful build times.
 The same code but with `tiny::optional` replaced with `std::optional` is also measured.
-The ratio of the times (build time of `tiny::optional` divided by the build time of `std::optional`) is shown in the following figure:
-![Build times](buildtimes//unique_types/result.png)
-clang 13 and gcc 11 are used on WSL, and `cl.exe` means MSVC 19.29.
+This is done 5 times and the average is taken.
+clang 21 and gcc 15 are used on WSL, and `cl.exe` means MSVC 19.44.
 clang without the `-stdlib=libc++` flag uses gcc's stdlibc++.
+The ratio of the times (build time of `tiny::optional` divided by the build time of `std::optional`) are shown in the following figures for C++20 and C++17:
+* **C++20:** ![Build times C++20](buildtimes//unique_types/result_tiny_vs_std_cpp20.png)
+* **C++17:** ![Build times C++17](buildtimes//unique_types/result_tiny_vs_std_cpp17.png)
 
-Obviously, `tiny::optional` takes roughly ~1.5x-2x longer to compile than `std::optional`.
-The more generic interface of `tiny::optional` requires additional template meta-programming, which apparently takes its toll.
+So in C++20 mode, `tiny::optional` takes roughly 10%-30% longer to compile than `std::optional` in most cases. 
+Interestingly, `tiny::optional` is slightly faster than `std::optional` for clang in debug with libstdc++; this was reproducible, but I have not attempted to track down the source for this inconsistency.
+
+In C++17, `tiny::optional` takes roughly ~20%-100% longer to compile than `std::optional`.
+C++17 is notably slower because deletion requirements of copy/move constructors and assignment operators are implemented by `tiny::optional` via a conditional inheritance hierarchy (similar to what is done in the implementations of `std::optional`), while in C++20 the hierarchy is replaced with overloads distinguished via different `requires` clauses.
+(The `std::optional` implementations seem to be missing this build time optimization so far.)
+
 But note that this is a rather extreme example since here the optional dominates the build time completely.
 In larger real world projects (where build times actually matter) one would expect that the overwhelming majority of all variables are not optionals, meaning that the usage of `tiny::optional` should not have a noticeable impact.
 Indeed, replacing all occurrences of `std::optional` in a commercial application with several million lines of code did not result in a measurable slowdown of the build.

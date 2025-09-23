@@ -1,0 +1,8 @@
+clang++ -std=c++20 debug;1.4033910709929251
+clang++ -std:c++20 release;1.0391184573002754
+clang++ -std=c++20 libc++ debug;1.4360972987501681
+clang++ -std:c++20 libc++ release;1.1062853107344632
+g++ -std=c++20 debug;1.597105351733423
+g++ -std=c++20 release;1.2561192701379618
+cl.exe /std:c++20 debug;1.268109058230961
+cl.exe /std:c++20 release;1.3426072842182646

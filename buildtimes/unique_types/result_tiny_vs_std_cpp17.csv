@@ -1,0 +1,8 @@
+clang++ -std=c++17;1.373437306597351
+clang++ -std=c++17 -O3 -DNDEBUG;1.217391304347826
+clang++ -std=c++17 -stdlib=libc++;1.7745950554134695
+clang++ -std=c++17 -O3 -DNDEBUG -stdlib=libc++;1.3676199261992619
+g++ -std=c++17;1.993963217745332
+g++ -std=c++17 -O3 -DNDEBUG;1.407378939277479
+cl.exe /std:c++17;1.6870160301970034
+cl.exe /std:c++17 /O2 /DNDEBUG;1.863755229744316
