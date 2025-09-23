@@ -498,21 +498,33 @@ namespace impl
     // - Similar, small values such as 0x01 (which, in principle, shouldn't appear in practice as valid addresses) are
     //   not a good choice either because at least the WinAPI function ShellExecute() function can return such values as
     //   error codes.
-    // - Not all addresses are possible on 64 bit. Current CPUs only implement 48 meaningful bits since this is cheaper.
-    //   Having enough memory to require true 64 bits is a thing for the distant future (thousands of petabytes...).
-    //   These so-called 'canonical addresses' range from 0x0000'0000'0000'0000 to 0x0000'7fff'ffff'ffff (which is
-    //   reserved for user space addresses) and from 0xffff'8000'0000'0000 to 0xffff'ffff'ffff'ffff (which is reserved
-    //   for kernel space addresses). All values in the gap between these two ranges can never occur as a real valid
-    //   virtual address. Thus, on 64 bit, we want to use a value from this gap of non-canonical addresses as sentinel.
-    //   Also see https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/
+    // - 64 bits: Not all virtual addresses are possible on 64 bit. Most current CPUs only implement 48 meaningful bits
+    //   since this is cheaper. There are some Intel CPUs that already support 57 bits ('Intel 5-level paging').
+    //   Take the more common 48 bit case as example, so the meaningful bits are bits 0-47. There is the additional
+    //   requirement that bits 48-63 are equal to bit 47 (this is the so-called 'sign extension'). This effectively
+    //   splits the valid addresses into two symmetric halves:
+    //       [0x0000'0000'0000'0000; 0x0000'7fff'ffff'ffff] and [0xffff'8000'0000'0000; 0xffff'ffff'ffff'ffff].
+    //   These valid ranges are called canonical addresses. Any address value in the 'hole' is an invalid address. Most
+    //   operating systems take the upper half of the address space as kernel space, the lower half as user space.
+    //   The Intel 5-level paging (57 bits) case also uses the sign extension (bits 57-63 must be equal to bit 56), so
+    //   the canonical addresses are:
+    //       [0x0000'0000'0000'0000, 0x00ff'ffff'ffff'ffff] and [0xff00'0000'0000'0000; 0xffff'ffff'ffff'ffff].
+    //   We want to use a value from this 'hole' between the canonical address ranges as sentinel. Since the 'hole' of
+    //   non-canonical addresses might shrink further in the future and it will most likely shrink symmetrical from the
+    //   top and bottom, we take the middle of the hole as sentinel:
+    //       0x7fff'ffff'ffff'ffff.
+    //   If there will ever be a x64 CPU that uses all 64 bits, this of course will stop working. Let's hope this will
+    //   never happen.
+    //   Also see e.g. https://read.seas.harvard.edu/cs161/2018/doc/memory-layout/ and
+    //   https://en.wikipedia.org/wiki/X86-64#Virtual_address_space_details.
     // - Allocated memory is usually aligned to 4 bytes on today's system. Of course, one can have valid addresses also
-    //   to non-aligned locations. But they occur less often in practice. Thus, if we choose a sentinel value that is
-    //   not divisible by 4, or even better not divisible by 2, we minimize the chance that the chosen sentinel value is
-    //   encountered as valid address in practice.
+    //   to non-aligned locations. Just create a struct with several bool members and take the address of the second
+    //   bool. But they occur less often in practice. Thus, if we choose a sentinel value that is not divisible by 4, or
+    //   even better not divisible by 2, we minimize the chance that the chosen sentinel value is encountered as valid
+    //   address in practice.
 
   #ifdef TINY_OPTIONAL_x64
-    // We simply use the highest non-canonical address on 64 bit.
-    static constexpr std::uintptr_t value = 0xffff'8000'0000'0000ull - 1;
+    static constexpr std::uintptr_t value = 0x7fff'ffff'ffff'ffffull;
   #elif defined(TINY_OPTIONAL_x86)
     // >= 0xffff'ffff-5 are not possible due to the pseudo handles on Windows. 0xffff'ffff-6 would be possible. Just to
     // get a bit more distance to the space of pseudo handles (in case another one will be introduced), we use

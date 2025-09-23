@@ -103,6 +103,12 @@ void test_TinyOptionalPayload_IsEmptyFlagInMember()
 
 void test_TinyOptionalPayload_Pointers()
 {
+#if defined(TINY_OPTIONAL_x64) && !defined(TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS)
+  // The 64-bit pointer sentinel is very deliberately chosen so that it can never be valid.
+  // Check this. See SentinelForExploitingUnusedBits for more information.
+  ASSERT_TRUE(IsAddressNonCanonical(tiny::impl::SentinelForExploitingUnusedBits<void *>::value));
+#endif
+
   // Ordinary pointers
   {
     TestClass c1, c2;

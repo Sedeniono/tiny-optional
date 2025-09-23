@@ -1,5 +1,6 @@
 #include "TestUtilities.h"
 
+#include <array>
 #include <cstdio>
 #include <exception>
 #include <fstream>
@@ -8,6 +9,16 @@
 
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
   #include <Windows.h>
+#endif
+
+#if defined(TINY_OPTIONAL_x64) || defined(TINY_OPTIONAL_x86)
+  #ifdef TINY_OPTIONAL_MSVC_BUILD
+    #include <intrin.h>
+  #elif defined(TINY_OPTIONAL_CLANG_BUILD) || defined(TINY_OPTIONAL_GCC_BUILD)
+    #include <cpuid.h>
+  #else
+    #error Unsupported compiler for cpuid
+  #endif
 #endif
 
 
@@ -242,5 +253,66 @@ WindowsTemporaryCodeFileScope ::~WindowsTemporaryCodeFileScope()
   }
 }
 
+
+#endif
+
+
+//======================================================================================
+// cpuid stuff
+//======================================================================================
+
+#if defined(TINY_OPTIONAL_x64) || defined(TINY_OPTIONAL_x86)
+
+// Calls cpuid, returning eax, ebx, ecx and edx in that order.
+static std::array<std::uint32_t, 4> cpuid(std::uint32_t function_id, std::uint32_t subfunction_id = 0)
+{
+  std::array<std::uint32_t, 4> regs{};
+
+  #if defined(TINY_OPTIONAL_MSVC_BUILD)
+  __cpuidex(reinterpret_cast<int *>(regs.data()), function_id, subfunction_id);
+  #elif defined(TINY_OPTIONAL_CLANG_BUILD) || defined(TINY_OPTIONAL_GCC_BUILD)
+  __cpuid_count(function_id, subfunction_id, regs[0], regs[1], regs[2], regs[3]);
+  #else
+    #error Unsupported compiler
+  #endif
+
+  return regs;
+}
+
+
+// Returns the number of bits the CPU uses for virtual addresses.
+// Returns 48 on most current CPUs.
+// Based on https://stackoverflow.com/a/64519023/3740047
+static std::uint32_t GetVirtualAddressBits()
+{
+  std::uint32_t virtualAddressSize;
+
+  auto const extInfo = cpuid(0x80000000U);
+  if (extInfo[0] < 0x80000008U) {
+    virtualAddressSize = 32;
+  }
+  else {
+    auto const memInfo = cpuid(0x80000008U);
+    virtualAddressSize = (memInfo[0] >> 8) & 0xFF;
+  }
+
+  return virtualAddressSize;
+}
+
+
+bool IsAddressNonCanonical(std::uint64_t addr)
+{
+  // See SentinelForExploitingUnusedBits for more information.
+
+  // Returns 48 on most CPUs.
+  std::uint64_t const virtualAddressBits = GetVirtualAddressBits();
+
+  // If the CPU uses 48 bits, this is 0x0000'7fff'ffff'ffff.
+  std::uint64_t const maxCanonicalLow = (1ULL << (virtualAddressBits - 1)) - 1;
+  // If the CPU uses 48 bits, this is 0xffff'8000'0000'0000.
+  std::uint64_t const minCanonicalHigh = ~maxCanonicalLow;
+
+  return maxCanonicalLow < addr && addr < minCanonicalHigh;
+}
 
 #endif

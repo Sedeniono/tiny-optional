@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tiny/optional.h"
+
 #include <cassert>
 #include <cmath>
 #include <filesystem>
@@ -9,6 +11,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+
 
 //=================================================================
 // Detection macros
@@ -215,4 +218,11 @@ public:
 private:
   std::filesystem::path const mCodeFile;
 };
+#endif
+
+
+#if defined(TINY_OPTIONAL_x64) || defined(TINY_OPTIONAL_x86)
+// Returns true if the given address is NOT a canonical address, i.e. returns true if the address can never be a valid
+// address. See `SentinelForExploitingUnusedBits<T *>` for more information.
+bool IsAddressNonCanonical(std::uint64_t addr);
 #endif
