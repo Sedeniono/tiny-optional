@@ -31,14 +31,6 @@ enum InPlaceExpectation
 };
 
 
-enum MoveCopyTrivialityExpectation
-{
-  EXPECT_TRIVIAL_MOVE_COPY,
-  EXPECT_NON_TRIVIAL_MOVE_COPY,
-  DEDUCE_COPY_MOVE_TRIVIALITY_EXPECTATION
-};
-
-
 inline static constexpr InPlaceExpectation cInPlaceExpectationForUnusedBits =
 #ifndef TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UNUSED_BITS
     EXPECT_INPLACE;
@@ -52,19 +44,6 @@ inline static constexpr InPlaceExpectation cInPlaceExpectationForMemPtr =
 #else
     EXPECT_SEPARATE;
 #endif
-
-
-template <class Optional, typename = void>
-struct FlagTypeGetter
-{
-  using type = void;
-};
-
-template <class Optional>
-struct FlagTypeGetter<Optional, std::void_t<typename Optional::flag_type>>
-{
-  using type = typename Optional::flag_type;
-};
 
 
 // The function ExerciseOptional() below is called with all sorts of optional types (including std::optional) and
@@ -81,7 +60,7 @@ struct FlagTypeGetter<Optional, std::void_t<typename Optional::flag_type>>
 // type. But simply using (tiny::optional<int, 42>) does not compile. Thus, at the calling side, we pass in a full
 // expression such as (tiny::optional<int, 42>{}) and then use decltype to extract the type.
 #define EXERCISE_OPTIONAL(o, inPlaceExpectation, validValueToAssign1, validValueToAssign2)                             \
-  ExerciseOptional<decltype(o), inPlaceExpectation, DEDUCE_COPY_MOVE_TRIVIALITY_EXPECTATION>(                          \
+  ExerciseOptional<decltype(o), inPlaceExpectation>(                                                                   \
       #o,                                                                                                              \
       #validValueToAssign1,                                                                                            \
       #validValueToAssign2,                                                                                            \
@@ -94,7 +73,7 @@ struct FlagTypeGetter<Optional, std::void_t<typename Optional::flag_type>>
 // default-constructs an object. But we also want to have some tests where we do pass in the constructor arguments
 // separately. This can be done using this macro.
 #define EXERCISE_OPTIONAL_WITH_CONSTRUCTOR_ARGS(o, inPlaceExpectation, validValueToAssign1, validValueToAssign2, ...)  \
-  ExerciseOptional<decltype(o), inPlaceExpectation, DEDUCE_COPY_MOVE_TRIVIALITY_EXPECTATION>(                          \
+  ExerciseOptional<decltype(o), inPlaceExpectation>(                                                                   \
       #o,                                                                                                              \
       #validValueToAssign1,                                                                                            \
       #validValueToAssign2,                                                                                            \
@@ -103,27 +82,11 @@ struct FlagTypeGetter<Optional, std::void_t<typename Optional::flag_type>>
       validValueToAssign2,                                                                                             \
       __VA_ARGS__)
 
-// Same as EXERCISE_OPTIONAL(), but with the MoveCopyTrivialityExpectation explicitly set.
-#define EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(                                                                    \
-    o,                                                                                                                 \
-    inPlaceExpectation,                                                                                                \
-    moveCopyTrivialityExpectation,                                                                                     \
-    validValueToAssign1,                                                                                               \
-    validValueToAssign2)                                                                                               \
-  ExerciseOptional<decltype(o), inPlaceExpectation, moveCopyTrivialityExpectation>(                                    \
-      #o,                                                                                                              \
-      #validValueToAssign1,                                                                                            \
-      #validValueToAssign2,                                                                                            \
-      "",                                                                                                              \
-      validValueToAssign1,                                                                                             \
-      validValueToAssign2)
-
 
 // See macros above.
 template <
     class Optional,
     InPlaceExpectation inPlaceExpectation,
-    MoveCopyTrivialityExpectation moveCopyTrivialityExpectation,
     class TestValue1T,
     class TestValue2T,
     class... ConstructorArgsT>
@@ -176,20 +139,12 @@ void ExerciseOptional(
       ;
   static_assert(std::is_trivially_destructible_v<Optional> == trivialDestructorExpected);
 
-
-#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-  using FlagType = typename FlagTypeGetter<Optional>::type;
-#endif
-
   constexpr bool trivialMoveCopyPossible =
 #ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-      // In most tests, we can simply deduce the expectation.
-      // But for some tests which use a optional_flag_manipulator, we want to explicitly set the expectation.
-      (moveCopyTrivialityExpectation == DEDUCE_COPY_MOVE_TRIVIALITY_EXPECTATION
-       && (!tiny::is_tiny_optional_v<Optional> || inPlaceExpectation == EXPECT_SEPARATE
-           || std::is_fundamental_v<FlagType> || std::is_pointer_v<FlagType> || std::is_enum_v<FlagType>))
-      || moveCopyTrivialityExpectation == EXPECT_TRIVIAL_MOVE_COPY;
+      // C++20: Same conditions for trivial copies/moves as for std::optional.
+      true;
 #else
+      // C++17: tiny::optional always has non-trivial copies/moves while std::optional implements the conditions.
       !tiny::is_tiny_optional_v<Optional>;
 #endif
 

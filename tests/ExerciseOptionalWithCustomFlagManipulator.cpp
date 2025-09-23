@@ -127,8 +127,6 @@ struct OuterClass
 template <>
 struct tiny::optional_flag_manipulator<OuterClass::NestedClass>
 {
-  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = true;
-
   static bool is_empty(OuterClass::NestedClass const & payload) noexcept
   {
     return payload.isEmpty;
@@ -185,9 +183,6 @@ struct OutermostClass
 template <>
 struct tiny::optional_flag_manipulator<OutermostClass>
 {
-  // This should not do anything because OutermostClass is non-trivally copyable/moveable.
-  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = true;
-
   static bool is_empty(OutermostClass const & payload) noexcept
   {
     return payload.outerClass.nestedClass.isEmpty;
@@ -224,7 +219,6 @@ template <>
 struct tiny::optional_flag_manipulator<EnumNamespace::TestUnscopedEnum>
   : tiny::sentinel_flag_manipulator<EnumNamespace::TestUnscopedEnum, EnumNamespace::INVALID>
 {
-  [[maybe_unused]] static constexpr bool tiny_optional_allow_trivial_move_copy = false;
 };
 
 
@@ -273,8 +267,6 @@ struct tiny::optional_flag_manipulator<
     SpecialEnumType,
     std::enable_if_t<std::is_same_v<SpecialEnumType, SpecialEnum1> || std::is_same_v<SpecialEnumType, SpecialEnum2>>>
 {
-  static constexpr bool tiny_optional_allow_trivial_move_copy = true;
-
   static bool is_empty(SpecialEnumType const & payload) noexcept
   {
     return static_cast<int>(payload) == -1;
@@ -332,14 +324,13 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
 
   // Test with a NestedClass.
   {
-    EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
+    EXERCISE_OPTIONAL(
         (tiny::optional<OuterClass::NestedClass>{}),
         EXPECT_INPLACE,
-        EXPECT_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is defined as true
         OuterClass::NestedClass{},
         OuterClass::NestedClass{});
 #ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-    // tiny_optional_allow_trivial_move_copy is defined as true
+    // NestedClass is trivially copyable/movable, and so should tiny::optional be in C++20.
     static_assert(std::is_trivially_copy_constructible_v<tiny::optional<OuterClass::NestedClass>>);
     static_assert(std::is_trivially_move_constructible_v<tiny::optional<OuterClass::NestedClass>>);
     static_assert(std::is_trivially_move_assignable_v<tiny::optional<OuterClass::NestedClass>>);
@@ -356,7 +347,7 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
         OutermostClass{"val1"},
         OutermostClass{"val2"},
         "val3");
-    // tiny_optional_allow_trivial_move_copy is defined as true, but OutermostClass is not trivially copyable/moveable.
+    // OutermostClass is not trivially copyable/moveable, and thus tiny::optional should not be.
     static_assert(!std::is_trivially_copy_constructible_v<tiny::optional<OutermostClass>>);
     static_assert(!std::is_trivially_move_constructible_v<tiny::optional<OutermostClass>>);
     static_assert(!std::is_trivially_move_assignable_v<tiny::optional<OutermostClass>>);
@@ -384,26 +375,26 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
 
   // Enums
   {
-    EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
+    EXERCISE_OPTIONAL(
         (tiny::optional<EnumNamespace::TestUnscopedEnum>{}),
         EXPECT_INPLACE,
-        EXPECT_NON_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is defined as false
         EnumNamespace::UNSCOPED_VALUE1,
         EnumNamespace::UNSCOPED_VALUE2);
-    // tiny_optional_allow_trivial_move_copy is defined as false
-    static_assert(!std::is_trivially_copy_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
-    static_assert(!std::is_trivially_move_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
-    static_assert(!std::is_trivially_move_assignable_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
-    static_assert(!std::is_trivially_move_assignable_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
-    
-    EXERCISE_OPTIONAL_WITH_TRIVIAL_EXPECTATION(
+#ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
+    // TestUnscopedEnum is trivially copyable/movable, and so should tiny::optional be in C++20.
+    static_assert(std::is_trivially_copy_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+    static_assert(std::is_trivially_move_constructible_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+    static_assert(std::is_trivially_move_assignable_v<tiny::optional<EnumNamespace::TestUnscopedEnum>>);
+#endif
+
+    EXERCISE_OPTIONAL(
         (tiny::optional<TestScopedEnum>{}),
         EXPECT_INPLACE,
-        EXPECT_TRIVIAL_MOVE_COPY, // tiny_optional_allow_trivial_move_copy is not defined -> defaults to true
         TestScopedEnum::VALUE1,
         TestScopedEnum::VALUE2);
 #ifdef TINY_OPTIONAL_TRIVIAL_SPECIAL_MEMBER_FUNCTIONS
-    // tiny_optional_allow_trivial_move_copy is not defined -> should be true by default
+    // TestScopedEnum is trivially copyable/movable, and so should tiny::optional be in C++20.
     static_assert(std::is_trivially_copy_constructible_v<tiny::optional<TestScopedEnum>>);
     static_assert(std::is_trivially_move_constructible_v<tiny::optional<TestScopedEnum>>);
     static_assert(std::is_trivially_move_assignable_v<tiny::optional<TestScopedEnum>>);

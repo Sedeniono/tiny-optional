@@ -33,10 +33,10 @@
   - [An optional type with automatic sentinels for integers and guarantee of in-place](#an-optional-type-with-automatic-sentinels-for-integers-and-guarantee-of-in-place)
   - [Teaching `tiny::optional` about custom types (`tiny::optional_flag_manipulator`)](#teaching-tinyoptional-about-custom-types-tinyoptional_flag_manipulator)
     - [Introduction](#introduction-1)
-    - [Example](#example)
+    - [Example for `tiny::optional_flag_manipulator`](#example-for-tinyoptional_flag_manipulator)
     - [Details](#details)
     - [Storing the empty flag in only part of the payload](#storing-the-empty-flag-in-only-part-of-the-payload)
-    - [Enabling trivial copy and move (`tiny_optional_allow_trivial_move_copy`)](#enabling-trivial-copy-and-move-tiny_optional_allow_trivial_move_copy)
+    - [A warning about exploiting padding bytes](#a-warning-about-exploiting-padding-bytes)
     - [Enumerations](#enumerations)
     - [Types that you have not authored](#types-that-you-have-not-authored)
       - [Generic alternative](#generic-alternative)
@@ -157,13 +157,9 @@ Note that you can disable them by defining `TINY_OPTIONAL_USE_SEPARATE_BOOL_INST
 Currently, the following components of the interface of `std::optional` are not yet supported:
 * No converting constructors and assignment operators are implemented. The major issue here is to decide what to do with conversions such as `tiny::optional<int, -1>` to `tiny::optional<unsigned, 42>`: What if the source contains a `42`? Should an exception be thrown? Should this be asserted in debug? Should this specific conversion be forbidden?
 * Triviality of special member functions (*roughly* speaking, triviality means that they are compiler generated and that all members have compiler generated functions; this allows for some additional optimizations):
-  * In C++17: Constructors, assignment operators and destructors are not trivial, even if the payload type `T` would allow it. It was not implemented for simplicity. It would require a lot of additional boilerplate code.
-  * In C++20 and later, the destructor is trivial if the payload has a trivial destructor.
-  * In C++20 and later, the copy/move constructors/assignment operators are trivial as far as possible. This means they are trivial if the payload has trivial special member functions, and if one of the following conditions apply:
-    * The emptiness flag is stored in a separate `bool`, i.e. the `tiny::optional` is not "tiny". This case is identical to `std::optional`.
-    * The emptiness flag is stored in-place (it is "tiny") and the payload is a fundamental type (`bool`, `float`, `int`, etc.) or pointer type.
-    * The emptiness flag is stored in-place and the payload is a user defined type that specializes `tiny::optional_flag_manipulator` and that specialization defines `tiny_optional_allow_trivial_move_copy` to `true`. If `tiny_optional_allow_trivial_move_copy` is missing or is `false`, then the copy/move constructors/assignment operators are *never* trivial. See [the corresponding chapter below](#teaching-tinyoptional-about-custom-types-tinyoptional_flag_manipulator) for more information and the reason.
-  * Note: Versions before clang 15 never have trivial special member functions, even in C++20, because [of a bug in clang](https://github.com/llvm/llvm-project/issues/45614). Clang 15 and alter (and all versions of gcc and MSVC) are fine.
+  * In C++17: Copy/move constructors, copy/move assignment operators and destructors are never trivial, even if the payload type `T` of `tiny::optional<T>` would allow it. So this is a deviation from `std::optional`. It was not implemented for simplicity. It would require a lot of additional boilerplate code.
+  * In C++20 and later, copy/move constructors, copy/move assignment operators and destructors of `tiny::optional` are trivial under the same conditions as for `std::optional`. So we fully follow the standard in C++20.
+  * Note: Versions before clang 15 never have trivial special member functions, even in C++20, because [of a bug in clang](https://github.com/llvm/llvm-project/issues/45614). Clang 15 and later (and all versions of gcc and MSVC) are fine.
 * Methods and types are not `constexpr`. This will probably not be possible in C++17 because some of the tricks rely on `std::memcpy`, which is not `constexpr`. `std::bit_cast` might help here for C++20. Since the whole purpose of the library is to safe memory during runtime, a viable workaround is to simply use `std::optional` in `consteval` contexts.
 
 Moreover, the monadic operation `transform()` always returns a `tiny::optional<T>`, i.e. specification of a sentinel or some other optional as return type (`tiny::optional_sentinel_via_type` etc.) is not possible. As a workaround, you can use `and_then()`.
@@ -390,7 +386,7 @@ The library provides a customization point: By specializing `tiny::optional_flag
 The method of customization by means of a specialization is the same as used by e.g. [`std::hash`](https://en.cppreference.com/w/cpp/utility/hash) and [`fmt::formatter`](https://fmt.dev/latest/api.html#formatting-user-defined-types).
 
 
-### Example
+### Example for `tiny::optional_flag_manipulator`
 
 Assume you have some custom type `MyNamespace::IndexPair` defined as
 ```C++
@@ -436,12 +432,6 @@ namespace MyNamespace
 template <>
 struct tiny::optional_flag_manipulator<MyNamespace::IndexPair>
 {
-    // Can be set to true if you know that the compiler-generated copy/move constructor
-    // and assignment operators are safe. This allows tiny::optional to also have trivial
-    // copy/move constructor/assignment operators, potentially generating faster code.
-    // NOTE: Do not set this to true if you exploit padding bytes! See below for more info.
-    static constexpr bool tiny_optional_allow_trivial_move_copy = true;
-
     static bool is_empty(MyNamespace::IndexPair const & payload) noexcept
     {
         // Needs to return true if the optional should be considered empty.
@@ -523,6 +513,7 @@ Especially note that the constructor that you usually call in `init_empty_flag()
 > template <> 
 > struct tiny::optional_flag_manipulator<TypeBecomingEmptyAfterMove> {
 >     static bool is_empty(TypeBecomingEmptyAfterMove const & payload) noexcept {
+>         // BAD! Do not do this!
 >         return payload.v.empty();
 >     }
 > 
@@ -537,7 +528,7 @@ Especially note that the constructor that you usually call in `init_empty_flag()
 >     }
 > };
 > ```
-> `tiny::optional<TypeBecomingEmptyAfterMove>` is treated as empty if `TypeBecomingEmptyAfterMove::v` is empty. Especially note that the move constructor and move assignment operator of `TypeBecomingEmptyAfterMove` empty `v`, and thus cause a transition to the empty state when stored in `tiny::optional`.
+> `tiny::optional<TypeBecomingEmptyAfterMove>` is treated as empty if `TypeBecomingEmptyAfterMove::v` is empty. Especially note that the (compiler-generated) move constructor and move assignment operator of `TypeBecomingEmptyAfterMove` empty `v`, and thus cause a transition to the empty state when stored in `tiny::optional`.
 > Now consider:
 > ```C++
 > tiny::optional<TypeBecomingEmptyAfterMove> nonEmpty(std::vector<int>{1,2,3});
@@ -553,9 +544,9 @@ Especially note that the constructor that you usually call in `init_empty_flag()
 > Also, the move constructor and assignment operators of `tiny::optional` could detect this case and handle it properly. 
 > But for two 2 reasons, this is **not supported** at the moment:
 > * In the general case outlined in the next section this is not fine (you might want to read that section, too!).
-> * `tiny::optional` tries to follow the C++ standard (i.e. `std::optional`) as close as possible, which requires that a moved-from non-empty optional is non-empty afterwards. We could lift this restriction, of course, but for now we do not.
+> * `tiny::optional` tries to follow the C++ standard (i.e. `std::optional`) as close as possible, which requires that a moved-from non-empty optional is non-empty afterwards.
 > 
-> As such, calling the move constructor or move assignment operator of `tiny::optional` performs a debug `assert()` that the emptiness state of the moved-from object does not change.
+> For these reasons, calling the move constructor or move assignment operator of `tiny::optional` performs a debug `assert()` that the emptiness state of the moved-from object does not change.
 
 
 ### Storing the empty flag in only part of the payload
@@ -566,8 +557,8 @@ If the other member are expensive to initialize, this can improve performance.
 This works in practice but it is actually undefined behavior according to the C++ standard.
 So use this possibility at your own risk.
 
-> ⚠️ If the `optional_flag_manipulator` specialization initializes only part of the payload, the payload's member functions really must not change the instance stored in the optional such that `tiny::optional` transitions from non-empty to empty or vice versa! As explained in the previous section, this is not supported anyway.
-> But to explain the problems, consider the `TypeBecomingEmptyAfterMove` type again, and the code:
+> ⚠️ If the `optional_flag_manipulator` specialization initializes only part of the payload, the payload's member functions really must not change the instance stored in the optional such that `tiny::optional` transitions from non-empty to empty or vice versa "outside" of `tiny::optional`! As explained in the previous section, this is not supported anyway.
+> But to explain the problems, consider the `TypeBecomingEmptyAfterMove` type from the previous chapter again, and the code:
 > ```C++
 > tiny::optional<TypeBecomingEmptyAfterMove> nonEmpty(std::vector<int>{1,2,3});
 > TypeBecomingEmptyAfterMove t = std::move(*nonEmpty);
@@ -588,38 +579,42 @@ So use this possibility at your own risk.
 Also see the next chapter!
 
 
-### Enabling trivial copy and move (`tiny_optional_allow_trivial_move_copy`)
-The first example for `tiny::optional_flag_manipulator` additionally defined `tiny_optional_allow_trivial_move_copy`:
+### A warning about exploiting padding bytes
+Assume you have a type
 ```C++
-template <>
-struct tiny::optional_flag_manipulator<MyNamespace::IndexPair>
+struct Foo
 {
-    static constexpr bool tiny_optional_allow_trivial_move_copy = true;
-
-    ...
+    int someInt;
+    char someChar;
 };
 ```
-The C++ standard requires the copy/move constructors/assignment operators of `std::optional` to be trivial since it enables additional optimizations.
-As [already explained](#compatibility-with-stdoptional), `tiny::optional` tries to follow the standard as far as possible if C++20 is enabled.
-However, there is an important exception: By default these functions are always non-trivial if `tiny::optional_flag_manipulator` is specialized, even if the payload has trivial copy/move constructors/assignment operators.
-You explicitly need to tell `tiny::optional` that it is safe to make them trivial by defining the public member `static constexpr bool tiny_optional_allow_trivial_move_copy = true`.
-If it is `false` or if it is missing, copy/move constructors/assignments are never trivial.
+This type typically has three or more padding bytes after `someChar`.
+It is tempting to exploit them and specialize `tiny::optional_flag_manipulator` in such a way that the emptiness flag is stored in one of the three padding bytes.
+To implement this, you might think about getting the address of the first padding byte by trickery like `(std::byte*)(&someChar + 1)` and setting/reading the value that way.
+I strongly advise against doing this: The standard does [not guarantee that padding bytes are copied](https://stackoverflow.com/a/46875219/3740047) in compiler-generated copy/move constructors and assignment operators.
+So you are forced to write these four special member functions yourself and ensure that the padding byte containing the emptiness flag is correctly copied.
+This has three issues: First, it (unnecessarily) exploits undefined behavior. Second, tricky code is required which is error prone. Third, it means that the constructors/assignment operators are [not trivial in C++20](#compatibility-with-stdoptional) even if they could otherwise be, which might reduce the performance in certain situations.
 
-> ⚠️ It is **UNSAFE** to set `tiny_optional_allow_trivial_move_copy` to `true` and thus make the copy/move constructors/assignment operators trivial if it is not guaranteed that the compiler copies all bits and bytes of the payload that contains the emptiness flag. Specifically, the standard does not guarantee that [padding bytes are copied](https://stackoverflow.com/questions/46875027/do-the-padding-bytes-of-a-pod-type-get-copied/46875219#46875219).
-> So if you store the emptiness flag in padding bytes, you must **NOT** set `tiny_optional_allow_trivial_move_copy` to `true`! Otherwise, the emptiness state might not be conserved when a `tiny::optional` is moved or copied.
-> (Padding bytes are the only issue I am currently aware of; please let me know if there are other problems.)
+Instead, I suggest to make it explicit: Simply introduce a dedicated member to replace the first padding byte:
+```C++
+struct Foo
+{
+    int someInt;
+    char someChar;
+    bool isEmpty = false; // Used for tiny::optional
+};
+```
+This will not increase the size of `Foo` and you won't run into the problems that padding bytes are not guaranteed to be copied.
+You can then specialize `tiny::optional_flag_manipulator` and set `isEmpty` as appropriate.
+Or, in this example, you can also simply write:
+```C++
+tiny::optional<Foo, &Foo::isEmpty>
+```
+(also compare [the chapter](#storing-the-empty-state-in-a-member-variable) about storing the emptiness flag in an existing member).
 
-Notes:
-* The copy/move constructors/assignment operators are never trivial if these functions are non-trivial for the payload itself.
-In this case it does not matter if you set `tiny_optional_allow_trivial_move_copy` or not.
-* The destructor of `tiny::optional` is not affected by `tiny_optional_allow_trivial_move_copy`.
-In C++20 it is always trivial if the payload has a trivial destructor.
-* You can check if `tiny::optional` has trivial member functions by using
-[`std::is_trivially_move_constructible_v<tiny::optional<...>>`](https://en.cppreference.com/w/cpp/types/is_move_constructible.html),
-[`std::is_trivially_copy_constructible_v<tiny::optional<...>>`](https://en.cppreference.com/w/cpp/types/is_copy_constructible.html),
-[`std::is_trivially_move_assignable_v<tiny::optional<...>>`](https://en.cppreference.com/w/cpp/types/is_move_assignable.html),
-[`std::is_trivially_copy_assignable_v<tiny::optional<...>>`](https://en.cppreference.com/w/cpp/types/is_copy_assignable.html) and
-[`std::is_trivially_destructible_v<tiny::optional<...>>`](https://en.cppreference.com/w/cpp/types/is_destructible.html).
+If you cannot change the definition of `Foo` (e.g. because it is part of an external library): Do not try to exploit the padding bytes.
+To the best of my knowledge, there is no reliable way to exploit it. (If I am mistaken, please tell me!)
+Also see the chapter about [types that you have not authored](#types-that-you-have-not-authored).
 
 
 ### Enumerations
@@ -651,7 +646,6 @@ struct tiny::optional_flag_manipulator<MyEnum>
 { };
 ```
 This "registers" `MyEnum::Max` as sentinel for the empty state whenever you write `tiny::optional<MyEnum>`.
-Moreover, `sentinel_flag_manipulator` sets [`tiny_optional_allow_trivial_move_copy = true`](#enabling-trivial-copy-and-move-tiny_optional_allow_trivial_move_copy) by default for enums (and in general for non-class types).
 
 > ⚠️ As noted above, you need to ensure that the specialization is consistently seen by instantiations of `tiny::optional`.
 For enumerations, there is a pitfall regarding forward declarations.  
@@ -722,8 +716,6 @@ Instead you can use `tiny::optional_inplace<Iterator, FlagManipulator>` with a c
 ```C++
 struct FlagManipulator
 {
-    static constexpr bool tiny_optional_allow_trivial_move_copy = true;
-
     static bool is_empty(Iterator const & iter) noexcept
     {
         return !iter.IsValid();
@@ -924,11 +916,10 @@ This holds of course only as long as a program does not do any tricks by itself.
 Additional ideas (not yet implemented!):
 
 * Polymorphic types (`std::is_polymorphic`) have a vtable pointer at the beginning. As for ordinary pointers, it could be set to `0xffffffffffffffff`. This would allow to store **any** polymorphic type within the optional without requiring additional space. But having optionals of polymorphic types is probably rare. Also need to research how the layout is in case of multiple inheritance.
-* Padding bytes in types could be exploited to store the emptiness. The closest in the standard we have is probably `std::has_unique_object_representations`. If this is `true`, there are either floating point types or padding bytes involved. But this type trait only works with trivially copyable types. But maybe one could use `boost::pfr` to get a `std::tuple` of the members, and by subtracting the addresses and comparing this difference with the actual size of the types one could identify the padding.
 * For POD-like types, `boost::pfr` could be used to get a `std::tuple` to the members. Then, at compile time, we could iterate over the members and check for any type with unused bit patterns. This would make the explicit specification of a member pointer by the user unnecessary. However, it would introduce a dependency on `boost`.
 * References: Similar to pointers. But references in optionals are currently forbidden by the C++ standard.
 * Enums: If there were a way to automatically get the min. or max. value in an enumeration, we could find an unused value as sentinel automatically.
-* Nested `tiny::optional<tiny::optional<T>>` could be optimized. But something like this is probably rare?
+* Nested `tiny::optional<tiny::optional<T>>` could be optimized. But something like this is probably rare and not worth the effort.
 * Strings: Idea from [reddit](https://www.reddit.com/r/cpp/comments/ybc4lf/comment/itftn0y/?utm_source=share&utm_medium=web2x&context=3): Use `"\0\0"` for std strings, or maybe better `"\0\r\a..."`. The size of the sentinel string should not be larger than the internal storage used for the short string optimization (SSO).
 
 

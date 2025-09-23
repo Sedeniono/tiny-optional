@@ -192,15 +192,6 @@ namespace impl
   struct NoCustomInplaceFlagManipulator
   {
   };
-
-
-  // Used to determine if tiny::optional should have trivial copy/move constructors/assignment operators (assuming that
-  // the payload has trivial ones). If the T is a class, most of our standard FlagManipulator::init_empty_flag()
-  // implementations call the constructor of T, and that one might meddle with padding bytes (which would cause
-  // problems, see StorageBase::trivialMoveCopyPossible). So by default we disable trivial copies/moves for class types.
-  template <class T>
-  inline constexpr bool IsStandardTypeAllowingTrivialMoveCopy = !std::is_class_v<T> && !std::is_union_v<T>;
-
 } // namespace impl
 TINY_OPTIONAL_INLINE_NS_END
 
@@ -254,9 +245,6 @@ TINY_OPTIONAL_INLINE_NS_BEGIN
 template <class PayloadType, auto SentinelValue>
 struct sentinel_flag_manipulator
 {
-  static constexpr bool tiny_optional_allow_trivial_move_copy
-      = impl::IsStandardTypeAllowingTrivialMoveCopy<PayloadType>;
-
   static bool is_empty(PayloadType const & payload) noexcept
   {
     return payload == SentinelValue;
@@ -770,10 +758,6 @@ namespace impl
    *   indicates that the optional contains no value, and 'false' if it indicates that some
    *   value is set.
    *
-   * Additionally, if `tiny_optional_allow_trivial_move_copy` is defined and a static bool that is
-   * true, trival copy/move constructors/assignment operators are enabled if the payload has trivial
-   * ones. See StorageBase::trivialMoveCopyPossible for more information.
-   *
    * We are using snake_case for the function names since users of the library might need to use
    * the concept (via tiny::optional_flag_manipulator or optional_inplace), and the whole public
    * interface of the library uses snake_case (because std::optional does).
@@ -784,10 +768,6 @@ namespace impl
   // stored in a separate bool variable (via SeparateFlagStorage).
   struct SeparateFlagManipulator
   {
-    // As for std::optional, trivial copy/move constructor/assignment is always possible if the payload has trivial
-    // versions. There is no chance that padding bytes of the payload are exploited to store the 'IsEmpty' flag.
-    static constexpr bool tiny_optional_allow_trivial_move_copy = true;
-
     [[nodiscard]] static bool is_empty(bool isEmptyFlag) noexcept
     {
       return isEmptyFlag;
@@ -835,8 +815,6 @@ namespace impl
     static_assert(std::is_trivial_v<FlagType>);
 
   public:
-    static constexpr bool tiny_optional_allow_trivial_move_copy = IsStandardTypeAllowingTrivialMoveCopy<FlagType>;
-
     [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
       // Regarding the cast: https://stackoverflow.com/q/63325244/3740047
@@ -926,8 +904,6 @@ namespace impl
 
 
   public:
-    static constexpr bool tiny_optional_allow_trivial_move_copy = IsStandardTypeAllowingTrivialMoveCopy<FlagType>;
-
     [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
     {
       // static_assert: Because tiny::optional requires is_empty() to be noexcept; otherwise, it could not give the same
@@ -1110,30 +1086,47 @@ namespace impl
     // libraries might use the information to implement more efficient code (e.g. std::vector might use memcpy instead
     // of doing a loop over all members).
     //
-    // But: For tiny::optional we need to be more careful if the flag is stored inplace: Assume that the user has a some
-    // POD-like struct with padding bytes that has trival special member functions. The user specializes
-    // tiny::optional_flag_manipulator and decides to pack the 'IsEmpty'-flag into one of the padding bytes. In this
-    // case tiny::optional needs to take care of moving/copying the value itself because there is no guarantee that the
-    // compiler generated move/copy operation copies the values of the padding bytes, too (see e.g.
-    // https://stackoverflow.com/a/46875219/3740047).
-    //
-    // To implement this, we ask the FlagManipulator if trival copies/moves are fine. If
-    // `tiny_optional_allow_trivial_move_copy` is a static constexpr bool that is true, then we make the special member
-    // functions trivial if the payload's functions are trivial.
-    static constexpr bool trivialMoveCopyPossible = requires {
-      { FlagManipulator::tiny_optional_allow_trivial_move_copy } -> std::convertible_to<bool>;
-      requires FlagManipulator::tiny_optional_allow_trivial_move_copy;
-    };
-
+    // There is a potential complication for tiny::optional. The purpose of this library is to store the IsEmpty flag
+    // in-place if possible. A user might have some class `ClsWithPadding` with padding bytes and decides to specialize
+    // `tiny::optional_flag_manipulator` in such a way that the IsEmpty flag is stored in one of the padding bytes. The
+    // standard however does not guarantee that padding bytes are copied (https://stackoverflow.com/a/46875219/3740047).
+    // So at first sight it would be a bad idea to make the move/copy constructor/assignment operator of tiny::optional
+    // trivial if padding bytes exist, since the compiler generated functions might not transfer the padding bytes.
+    // However: Consider e.g. assignment of a value `ClsWithPadding` to an `tiny::optional<ClsWithPadding>`, and assume
+    // that the specialization of `tiny::optional_flag_manipulator` stores the IsEmpty flag in a padding byte.
+    // Internally, we first destroy the IsEmpty flag object, which in this case should be a no-op (because its just a
+    // byte, and a byte has no destructor). Then we either use the copy constructor or the assignment operator of
+    // `ClsWithPadding` (depending on whether the optional is current empty or not) to create the object in the memory
+    // of `tiny::optional`. In this process we assume that they set the padding bytes such that the optional is not
+    // marked as empty. In other words, this already assumes that `ClsWithPadding` explicitly handles copying/assigning
+    // of values and most importantly also of the padding byte. So we assume that the the copy constructor and copy
+    // assignment operator are non-trivial and take into account the padding byte. So there is no sense in adding a
+    // condition to the triviality of the tiny::optional constructors/assignments regarding padding bytes. The same
+    // holds for the move constructor and move assignment.
+    // Another case: 
+    //    ```
+    //    tiny::optional<ClsWithPadding> o(ClsWithPadding{});
+    //    assert(o.has_value());
+    //    *o = ClsWithPadding{};
+    //    ```
+    // The assignment assumes the same thing: That `ClsWithPadding` handles the padding bytes explicitly already.
+    // In short: We do not have to take into account the possibility that padding bytes might be exploited in the
+    // condition if the copy/move constructor/assignment of tiny::optional should be trivial or not.
+    // 
+    // In general, it seems to be a very bad idea to exploit padding bytes by directly manipulating their values (via
+    // memset or some offset and cast trickery). It is very easy to make mistakes, and the constructors/assignments
+    // cannot be trivial. It is much easier to simply introduce a dedicated `std::byte` member where a padding byte
+    // would be and use it only for the IsEmpty flag. Then the constructors/assignment can be trivial, and there is no
+    // danger that the compiler might not copy the padding bytes. This is documented also in the readme.
     static constexpr bool hasTrivialMoveConstructor
-        = trivialMoveCopyPossible && std::is_trivially_move_constructible_v<PayloadType>;
+        = std::is_trivially_move_constructible_v<PayloadType>;
     static constexpr bool hasTrivialCopyConstructor
-        = trivialMoveCopyPossible && std::is_trivially_copy_constructible_v<PayloadType>;
+        = std::is_trivially_copy_constructible_v<PayloadType>;
     static constexpr bool hasTrivialMoveAssignment
-        = trivialMoveCopyPossible && std::is_trivially_move_constructible_v<PayloadType>
+        = std::is_trivially_move_constructible_v<PayloadType>
           && std::is_trivially_move_assignable_v<PayloadType> && std::is_trivially_destructible_v<PayloadType>;
     static constexpr bool hasTrivialCopyAssignment
-        = trivialMoveCopyPossible && std::is_trivially_copy_constructible_v<PayloadType>
+        = std::is_trivially_copy_constructible_v<PayloadType>
           && std::is_trivially_copy_assignable_v<PayloadType> && std::is_trivially_destructible_v<PayloadType>;
 
     static constexpr bool hasMoveConstructor = std::is_move_constructible_v<PayloadType>;
