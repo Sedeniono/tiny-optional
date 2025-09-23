@@ -554,9 +554,49 @@ The above examples used the whole memory given in `init_empty_flag()` to initial
 We just defined that a specific state of the full payload is to be interpreted as empty state.
 In principle, one can also use just a part of the memory, e.g. the part where `IndexPair::mIndex2` is located, and to not initialize all the other members at all.
 If the other member are expensive to initialize, this can improve performance.
-This works in practice but it is actually undefined behavior according to the C++ standard.
-So use this possibility at your own risk.
+This works in practice but it is actually **undefined behavior** according to the C++ standard.
+So use this possibility at your own risk!
 
+Example:
+```C++
+struct ExpensiveToInitialize
+{
+  std::string someString;
+  int someInt; // -1 is never valid and exploited as sentinel
+
+  explicit ExpensiveToInitialize()
+    : someString("Some very long string...")
+    , someInt(0)
+  {
+    // More expensive stuff.
+  }
+};
+
+// Exploiting undefined behavior: In the empty state of the optional, we do not
+// construct a full instance of `ExpensiveToInitialize`. Instead, we only change
+// the `payload.someInt` member.
+template <>
+struct tiny::optional_flag_manipulator<ExpensiveToInitialize>
+{
+  static bool is_empty(ExpensiveToInitialize const & payload) noexcept
+  {
+    return payload.someInt == -1;
+  }
+
+  static void init_empty_flag(ExpensiveToInitialize & uninitializedPayloadMemory) noexcept
+  {
+    ::new (&uninitializedPayloadMemory.someInt) int(-1);
+  }
+
+  static void invalidate_empty_flag(ExpensiveToInitialize & /*emptyPayload*/) noexcept 
+  {
+    // Empty, because `someInt` has no destructor that we could call.
+  }
+};
+
+```
+
+**Warning:**
 > ⚠️ If the `optional_flag_manipulator` specialization initializes only part of the payload, the payload's member functions really must not change the instance stored in the optional such that `tiny::optional` transitions from non-empty to empty or vice versa "outside" of `tiny::optional`! As explained in the previous section, this is not supported anyway.
 > But to explain the problems, consider the `TypeBecomingEmptyAfterMove` type from the previous chapter again, and the code:
 > ```C++

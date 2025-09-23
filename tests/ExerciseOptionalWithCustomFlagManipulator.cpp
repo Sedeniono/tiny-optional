@@ -198,6 +198,55 @@ struct tiny::optional_flag_manipulator<OutermostClass>
 
 
 //====================================================================
+// Example class: ExpensiveToInitialize (from the readme)
+//====================================================================
+
+namespace
+{
+struct ExpensiveToInitialize
+{
+  std::string someString;
+  int someInt; // -1 is never valid and exploited as sentinel
+
+  explicit ExpensiveToInitialize()
+    : someString("Some very long string...")
+    , someInt(0)
+  {
+    // More expensive stuff.
+  }
+
+  friend bool operator==(ExpensiveToInitialize const & lhs, ExpensiveToInitialize const & rhs)
+  {
+    return lhs.someString == rhs.someString && lhs.someInt == rhs.someInt;
+  }
+};
+} // namespace
+
+
+// Exploiting undefined behavior: In the empty state of the optional, we do not
+// construct a full instance of `ExpensiveToInitialize`. Instead, we only change
+// the `payload.someInt` member.
+template <>
+struct tiny::optional_flag_manipulator<ExpensiveToInitialize>
+{
+  static bool is_empty(ExpensiveToInitialize const & payload) noexcept
+  {
+    return payload.someInt == -1;
+  }
+
+  static void init_empty_flag(ExpensiveToInitialize & uninitializedPayloadMemory) noexcept
+  {
+    ::new (&uninitializedPayloadMemory.someInt) int(-1);
+  }
+
+  static void invalidate_empty_flag(ExpensiveToInitialize & /*emptyPayload*/) noexcept
+  {
+    // Empty, because `someInt` has no destructor that we could call.
+  }
+};
+
+
+//====================================================================
 // Example enums
 //====================================================================
 
@@ -352,6 +401,13 @@ void test_TinyOptionalWithRegisteredCustomFlagManipulator()
     static_assert(!std::is_trivially_move_constructible_v<tiny::optional<OutermostClass>>);
     static_assert(!std::is_trivially_move_assignable_v<tiny::optional<OutermostClass>>);
     static_assert(!std::is_trivially_move_assignable_v<tiny::optional<OutermostClass>>);
+
+    // Example from the readme.
+    EXERCISE_OPTIONAL(
+        (tiny::optional<ExpensiveToInitialize>{}),
+        EXPECT_INPLACE,
+        ExpensiveToInitialize{},
+        ExpensiveToInitialize{});
   }
 
   // Version with a **const** payload: Since we do not provide a specialization of the flag manipulator for const
