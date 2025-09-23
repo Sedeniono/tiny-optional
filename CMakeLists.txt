@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 project(
     tiny-optional
-    VERSION 1.4.0
+    VERSION 1.5.1
     DESCRIPTION "Replacement for std::optional that does not waste memory unnecessarily."
     HOMEPAGE_URL "https://github.com/Sedeniono/tiny-optional"
     LANGUAGES CXX

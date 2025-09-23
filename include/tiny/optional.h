@@ -55,7 +55,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // E.g. TINY_OPTIONAL_VERSION 100301
 //
 #define TINY_OPTIONAL_VERSION_MAJOR_MINOR 1005 // If you change this, adapt Natvis, too!
-#define TINY_OPTIONAL_VERSION_PATCH 0
+#define TINY_OPTIONAL_VERSION_PATCH 1
 #define TINY_OPTIONAL_VERSION (TINY_OPTIONAL_VERSION_MAJOR_MINOR * 100 + TINY_OPTIONAL_VERSION_PATCH)
 
 
