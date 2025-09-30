@@ -52,7 +52,7 @@ enum class TestEnum : unsigned long long
 {
   VALUE1,
   VALUE2,
-  INVALID = 0xffff800000000000ull - 1
+  INVALID = 0x7fff'ffff'ffff'ffffull
 };
 } // namespace
 

@@ -141,7 +141,7 @@ NOTES:
   natvis error debug output is enabled in the options).
   So instead this visualizer accepts EVERY tiny::optional_flag_manipulator<T, void>. If T is bool, float or double, 
   the "overloads" above are used. If T is anything else, this here is used. The trick to check whether T is a pointer 
-  or not is in the definition of the IsEmpty() intrinsic: We do *&mStorage.storage, which is invalid if storage is not 
+  or not is in the definition of the IsEmpty() intrinsic: We do &*mStorage.storage, which is invalid if storage is not 
   a pointer. Then, the condition "IsEmpty() || !IsEmpty()" is always true for a pointer and undefined for non-pointers.
   In case of undefined, the Optional="true" comes into play.
   Note: Using pure natvis, it is impossible to properly query the IsEmpty flag. Natvis does not allow to call functions,
@@ -152,7 +152,7 @@ NOTES:
     <Intrinsic Name="IsEmpty" Optional="true" Expression="
                sizeof(&amp;*mStorage.storage) == 4
                ? ((unsigned int)(void*)mStorage.storage) == 0xffffffff - 8
-               : ((unsigned long long)(void*)mStorage.storage) == 0xffff800000000000ull - 1
+               : ((unsigned long long)(void*)mStorage.storage) == 0x7fffffffffffffffull
                "/>
     <!--Used for pointers-->
     <DisplayString Optional="true" Condition="IsEmpty() || !IsEmpty()">{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
@@ -176,7 +176,7 @@ NOTES:
     <Intrinsic Name="IsEmpty" Optional="true" Expression="
                sizeof(&amp;**(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 4
                ? ((unsigned int)(void*)*(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 0xffffffff - 8
-               : ((unsigned long long)(void*)*(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 0xffff800000000000ull - 1
+               : ((unsigned long long)(void*)*(FlagType*)(((unsigned char*)&amp;mStorage.storage) + $T2)) == 0x7fffffffffffffffull
                "/>
     <!--Used for pointers-->
     <DisplayString Optional="true" Condition="IsEmpty() || !IsEmpty()">{*this,view(TinyOptionalInplaceStorageView)}</DisplayString>
