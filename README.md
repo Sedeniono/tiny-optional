@@ -1,5 +1,10 @@
 # tiny::optional  <!-- omit in toc -->
 
+[![vcpkg](https://img.shields.io/vcpkg/v/tiny-optional)](https://vcpkg.io/en/package/tiny-optional)
+[![Conan](https://img.shields.io/conan/v/tiny-optional)](https://conan.io/center/recipes/tiny-optional)
+[![GitHub Release](https://img.shields.io/github/v/release/Sedeniono/tiny-optional?sort=semver&display_name=release&label=GitHub)](https://github.com/Sedeniono/tiny-optional/releases)
+
+
 ![tests of gcc on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_linux.yml/badge.svg)
 ![tests of clang on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_linux.yml/badge.svg)
 ![tests of msvc on windows](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_msvc_win.yml/badge.svg)
@@ -17,6 +22,7 @@
   - [Platform specific behavior](#platform-specific-behavior)
   - [Compatibility with `std::optional`](#compatibility-with-stdoptional)
 - [Installation](#installation)
+  - [Installation via package package managers (vcpkg, Conan)](#installation-via-package-package-managers-vcpkg-conan)
   - [Installation using cmake](#installation-using-cmake)
   - [Manual installation](#manual-installation)
   - [Preprocessor flags](#preprocessor-flags)
@@ -169,6 +175,12 @@ Moreover, the monadic operation `transform()` always returns a `tiny::optional<T
 # Installation
 
 This is a **header-only** library.
+
+## Installation via package package managers (vcpkg, Conan)
+The library is available in the following package managers:
+* vcpkg: [vcpkg.io/en/package/tiny-optional](https://vcpkg.io/en/package/tiny-optional)
+* Conan: [conan.io/center/recipes/tiny-optional](https://conan.io/center/recipes/tiny-optional)
+
 
 ## Installation using cmake
 
@@ -979,7 +991,7 @@ The [discussion on reddit](https://www.reddit.com/r/cpp/comments/ybc4lf/tinyopti
 * [foonathan/tiny](https://github.com/foonathan/tiny): Seems to be abandoned and to not implement a fully fledged `std::optional` replacement.
 
 Moreover, a few years after the initial release of `tiny::optional`, the [`opt::option`](https://github.com/NUCLEAR-BOMB/option) library has been published (discussion on [reddit](https://www.reddit.com/r/cpp/comments/1fgjhvu/optoption_a_replacement_for_stdoptional/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)).
-It supports more types out-of-the-box than `tiny::optional`, where the empty state is stored in-place.
+It seems to support more types out-of-the-box than `tiny::optional`, but is not a complete drop-in replacement (e.g. assignment by `std::nullopt` seems to be not supported).
 
 
 Also, Rust's `Option` implements some magic for [references](https://stackoverflow.com/q/16504643/3740047) and [bools](https://stackoverflow.com/q/73180983/3740047).
