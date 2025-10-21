@@ -61,7 +61,7 @@ The goal of this library is to provide the functionality of [`std::optional`](ht
 2. custom types with unused states, or 
 3. where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
 
-> ⚠️ **Warning:** This library exploits undefined/platform specific behavior on x86/x64 architectures to implement the first case. However, this first case can be disabled to allow using the second and third cases also on other architectures. See chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more details.
+> ⚠️ **Warning:** This library exploits platform specific behavior on x86/x64 architectures to implement the first case. However, it is tested regularly and known to work reliably. If desired, it can be disabled to allow using the second and third cases also on other architectures. See chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more details.
 
 For a quick start, see the following example, also available [live on godbolt](https://godbolt.org/z/83xo9hdxT):
 ```C++
@@ -154,7 +154,7 @@ The library is regularly tested on MSVC, clang and gcc on Windows, Linux and Mac
 # Limitations
 
 ## Platform specific behavior
-This library exploits **platform specific behavior** (i.e. undefined behavior). So if your own code also uses platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained. 
+This library exploits **platform specific behavior** (i.e. undefined behavior). So if your own code also uses similar platform specific tricks, you might want to check that they are not incompatible. Compare the section below where the tricks employed by this library are explained. 
 
 Note that you can disable them by defining `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`, as explained in the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)".
 
@@ -567,7 +567,6 @@ We just defined that a specific state of the full payload is to be interpreted a
 In principle, one can also use just a part of the memory, e.g. the part where `IndexPair::mIndex2` is located, and to not initialize all the other members at all.
 If the other member are expensive to initialize, this can improve performance.
 This works in practice but it is actually **undefined behavior** according to the C++ standard.
-So use this possibility at your own risk!
 
 Example:
 ```C++
@@ -955,7 +954,7 @@ Indeed, replacing all occurrences of `std::optional` in a commercial application
 
 # How the library exploits platform specific behavior
 
-The library exploits **platform specific behavior** (that is not guaranteed by the C++ standard) to construct optionals that have the same size as the payload. Specifically:
+The library exploits **platform specific behavior** (that is not guaranteed by the C++ standard and hence is undefined behavior) to construct optionals that have the same size as the payload. Specifically:
 
 * Booleans: A `bool` has a size of at least 1 byte (so that addresses to it can be formed). But only 1 bit is necessary to store the information if the value is `true` or `false`. The remaining 7 or more bits are unused. More precisely, the numerical value of `true` is `1` and for `false` it is `0` on the supported platforms. Any other numerical value results in undefined behavior. `tiny::optional<bool>` will store the numerical value `0xfe` in the `bool` to indicate an empty state.
 
