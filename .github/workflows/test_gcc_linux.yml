@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gcc_version: [9, 11, 13]
+        gcc_version: [9, 11, 13, 14]
         cpp_version: [c++17, c++20]
         arch: [m64, m32] # 64 and 32 bit
         buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
@@ -34,26 +34,24 @@ jobs:
           arch: m64
           buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@v4
 
-    # gcc 13 was removed from the runner (https://github.com/actions/runner-images/issues/9679), so install it manually.
-    - name: Install gcc 13 if required
-      if: ${{ matrix.gcc_version == 13 }}
+    - name: Install gcc
       run: |
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
         sudo apt update -y
-        sudo apt install g++-13
+        sudo apt install ${{ format('gcc-{0} g++-{0}', matrix.gcc_version) }} -y
 
     - name: Install gcc-multilib for x86 if required
       # Creating a 32 bit executable on a 64 bit OS requires the gcc multilib. 
       # It is not installed by default on the github runner.
       if: ${{ matrix.arch == 'm32' }}
       run: |
-        sudo apt update
+        sudo apt update -y
         sudo apt install ${{ format('gcc-{0}-multilib g++-{0}-multilib', matrix.gcc_version) }} -y 
 
     - name: Build and run tests
@@ -62,5 +60,3 @@ jobs:
         CXX: ${{ format('g++-{0}', matrix.gcc_version) }}
         ADDITIONAL_FLAGS: ${{ format('-{0} -std={1} {2}', matrix.arch, matrix.cpp_version, matrix.buildmode) }}
       run: make generic
-
-
