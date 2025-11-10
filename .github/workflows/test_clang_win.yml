@@ -44,4 +44,4 @@ jobs:
         ADDITIONAL_FLAGS: ${{ format('-std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
         OUT_DIR_NAME: win_clang_generic
       run: |
-        & ".\make_win_gcclike.ps1"
+        & ".\make_win_gcclike.ps1" 2>&1
