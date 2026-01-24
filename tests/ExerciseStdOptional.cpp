@@ -28,9 +28,7 @@ void test_CrosscheckStdOptional()
         ScopedEnum::v2);
   }
 
-  // The libstdc++ in version 11 contains a bug that prevents the volatile and const tests from running.
-  // See https://github.com/gcc-mirror/gcc/commit/fc6f1128ae603164aea6303ce2b3ed0b57e6a378
-#if !defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE != 11
+#ifdef TINY_OPTIONAL_ENABLE_CONST_VOLATILE_TEST
   EXERCISE_OPTIONAL((std::optional<double volatile>{}), EXPECT_SEPARATE, 43.0, 44.0);
   static_assert(std::is_same_v<std::optional<double volatile>::value_type, double volatile>);
   EXERCISE_OPTIONAL((std::optional<double const>{}), EXPECT_SEPARATE, 43.0, 44.0);

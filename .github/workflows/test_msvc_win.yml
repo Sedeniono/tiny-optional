@@ -32,6 +32,9 @@ jobs:
         - cpp_version: "C++20 permissive"
           platform: x64
           buildmode: Debug
+        - cpp_version: "C++23"
+          platform: x64
+          buildmode: Debug
           # Also include a variation with disabled UB tricks (not for all to limit resource consumption).
         - cpp_version: "C++20 No UB"
           platform: x64

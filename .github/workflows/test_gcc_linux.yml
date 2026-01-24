@@ -33,6 +33,10 @@ jobs:
           cpp_version: c++20
           arch: m64
           buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+        - gcc_version: 14
+          cpp_version: c++23
+          arch: m64
+          buildmode:
 
     runs-on: ubuntu-24.04
     timeout-minutes: 20

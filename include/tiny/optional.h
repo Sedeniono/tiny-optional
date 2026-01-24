@@ -67,6 +67,10 @@ Original repository: https://github.com/Sedeniono/tiny-optional
   #define TINY_OPTIONAL_CPP20
 #endif
 
+#if (defined(__cplusplus) && __cplusplus >= 202302L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202302L)
+  #define TINY_OPTIONAL_CPP23
+#endif
+
 // https://stackoverflow.com/a/66249936
 #if (defined(__x86_64__) || defined(_M_X64)) /* Is it x64?*/
   #define TINY_OPTIONAL_x64

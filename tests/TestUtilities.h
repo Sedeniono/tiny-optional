@@ -35,6 +35,18 @@
 #endif
 
 
+// <=C++20: The libstdc++ in version 11 contains a bug that prevents e.g. std::optional<const volatile int>
+// See https://github.com/gcc-mirror/gcc/commit/fc6f1128ae603164aea6303ce2b3ed0b57e6a378
+//
+// >= C++23: The "voidify" and thus the support for volatile and const payloads got removed from the standard.
+// See LWG 3870 (https://www.open-std.org/jtc1/sc22/wg21/docs/lwg-defects.html#3870).
+// gcc's stdlibc++ in version >=15 also removed it for any C++ version before C++23.
+// Corresponding gcc commit: https://github.com/gcc-mirror/gcc/commit/2eaae1bd69302efe6d73d8d63739b081299f8641
+#if (!defined(_GLIBCXX_RELEASE) || (_GLIBCXX_RELEASE != 11 && _GLIBCXX_RELEASE < 15)) && !defined(TINY_OPTIONAL_CPP23)
+  #define TINY_OPTIONAL_ENABLE_CONST_VOLATILE_TEST
+#endif
+
+
 //=================================================================
 // Test assertions
 //=================================================================

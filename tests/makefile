@@ -90,6 +90,16 @@ clang_x64_cpp20_libcpp_debug_noUB: $(CPP_FILES)
 	$(CXX_AND_RUN_COMMAND)
 
 
+clang_x64_cpp23_gcclib_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++23 -stdlib=libstdc++)
+	$(CXX_AND_RUN_COMMAND)
+
+clang_x64_cpp26_gcclib_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_CLANG))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++26 -stdlib=libstdc++)
+	$(CXX_AND_RUN_COMMAND)
+
 #---------------------------------------------------------------------
 # gcc
 #---------------------------------------------------------------------
@@ -139,6 +149,15 @@ gcc_x64_cpp20_release_noUB: $(CPP_FILES)
 	$(eval ADDITIONAL_FLAGS = -m64 -std=c++20 -O3 -DNDEBUG -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS)
 	$(CXX_AND_RUN_COMMAND)
 
+gcc_x64_cpp23_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++23)
+	$(CXX_AND_RUN_COMMAND)
+
+gcc_x64_cpp26_debug: $(CPP_FILES)
+	$(eval CXX = $(CXX_GCC))
+	$(eval ADDITIONAL_FLAGS = -m64 -std=c++26)
+	$(CXX_AND_RUN_COMMAND)
 
 #---------------------------------------------------------------------
 # generic version, used by the github actions

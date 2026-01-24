@@ -27,6 +27,9 @@ jobs:
           - clang_version: 20
             cpp_version: c++20
             buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+          - clang_version: 21
+            cpp_version: c++23
+            buildmode:
         
     runs-on: windows-2022
     timeout-minutes: 10
@@ -34,7 +37,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install clang
-      uses: KyleMayes/install-llvm-action@v2.0.8
+      uses: KyleMayes/install-llvm-action@v2.0.9
       with:
         version: ${{ matrix.clang_version }}
     - name: Build and run tests
