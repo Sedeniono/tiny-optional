@@ -30,7 +30,10 @@ jobs:
           - clang_version: 21
             cpp_version: c++23
             buildmode:
-        
+          - clang_version: 21
+            cpp_version: c++26
+            buildmode:
+
     runs-on: windows-2022
     timeout-minutes: 10
 

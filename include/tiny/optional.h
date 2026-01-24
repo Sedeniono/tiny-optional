@@ -819,8 +819,8 @@ namespace impl
     static constexpr auto valueToIndicateEmpty = SentinelValue::value;
     static_assert(sizeof(valueToIndicateEmpty) <= sizeof(FlagType));
 
-    // Required so that we can use std::memcpy in a way that is covered by the C++ standard.
-    // Compare https://stackoverflow.com/a/59522771/3740047.
+    // Required so that we can use std::memcpy and std::memcmp in a way that is covered by the C++ standard.
+    // Compare https://stackoverflow.com/a/59522771/3740047 and https://en.cppreference.com/w/cpp/string/byte/memcmp.
     // Until gcc <=9, however, CWG 2094 was not implemented (https://stackoverflow.com/q/36098055/3740047),
     // meaning that this static_assert fails with volatile payloads.
 #if defined(__GNUG__) && !defined(__clang__) && __GNUC__ <= 9
@@ -828,8 +828,6 @@ namespace impl
 #else
     static_assert(std::is_trivially_copyable_v<FlagType>);
 #endif
-
-    static_assert(std::is_trivial_v<FlagType>);
 
   public:
     [[nodiscard]] static bool is_empty(FlagType const & isEmptyFlag) noexcept
