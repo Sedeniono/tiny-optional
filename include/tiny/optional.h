@@ -55,7 +55,7 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // E.g. TINY_OPTIONAL_VERSION 100301
 //
 #define TINY_OPTIONAL_VERSION_MAJOR_MINOR 1005 // If you change this, adapt Natvis and CMakeLists.txt, too!
-#define TINY_OPTIONAL_VERSION_PATCH 2 // If you change this, adapt CMakeLists.txt, too!
+#define TINY_OPTIONAL_VERSION_PATCH 3 // If you change this, adapt CMakeLists.txt, too!
 #define TINY_OPTIONAL_VERSION (TINY_OPTIONAL_VERSION_MAJOR_MINOR * 100 + TINY_OPTIONAL_VERSION_PATCH)
 
 
