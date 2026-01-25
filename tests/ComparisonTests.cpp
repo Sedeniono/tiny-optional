@@ -65,11 +65,12 @@ void TestCompareOptWithValue(Val1 val1, Val2 val2, Comparer comparer)
 } // namespace
 
 
-// Some comparison tests involving NaNs fail with -ffast-math, C++20, gcc <=10 and optimizations enabled. fast-math is
-// quite problematic for reproducible results, so there does not seem to be a defect in the tiny::optional library, and
-// certainly not with the sentinel used within tiny::optional. Instead, the optimizer is giving inconsistent results.
-// Thus, simply disable the tests for these cases.
-#if !defined(TINY_OPTIONAL_GCC_BUILD) || __GNUC__ >= 11 || (!defined(__FAST_MATH__) && !defined(TINY_OPTIONAL_CPP20))
+// Some comparison tests involving NaNs fail for gcc <=10 and >=15 with -ffast-math, C++20, and optimizations enabled.
+// fast-math is quite problematic for reproducible results, so there does not seem to be a defect in the tiny::optional
+// library, and certainly not with the sentinel used within tiny::optional. Instead, the optimizer is giving
+// inconsistent results. Thus, simply disable the tests for these cases.
+#if !defined(TINY_OPTIONAL_GCC_BUILD) || (__GNUC__ >= 11 && __GNUC__ < 15)                                             \
+    || (!defined(__FAST_MATH__) && !defined(TINY_OPTIONAL_CPP20))
   #define TINY_OPTIONAL_ENABLE_NAN_COMPARISON_TESTS
 #endif
 
