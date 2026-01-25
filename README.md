@@ -5,12 +5,28 @@
 [![GitHub Release](https://img.shields.io/github/v/release/Sedeniono/tiny-optional?sort=semver&display_name=release&label=GitHub)](https://github.com/Sedeniono/tiny-optional/releases)
 
 
-![tests of gcc on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_linux.yml/badge.svg)
-![tests of clang on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_linux.yml/badge.svg)
-![tests of msvc on windows](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_msvc_win.yml/badge.svg)
-![tests of clang on windows](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_win.yml/badge.svg)
-![tests of gcc on windows](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_win.yml/badge.svg)
-![tests of clang on macOS](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_mac.yml/badge.svg)
+[![tests of gcc on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_linux.yml/badge.svg)](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_linux.yml)
+[![tests of clang on linux](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_linux.yml/badge.svg)](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_linux.yml)
+[![tests of msvc on windows](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_msvc_win.yml/badge.svg)](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_msvc_win.yml)
+[![tests of clang on windows](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_win.yml/badge.svg)](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_win.yml)
+[![tests of gcc on windows](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_win.yml/badge.svg)](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_gcc_win.yml)
+[![tests of clang on macOS](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_mac.yml/badge.svg)](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_mac.yml)
+
+
+> **TL;DR:** `tiny::optional` requires no additional memory for certain types, in contrast to `std::optional`:
+> ```C++
+> sizeof(tiny::optional<bool>) == sizeof(bool)
+> sizeof(tiny::optional<double>) == sizeof(double) // NaN != empty
+> sizeof(tiny::optional<T*>) == sizeof(T*) // nullptr != empty
+> // With an appropriate tiny::optional_flag_manipulator:
+> sizeof(tiny::optional<CustomType>) == sizeof(CustomType)
+> ```
+> Also supports sentinel values:
+> ```C++
+> sizeof(tiny::optional<int, -1>) == sizeof(tiny::optional<int>) // -1 is no longer valid
+> ```
+> Header-only. C++17 or later. Works on clang, gcc and MSVC. Some features are only available on x86/x64.  
+> Supports the same API as `std::optional` (with very minor exceptions).
 
 
 - [Introduction](#introduction)
@@ -61,9 +77,9 @@ The goal of this library is to provide the functionality of [`std::optional`](ht
 2. custom types with unused states, or 
 3. where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
 
-> ⚠️ **Warning:** This library exploits platform specific behavior on x86/x64 architectures to implement the first case. However, it is tested regularly and known to work reliably. If desired, it can be disabled to allow using the second and third cases also on other architectures. See chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more details.
+> **Note:** This library by default exploits platform specific behavior on x86/x64 architectures to implement the first use case. However, it is tested regularly and known to work reliably. clang's sanitizer checks pass. If desired, the tricks can be disabled; this allows the library to be used also on other architectures for the second and third use cases. See chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more details.
 
-For a quick start, see the following example, also available [live on godbolt](https://godbolt.org/z/83xo9hdxT):
+For a quick start, see the following example, also available [live on godbolt](https://godbolt.org/z/hdxeG1aGx):
 ```C++
 //--------- Automatic exploitation of unused bit patterns ---------
 // Assume you have the following optional variable:
@@ -253,12 +269,17 @@ Notes:
 # Usage
 
 ## Using `tiny::optional` as `std::optional` replacement
-Instead of writing `std::optional<T>`, use `tiny::optional<T>` in your code.
+Replace `std::optional<T>` with `tiny::optional<T>` in your code.
+With the exceptions mentioned at "[Compatibility with `std::optional`](#compatibility-with-stdoptional)", `tiny::optional` supports the same API as `std::optional`.
+So for basic use, please refer to the [documentation of `std::optional`](https://en.cppreference.com/w/cpp/utility/optional.html).
+
 If the payload `T` is a `float`, `double`, `bool` or a pointer/function pointer (in the sense of `std::is_pointer`), the optional will not require additional space. E.g.: `sizeof(tiny::optional<double>) == sizeof(double)`.  
+
 **Notes:**
-* This is only true if `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS` is not defined. See the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more information.
 * For pointers, `nullptr` remains a valid value! I.e. the optional `tiny::optional<int*> o = nullptr;` is **not** empty!
+* For floating point values, NaNs and infinities remain valid values! For example, `tiny::optional<double> o = std::numeric_limits<double>::quiet_NaN();` is **not** empty!
 * The type `long double` requires additional space at the moment, simply because the differing characteristics on the various supported platforms are not yet implemented.  
+* The smaller size is used only if `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS` is *not* defined. See the chapter "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)" for more information.
 
 For other types (where the automatic "tiny" state is not possible), the size of `tiny::optional` is equal to that of `std::optional`. E.g. `sizeof(tiny::optional<int>) == sizeof(std::optional<int>)`, or `sizeof(tiny::optional<SomeStruct>) == sizeof(std::optional<SomeStruct>)`.  
 But note that you can **teach** the library about custom types, see the chapter about `tiny::optional_flag_manipulator` below.
