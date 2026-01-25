@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Install clang
       uses: KyleMayes/install-llvm-action@v2.0.9
       with:
