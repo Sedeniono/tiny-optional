@@ -17,26 +17,111 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        clang_version: [13, 15]
-        cpp_version: [c++17, c++20]
+        clang_version: [16, 18]
+        cpp_version: [c++17, c++20, c++23, c++26]
         stdlib: [libc++, libstdc++] # llvm library and gcc library
         arch: [m64, m32] # 64 and 32 bit
-        buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
+        buildmode: [~ , -O3 -DNDEBUG, -O3 -DNDEBUG -ffast-math]
+        os: [ubuntu-24.04]
     
-        # Also include a few variations with disabled UB tricks (not for all to limit resource consumption).
-        include:
-        - clang_version: 15
-          cpp_version: c++20
-          stdlib: libc++
-          arch: m64
-          buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
-        - clang_version: 15
-          cpp_version: c++20
-          stdlib: libstdc++
-          arch: m64
-          buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+        exclude:
+          # Disable unsupported language standards for older clang versions
+          - clang_version: 16
+            cpp_version: c++23
+          - clang_version: 16
+            cpp_version: c++26
+          # -ffast-math + stdlibc++ in release on clang 18 causes warnings -Wnan-infinity-disabled because 
+          # of std::isnan uses in the tests.
+          - clang_version: 18
+            stdlib: libstdc++
+            buildmode: -O3 -DNDEBUG -ffast-math
 
-    runs-on: ubuntu-22.04
+        include:
+          # Also include a few variations with disabled UB tricks (not for all to limit resource consumption).
+          - clang_version: 18
+            cpp_version: c++20
+            stdlib: libc++
+            arch: m64
+            buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+            os: ubuntu-24.04
+          - clang_version: 18
+            cpp_version: c++20
+            stdlib: libstdc++
+            arch: m64
+            buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+            os: ubuntu-24.04
+          # A few sanitzer builds
+          - clang_version: 18
+            cpp_version: c++20
+            stdlib: libc++
+            arch: m64
+            buildmode: -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope
+            os: ubuntu-24.04
+          - clang_version: 18
+            cpp_version: c++20
+            stdlib: libc++
+            arch: m64
+            buildmode: -O3 -DNDEBUG -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope
+            os: ubuntu-24.04
+          # See above, where this combination was disabled. Add it back with ignored warning.
+          - clang_version: 18
+            cpp_version: c++20
+            stdlib: libstdc++
+            arch: m64
+            buildmode: -O3 -DNDEBUG -ffast-math -Wno-nan-infinity-disabled
+            os: ubuntu-24.04
+          # clang 13: installed on ubuntu 22.04
+          - clang_version: 13
+            cpp_version: c++20
+            stdlib: libc++
+            arch: m64
+            buildmode:
+            os: ubuntu-22.04
+          - clang_version: 13
+            cpp_version: c++20
+            stdlib: libstdc++
+            arch: m64
+            buildmode: -O3 -DNDEBUG
+            os: ubuntu-22.04
+          - clang_version: 13
+            cpp_version: c++20
+            stdlib: libc++
+            arch: m64
+            buildmode: -O3 -DNDEBUG
+            os: ubuntu-22.04
+          - clang_version: 13
+            cpp_version: c++20
+            stdlib: libstdc++
+            arch: m64
+            buildmode:
+            os: ubuntu-22.04
+          # clang 15: installed on ubuntu 22.04
+          - clang_version: 15
+            cpp_version: c++20
+            stdlib: libc++
+            arch: m64
+            buildmode:
+            os: ubuntu-22.04
+          - clang_version: 15
+            cpp_version: c++20
+            stdlib: libstdc++
+            arch: m64
+            buildmode: -O3 -DNDEBUG
+            os: ubuntu-22.04
+          - clang_version: 15
+            cpp_version: c++20
+            stdlib: libc++
+            arch: m64
+            buildmode: -O3 -DNDEBUG
+            os: ubuntu-22.04
+          - clang_version: 15
+            cpp_version: c++20
+            stdlib: libstdc++
+            arch: m64
+            buildmode:
+            os: ubuntu-22.04
+
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
 
     steps:
