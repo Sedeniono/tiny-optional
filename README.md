@@ -1,5 +1,8 @@
 # tiny::optional  <!-- omit in toc -->
 
+[![PayPal](https://img.shields.io/badge/PayPal-Leave_a_tip-003087?logo=paypal)](https://paypal.me/sedeniono)
+
+
 [![vcpkg](https://img.shields.io/vcpkg/v/tiny-optional)](https://vcpkg.io/en/package/tiny-optional)
 [![Conan](https://img.shields.io/conan/v/tiny-optional)](https://conan.io/center/recipes/tiny-optional)
 [![GitHub Release](https://img.shields.io/github/v/release/Sedeniono/tiny-optional?sort=semver&display_name=release&label=GitHub)](https://github.com/Sedeniono/tiny-optional/releases)
@@ -27,6 +30,14 @@
 > ```
 > Header-only. C++17 or later. Works on clang, gcc and MSVC. Some features are only available on x86/x64.  
 > Supports the same API as `std::optional` (with very minor exceptions).
+
+
+---
+
+**If the library has helped with your work, you can support its continued development by leaving a tip via PayPal ([paypal.me/sedeniono](https://paypal.me/sedeniono))**. You can also give it a [star on GitHub](https://github.com/Sedeniono/VSDoxyHighlighter).
+
+
+---
 
 
 - [Introduction](#introduction)
