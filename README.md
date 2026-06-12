@@ -34,7 +34,7 @@
 
 ---
 
-**If the library has helped with your work, you can support its continued development by leaving a tip via PayPal ([paypal.me/sedeniono](https://paypal.me/sedeniono))**. You can also give it a [star on GitHub](https://github.com/Sedeniono/VSDoxyHighlighter).
+**If the library has helped with your work, you can support its continued development by leaving a tip via PayPal ([paypal.me/sedeniono](https://paypal.me/sedeniono))**. You can also give it a [star on GitHub](https://github.com/Sedeniono/tiny-optional).
 
 
 ---
