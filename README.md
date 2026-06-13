@@ -1,5 +1,7 @@
 # tiny::optional  <!-- omit in toc -->
 
+[![ko-fi](https://img.shields.io/badge/Ko--fi-Leave_a_tip-ff5a16?logo=ko-fi)](https://ko-fi.com/sedeniono)
+&nbsp;
 [![PayPal](https://img.shields.io/badge/PayPal-Leave_a_tip-003087?logo=paypal)](https://paypal.me/sedeniono)
 
 
@@ -34,7 +36,7 @@
 
 ---
 
-**If the library has helped with your work, you can support its continued development by leaving a tip via PayPal ([paypal.me/sedeniono](https://paypal.me/sedeniono))**. You can also give it a [star on GitHub](https://github.com/Sedeniono/tiny-optional).
+**If the library has helped with your work, you can support its continued development by leaving a tip via ko-fi ([ko-fi.com/sedeniono](https://ko-fi.com/sedeniono)) or PayPal ([paypal.me/sedeniono](https://paypal.me/sedeniono))**. You can also give it a [star on GitHub](https://github.com/Sedeniono/tiny-optional).
 
 
 ---
