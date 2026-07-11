@@ -363,18 +363,19 @@ MigrationBackup/
 FodyWeavers.xsd
 
 
+.vscode/
+build*/
+!buildtimes/
 
-
-TinyOptionalClang
-TinyOptionalGCC
-LinuxBin
-Debug C++17
-Debug C++20
-clangPerf
-gccPerf
-
-.vscode
+CMakeCache.txt
+CMakeUserPresets.json
+CMakeFiles/
 
 *.o
 a.out
 *.exe
+clangPerf
+gccPerf
+
+
+
