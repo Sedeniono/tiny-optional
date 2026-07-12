@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.21...4.4)
 
 option(TINY_OPTIONAL_BUILD_TESTS "Build the tiny::optional tests" ${PROJECT_IS_TOP_LEVEL})
 
