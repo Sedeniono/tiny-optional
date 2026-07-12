@@ -75,23 +75,13 @@ std::string CompilationChecksBase::FormatInfo(std::string const & code, Executio
 
 std::unique_ptr<CompilationChecksBase> CreateCompilationChecker()
 {
-#if defined(TINY_OPTIONAL_MSVC_BUILD)
-  // E.g.: "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\"
-  std::filesystem::path const vcInstallDir = TINY_OPTIONAL_TESTS_VC_INSTALL_DIR;
-  // E.g.: vcvars64.bat
-  std::string const vcvarsFilename = TINY_OPTIONAL_TESTS_VCVARS_NAME;
-  std::filesystem::path fullVcvarsPath = vcInstallDir / "Auxiliary" / "Build" / vcvarsFilename;
-  fullVcvarsPath = canonical(fullVcvarsPath);
-
-  std::filesystem::path const tinyOptionalIncludeDir = TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR;
-  std::string const compilationFlags = TINY_OPTIONAL_TESTS_COMPILATION_FLAGS;
-
-  return std::make_unique<MsvcCompilationChecks>(fullVcvarsPath, tinyOptionalIncludeDir, compilationFlags);
-
-#else
-  std::filesystem::path const executable = cCompilerPath;
+  std::filesystem::path const compilerPath = cCompilerPath;
   std::filesystem::path const tinyOptionalIncludeDir = cTinyOptionalIncludeDir;
   std::string const compilationFlags = cCompilationFlags;
-  return std::make_unique<GccLikeCompilationChecks>(executable, tinyOptionalIncludeDir, compilationFlags);
+
+#if defined(TINY_OPTIONAL_MSVC_BUILD)
+  return std::make_unique<MsvcCompilationChecks>(compilerPath, tinyOptionalIncludeDir, compilationFlags);
+#else
+  return std::make_unique<GccLikeCompilationChecks>(compilerPath, tinyOptionalIncludeDir, compilationFlags);
 #endif
 }

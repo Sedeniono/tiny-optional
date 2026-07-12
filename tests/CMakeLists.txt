@@ -43,6 +43,7 @@ target_sources(tiny_optional_tests PRIVATE
 )
 
 #---------------------------------------------------------------
+# Compilation flags
 
 # We need to build and run the tests for all sorts of compilers and compilation flags. We could use the
 # abstraction cmake usually promotes and introduce cmake variables to control e.g. if fast-math 
@@ -61,18 +62,17 @@ target_sources(tiny_optional_tests PRIVATE
 if (CMAKE_BUILD_TYPE)
     message(FATAL_ERROR "Do not use CMAKE_BUILD_TYPE. See comment in the source above for details.")
 endif()
-if (CMAKE_CONFIGURATION_TYPES)
-    message(FATAL_ERROR "Do not use CMAKE_CONFIGURATION_TYPES. See comment in the source above for details.")
-endif()
+
+set(CMAKE_CONFIGURATION_TYPES "Build" CACHE STRING "" FORCE)
 
 set(TINY_OPTIONAL_ADDITIONAL_FLAGS "" CACHE STRING
     "Flags that differ between builds of the tests,and thus are set by the callers.")
 separate_arguments(ADDITIONAL_FLAGS_AS_LIST NATIVE_COMMAND "${TINY_OPTIONAL_ADDITIONAL_FLAGS}")
 
 if (MSVC)
-    set(DEFAULT_FLAGS /W4 /WX /bigobj /sdl)
+    set(DEFAULT_FLAGS /W4 /WX /bigobj /sdl /MP /Zi)
 else()
-    set(DEFAULT_FLAGS -Wall -Wextra -pedantic -Wconversion -Werror)
+    set(DEFAULT_FLAGS -Wall -Wextra -pedantic -Wconversion -Werror -g)
 endif()
 
 set(ALL_FLAGS ${DEFAULT_FLAGS} ${ADDITIONAL_FLAGS_AS_LIST})
@@ -81,8 +81,14 @@ target_compile_options(tiny_optional_tests PRIVATE ${ALL_FLAGS})
 
 target_link_libraries(tiny_optional_tests PRIVATE tiny-optional::tiny-optional)
 
+target_link_options(tiny_optional_tests PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/DEBUG>)
+
+set_property(DIRECTORY "${PROJECT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT tiny_optional_tests)
+
 
 #---------------------------------------------------------------
+# Generate header file with the compiler path and flags.
+# Used by tests that check if certain code snippets that should not compile actually fail, and fail correctly.
 
 set(TINY_OPTIONAL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 list(JOIN ALL_FLAGS " " COMPILATION_FLAGS)
@@ -94,7 +100,7 @@ configure_file(
     @ONLY)
 
 target_include_directories(tiny_optional_tests PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
-
+target_sources(tiny_optional_tests PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/TestBuildFlags.h")
 
 #---------------------------------------------------------------
 

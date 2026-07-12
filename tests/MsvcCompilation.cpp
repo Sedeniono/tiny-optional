@@ -12,11 +12,44 @@
 
 
 #ifdef TINY_OPTIONAL_WINDOWS_BUILD
+
+static std::filesystem::path GetVcvarsBatFilePath(std::filesystem::path fullCompilerPath)
+{
+  // Example:
+  // fullCompilerPath: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+  // -> vcvars: C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
+
+  fullCompilerPath = canonical(fullCompilerPath);
+
+  std::string const arch = fullCompilerPath.parent_path().filename().string();
+  std::string vcvarsFilename;
+  if (arch == "x86") {
+    vcvarsFilename = "vcvars32.bat";
+  }
+  else if (arch == "x64") {
+    vcvarsFilename = "vcvars64.bat";
+  }
+  else {
+    throw std::runtime_error("Unknown architecture: " + arch);
+  }
+
+  std::filesystem::path vcInstallDir = fullCompilerPath;
+  while (!vcInstallDir.empty() && vcInstallDir.filename() != "VC") {
+    vcInstallDir = vcInstallDir.parent_path();
+  }
+  if (vcInstallDir.empty()) {
+    throw std::runtime_error("Failed to find the VC directory in the path: " + fullCompilerPath.string());
+  }
+  std::filesystem::path const fullVcvarsPath = vcInstallDir / "Auxiliary" / "Build" / vcvarsFilename;
+  return canonical(fullVcvarsPath);
+}
+
+
 MsvcCompilationChecks::MsvcCompilationChecks(
-    std::filesystem::path const & vcvarsBatFile,
+    std::filesystem::path const & fullCompilerPath,
     std::filesystem::path const & tinyOptionalIncludeDir,
     std::string const & compilationFlags)
-  : mVcvarsBatFile(vcvarsBatFile)
+  : mVcvarsBatFile(GetVcvarsBatFilePath(fullCompilerPath))
   , mTinyOptionalIncludeDir(weakly_canonical(tinyOptionalIncludeDir))
   , mCompilationFlags(compilationFlags)
 {

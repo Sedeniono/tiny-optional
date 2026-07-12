@@ -15,7 +15,7 @@ class MsvcCompilationChecks final : public CompilationChecksBase
 {
 public:
   explicit MsvcCompilationChecks(
-      std::filesystem::path const & vcvarsBatFile,
+      std::filesystem::path const & fullCompilerPath,
       std::filesystem::path const & tinyOptionalIncludeDir,
       std::string const & compilationFlags);
 
