@@ -9,7 +9,7 @@ endif()
 
 project(
     tiny-optional
-    VERSION 1.5.3
+    VERSION 1.6.0
     DESCRIPTION "Replacement for std::optional that does not waste memory unnecessarily."
     HOMEPAGE_URL "https://github.com/Sedeniono/tiny-optional"
     LANGUAGES CXX

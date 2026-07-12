@@ -54,8 +54,8 @@ Original repository: https://github.com/Sedeniono/tiny-optional
 // So the format is:          MmmmPP, where 'M'=major, 'm'=minor and 'P'=patch.
 // E.g. TINY_OPTIONAL_VERSION 100301
 //
-#define TINY_OPTIONAL_VERSION_MAJOR_MINOR 1005 // If you change this, adapt Natvis and CMakeLists.txt, too!
-#define TINY_OPTIONAL_VERSION_PATCH 3 // If you change this, adapt CMakeLists.txt, too!
+#define TINY_OPTIONAL_VERSION_MAJOR_MINOR 1006 // If you change this, adapt Natvis and CMakeLists.txt, too!
+#define TINY_OPTIONAL_VERSION_PATCH 0 // If you change this, adapt CMakeLists.txt, too!
 #define TINY_OPTIONAL_VERSION (TINY_OPTIONAL_VERSION_MAJOR_MINOR * 100 + TINY_OPTIONAL_VERSION_PATCH)
 
 
