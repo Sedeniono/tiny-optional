@@ -1,0 +1,12 @@
+#pragma once
+
+// The following values are replaced by CMake during configuration.
+
+// Path to folder containing the "tiny/optional.h" header file.
+inline constexpr char const * cTinyOptionalIncludeDir = "@TINY_OPTIONAL_INCLUDE_DIR@";
+
+inline constexpr char const * cCompilationFlags = "@COMPILATION_FLAGS@";
+
+// Path to the compiler (cl.exe, g++, clang++, etc.)
+inline constexpr char const * cCompilerPath = "@COMPILER_PATH@";
+

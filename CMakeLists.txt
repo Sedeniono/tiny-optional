@@ -8,6 +8,8 @@ project(
     LANGUAGES CXX
 )
 
+option(TINY_OPTIONAL_BUILD_TESTS "Build the tiny-optional tests" ${PROJECT_IS_TOP_LEVEL})
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -15,11 +17,11 @@ add_library(tiny-optional INTERFACE)
 add_library(tiny-optional::tiny-optional ALIAS tiny-optional)
 
 if (NOT PROJECT_IS_TOP_LEVEL)
-    set(warning_guard SYSTEM)
+    set(WARNING_GUARD SYSTEM)
 endif()
 
 target_include_directories(
-    tiny-optional ${warning_guard}
+    tiny-optional ${WARNING_GUARD}
     INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
@@ -57,3 +59,8 @@ install(
     FILES "${PROJECT_BINARY_DIR}/tiny-optionalConfig.cmake"
           "${PROJECT_BINARY_DIR}/tiny-optionalConfigVersion.cmake"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/tiny-optional")
+
+if (TINY_OPTIONAL_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

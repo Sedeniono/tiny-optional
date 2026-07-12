@@ -2,6 +2,7 @@
 
 #include "GccLikeCompilation.h"
 #include "MsvcCompilation.h"
+#include "TestBuildFlags.h"
 #include "TestUtilities.h"
 
 #include <regex>
@@ -88,9 +89,9 @@ std::unique_ptr<CompilationChecksBase> CreateCompilationChecker()
   return std::make_unique<MsvcCompilationChecks>(fullVcvarsPath, tinyOptionalIncludeDir, compilationFlags);
 
 #else
-  std::filesystem::path const executable = TINY_OPTIONAL_TESTS_COMPILER_EXECUTABLE;
-  std::filesystem::path const tinyOptionalIncludeDir = TINY_OPTIONAL_TESTS_HEADER_INCLUDE_DIR;
-  std::string const compilationFlags = TINY_OPTIONAL_TESTS_COMPILATION_FLAGS;
+  std::filesystem::path const executable = cCompilerPath;
+  std::filesystem::path const tinyOptionalIncludeDir = cTinyOptionalIncludeDir;
+  std::string const compilationFlags = cCompilationFlags;
   return std::make_unique<GccLikeCompilationChecks>(executable, tinyOptionalIncludeDir, compilationFlags);
 #endif
 }

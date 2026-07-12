@@ -1,0 +1,36 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "base-build",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "TINY_OPTIONAL_BUILD_TESTS": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "tests_win_clang_x64_cpp20_debug",
+            "inherits": "base-build",
+            "generator": "Ninja",
+            "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TINY_OPTIONAL_ADDITIONAL_FLAGS": "-m64 -std=c++20"
+            }
+        }
+    ],
+    "buildPresets": [
+        { "name": "tests_win_clang_x64_cpp20_debug", "configurePreset": "tests_win_clang_x64_cpp20_debug" }
+    ],
+    "testPresets": [
+        { 
+            "name": "base-test", 
+            "hidden": true, 
+            "output": { "outputOnFailure": true, "verbosity": "verbose" }
+        },
+        { "name": "tests_win_clang_x64_cpp20_debug", "configurePreset": "tests_win_clang_x64_cpp20_debug", "inherits": "base-test" }
+    ]
+}
