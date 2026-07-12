@@ -12,6 +12,16 @@
             }
         },
         {
+            "name": "tests_clang_tidy",
+            "inherits": "base-build",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CXX_CLANG_TIDY": "clang-tidy;-checks=clang-analyzer-*",
+                "TINY_OPTIONAL_ADDITIONAL_FLAGS": "-m64 -std=c++20 -O0"
+            }
+        },
+        {
             "name": "tests_clang_x64_cpp20_debug",
             "inherits": "base-build",
             "generator": "Ninja",
@@ -28,7 +38,8 @@
                 "CMAKE_CXX_COMPILER": "clang++",
                 "TINY_OPTIONAL_ADDITIONAL_FLAGS": "-m64 -std=c++20 -O0 -stdlib=libc++"
             }
-        },        {
+        },
+        {
             "name": "tests_gcc_x64_cpp20_debug",
             "inherits": "base-build",
             "generator": "Ninja",
@@ -70,6 +81,7 @@
         }
     ],
     "buildPresets": [
+        { "name": "tests_clang_tidy", "configurePreset": "tests_clang_tidy" },
         { "name": "tests_clang_x64_cpp20_debug", "configurePreset": "tests_clang_x64_cpp20_debug" },
         { "name": "tests_linux_clang_x64_cpp20_libc++_debug", "configurePreset": "tests_linux_clang_x64_cpp20_libc++_debug" },
         { "name": "tests_gcc_x64_cpp20_debug", "configurePreset": "tests_gcc_x64_cpp20_debug" },
@@ -83,6 +95,7 @@
             "hidden": true, 
             "output": { "outputOnFailure": true, "verbosity": "verbose" }
         },
+        { "name": "tests_clang_tidy", "configurePreset": "tests_clang_tidy", "inherits": "base-test" },
         { "name": "tests_clang_x64_cpp20_debug", "configurePreset": "tests_clang_x64_cpp20_debug", "inherits": "base-test" },
         { "name": "tests_linux_clang_x64_cpp20_libc++_debug", "configurePreset": "tests_linux_clang_x64_cpp20_libc++_debug", "inherits": "base-test" },
         { "name": "tests_gcc_x64_cpp20_debug", "configurePreset": "tests_gcc_x64_cpp20_debug", "inherits": "base-test" },
