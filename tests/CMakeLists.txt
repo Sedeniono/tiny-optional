@@ -64,7 +64,7 @@ target_sources(tiny_optional_tests PRIVATE
 # generators, we also enforce that only a single configuration exists.
 if (CMAKE_BUILD_TYPE)
     message(FATAL_ERROR
-        "Do not use CMAKE_BUILD_TYPE (set to ${CMAKE_BUILD_TYPE}). "
+        "Expected CMAKE_BUILD_TYPE to be set to empty (`CMAKE_BUILD_TYPE=`), but it is set to '${CMAKE_BUILD_TYPE}'. "
         "See comment in the source above this message for details.")
 endif()
 if (NOT CMAKE_CONFIGURATION_TYPES STREQUAL "Build")
