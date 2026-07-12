@@ -16,7 +16,7 @@ jobs:
         gcc_version: [9, 11, 13, 14]
         cpp_version: [c++17, c++20, c++23, c++26]
         arch: [m64, m32] # 64 and 32 bit
-        buildmode: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
+        build_flags: [~ ,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
         
         # Disable unsupported language standards for older gcc versions
         exclude:
@@ -38,7 +38,7 @@ jobs:
           - gcc_version: 13
             cpp_version: c++20
             arch: m64
-            buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+            build_flags: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
 
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -66,7 +66,7 @@ jobs:
         -DTINY_OPTIONAL_BUILD_TESTS=ON
         -DCMAKE_BUILD_TYPE=
         -DCMAKE_CXX_COMPILER=${{ format('g++-{0}', matrix.gcc_version) }}
-        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-{0} -std={1} {2}', matrix.arch, matrix.cpp_version, matrix.buildmode) }}"
+        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-{0} -std={1} {2}', matrix.arch, matrix.cpp_version, matrix.build_flags) }}"
 
     - name: Build
       run: cmake --build build --parallel

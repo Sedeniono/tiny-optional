@@ -16,7 +16,7 @@ jobs:
         cpp_version: [c++17, c++20, c++23, c++26]
         # Note: We are never building without optimizations because mingw complains that the object
         # files become too big.
-        buildmode: [-O2,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
+        build_flags: [-O2,  -O3 -DNDEBUG,  -O3 -DNDEBUG -ffast-math]
 
     runs-on: windows-2022
     timeout-minutes: 15
@@ -42,7 +42,7 @@ jobs:
         -DTINY_OPTIONAL_BUILD_TESTS=ON
         -DCMAKE_BUILD_TYPE=
         -DCMAKE_CXX_COMPILER=g++
-        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-Wa,-mbig-obj  -std={0} {1}', matrix.cpp_version, matrix.buildmode) }}"
+        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-Wa,-mbig-obj  -std={0} {1}', matrix.cpp_version, matrix.build_flags) }}"
 
     - name: Build
       run: cmake --build build --parallel

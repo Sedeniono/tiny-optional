@@ -16,7 +16,7 @@ jobs:
         cpp_version: [c++17, c++20, c++23, c++26]
         stdlib: [libc++, libstdc++] # llvm library and gcc library
         arch: [m64, m32] # 64 and 32 bit
-        buildmode: [~ , -O3 -DNDEBUG, -O3 -DNDEBUG -ffast-math]
+        build_flags: [~ , -O3 -DNDEBUG, -O3 -DNDEBUG -ffast-math]
         os: [ubuntu-24.04]
     
         exclude:
@@ -29,7 +29,7 @@ jobs:
           # of std::isnan uses in the tests.
           - clang_version: 18
             stdlib: libstdc++
-            buildmode: -O3 -DNDEBUG -ffast-math
+            build_flags: -O3 -DNDEBUG -ffast-math
 
         include:
           # Also include a few variations with disabled UB tricks (not for all to limit resource consumption).
@@ -37,83 +37,83 @@ jobs:
             cpp_version: c++20
             stdlib: libc++
             arch: m64
-            buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+            build_flags: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
             os: ubuntu-24.04
           - clang_version: 18
             cpp_version: c++20
             stdlib: libstdc++
             arch: m64
-            buildmode: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
+            build_flags: -DTINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS
             os: ubuntu-24.04
           # A few sanitzer builds
           - clang_version: 18
             cpp_version: c++20
             stdlib: libc++
             arch: m64
-            buildmode: -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope
+            build_flags: -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope
             os: ubuntu-24.04
           - clang_version: 18
             cpp_version: c++20
             stdlib: libc++
             arch: m64
-            buildmode: -O3 -DNDEBUG -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope
+            build_flags: -O3 -DNDEBUG -fsanitize=undefined -fsanitize=address -fsanitize-address-use-after-scope
             os: ubuntu-24.04
           # See above, where this combination was disabled. Add it back with ignored warning.
           - clang_version: 18
             cpp_version: c++20
             stdlib: libstdc++
             arch: m64
-            buildmode: -O3 -DNDEBUG -ffast-math -Wno-nan-infinity-disabled
+            build_flags: -O3 -DNDEBUG -ffast-math -Wno-nan-infinity-disabled
             os: ubuntu-24.04
           # clang 13: installed on ubuntu 22.04
           - clang_version: 13
             cpp_version: c++20
             stdlib: libc++
             arch: m64
-            buildmode:
+            build_flags:
             os: ubuntu-22.04
           - clang_version: 13
             cpp_version: c++20
             stdlib: libstdc++
             arch: m64
-            buildmode: -O3 -DNDEBUG
+            build_flags: -O3 -DNDEBUG
             os: ubuntu-22.04
           - clang_version: 13
             cpp_version: c++20
             stdlib: libc++
             arch: m64
-            buildmode: -O3 -DNDEBUG
+            build_flags: -O3 -DNDEBUG
             os: ubuntu-22.04
           - clang_version: 13
             cpp_version: c++20
             stdlib: libstdc++
             arch: m64
-            buildmode:
+            build_flags:
             os: ubuntu-22.04
           # clang 15: installed on ubuntu 22.04
           - clang_version: 15
             cpp_version: c++20
             stdlib: libc++
             arch: m64
-            buildmode:
+            build_flags:
             os: ubuntu-22.04
           - clang_version: 15
             cpp_version: c++20
             stdlib: libstdc++
             arch: m64
-            buildmode: -O3 -DNDEBUG
+            build_flags: -O3 -DNDEBUG
             os: ubuntu-22.04
           - clang_version: 15
             cpp_version: c++20
             stdlib: libc++
             arch: m64
-            buildmode: -O3 -DNDEBUG
+            build_flags: -O3 -DNDEBUG
             os: ubuntu-22.04
           - clang_version: 15
             cpp_version: c++20
             stdlib: libstdc++
             arch: m64
-            buildmode:
+            build_flags:
             os: ubuntu-22.04
 
     runs-on: ${{ matrix.os }}
@@ -144,7 +144,7 @@ jobs:
         -DTINY_OPTIONAL_BUILD_TESTS=ON
         -DCMAKE_BUILD_TYPE=
         -DCMAKE_CXX_COMPILER=${{ format('clang++-{0}', matrix.clang_version) }}
-        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-{0} -std={1} -stdlib={2} {3}', matrix.arch, matrix.cpp_version, matrix.stdlib, matrix.buildmode) }}"
+        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-{0} -std={1} -stdlib={2} {3}', matrix.arch, matrix.cpp_version, matrix.stdlib, matrix.build_flags) }}"
 
     - name: Build
       run: cmake --build build --parallel
