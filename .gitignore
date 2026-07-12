@@ -370,6 +370,7 @@ build*/
 CMakeCache.txt
 CMakeUserPresets.json
 CMakeFiles/
+Testing/
 
 *.o
 a.out

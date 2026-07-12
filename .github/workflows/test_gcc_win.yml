@@ -8,10 +8,6 @@ on:
     - cron: '20 3 * * *'
 
 
-env:
-  TEST_DIR: tests
-
-
 jobs:
   all:
     strategy:
@@ -31,16 +27,26 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+
     - uses: msys2/setup-msys2@v2.31.1
       with:
         msystem: mingw64
-        install: mingw-w64-x86_64-toolchain make
+        install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+
     - name: Print compiler version
       run: g++ --version
-    - name: Build and run tests
-      working-directory: ${{env.TEST_DIR}}
-      env:
-        CXX: g++
-        ADDITIONAL_FLAGS: ${{ format('-Wa,-mbig-obj  -std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
-        IS_MSYS: 1
-      run: make generic 2>&1
+
+    - name: Configure
+      run: >
+        cmake -S . -B build
+        -DTINY_OPTIONAL_BUILD_TESTS=ON
+        -DCMAKE_BUILD_TYPE=
+        -DCMAKE_CXX_COMPILER=g++
+        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-Wa,-mbig-obj  -std={0} {1}', matrix.cpp_version, matrix.buildmode) }}"
+
+    - name: Build
+      run: cmake --build build --parallel
+
+    - name: Run tests
+      run: ctest --test-dir build --output-on-failure --parallel
+

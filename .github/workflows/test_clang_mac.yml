@@ -7,10 +7,6 @@ on:
   schedule:
     - cron: '20 3 * * *'
   
-    
-env:
-  TEST_DIR: ./tests
-
 
 jobs:
   all:
@@ -51,10 +47,16 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Build and run tests
-      working-directory: ${{env.TEST_DIR}}
-      env:
-        CXX: clang++
-        ADDITIONAL_FLAGS: ${{ format('-std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
-      run: make generic
+    - name: Configure
+      run: >
+        cmake -S . -B build 
+        -DTINY_OPTIONAL_BUILD_TESTS=ON
+        -DCMAKE_BUILD_TYPE=
+        -DCMAKE_CXX_COMPILER=clang++
+        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-std={0} {1}', matrix.cpp_version, matrix.buildmode) }}"
 
+    - name: Build
+      run: cmake --build build --parallel
+
+    - name: Run tests
+      run: ctest --test-dir build --output-on-failure --parallel

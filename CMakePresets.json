@@ -12,13 +12,38 @@
             }
         },
         {
-            "name": "tests_win_clang_x64_cpp20_debug",
+            "name": "tests_clang_x64_cpp20_debug",
             "inherits": "base-build",
             "generator": "Ninja",
-            "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "clang++",
                 "TINY_OPTIONAL_ADDITIONAL_FLAGS": "-m64 -std=c++20 -O0"
+            }
+        },
+        {
+            "name": "tests_linux_clang_x64_cpp20_libc++_debug",
+            "inherits": "base-build",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++",
+                "TINY_OPTIONAL_ADDITIONAL_FLAGS": "-m64 -std=c++20 -O0 -stdlib=libc++"
+            }
+        },        {
+            "name": "tests_gcc_x64_cpp20_debug",
+            "inherits": "base-build",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "g++",
+                "TINY_OPTIONAL_ADDITIONAL_FLAGS": "-m64 -std=c++20 -O0"
+            }
+        },
+        {
+            "name": "tests_gcc_x86_cpp20_debug",
+            "inherits": "base-build",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "g++",
+                "TINY_OPTIONAL_ADDITIONAL_FLAGS": "-m32 -std=c++20 -O0"
             }
         },
         {
@@ -31,11 +56,26 @@
                 "CMAKE_CXX_COMPILER": "cl",
                 "TINY_OPTIONAL_ADDITIONAL_FLAGS": "/std:c++20 /Od /permissive-"
             }
+        },
+        {
+            "name": "tests_win_msvc_x64_cpp20_release",
+            "inherits": "base-build",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "cl",
+                "TINY_OPTIONAL_ADDITIONAL_FLAGS": "/std:c++20 /O2 /Oi /GL /DNDEBUG /permissive-"
+            }
         }
     ],
     "buildPresets": [
-        { "name": "tests_win_clang_x64_cpp20_debug", "configurePreset": "tests_win_clang_x64_cpp20_debug" },
-        { "name": "tests_win_msvc_x64_cpp20_debug", "configurePreset": "tests_win_msvc_x64_cpp20_debug", "configuration": "Build" }
+        { "name": "tests_clang_x64_cpp20_debug", "configurePreset": "tests_clang_x64_cpp20_debug" },
+        { "name": "tests_linux_clang_x64_cpp20_libc++_debug", "configurePreset": "tests_linux_clang_x64_cpp20_libc++_debug" },
+        { "name": "tests_gcc_x64_cpp20_debug", "configurePreset": "tests_gcc_x64_cpp20_debug" },
+        { "name": "tests_gcc_x86_cpp20_debug", "configurePreset": "tests_gcc_x86_cpp20_debug" },
+        { "name": "tests_win_msvc_x64_cpp20_debug", "configurePreset": "tests_win_msvc_x64_cpp20_debug", "configuration": "Build" },
+        { "name": "tests_win_msvc_x64_cpp20_release", "configurePreset": "tests_win_msvc_x64_cpp20_release", "configuration": "Build" }
     ],
     "testPresets": [
         { 
@@ -43,7 +83,11 @@
             "hidden": true, 
             "output": { "outputOnFailure": true, "verbosity": "verbose" }
         },
-        { "name": "tests_win_clang_x64_cpp20_debug", "configurePreset": "tests_win_clang_x64_cpp20_debug", "inherits": "base-test" },
-        { "name": "tests_win_msvc_x64_cpp20_debug", "configurePreset": "tests_win_msvc_x64_cpp20_debug", "configuration": "Build", "inherits": "base-test" }
+        { "name": "tests_clang_x64_cpp20_debug", "configurePreset": "tests_clang_x64_cpp20_debug", "inherits": "base-test" },
+        { "name": "tests_linux_clang_x64_cpp20_libc++_debug", "configurePreset": "tests_linux_clang_x64_cpp20_libc++_debug", "inherits": "base-test" },
+        { "name": "tests_gcc_x64_cpp20_debug", "configurePreset": "tests_gcc_x64_cpp20_debug", "inherits": "base-test" },
+        { "name": "tests_gcc_x86_cpp20_debug", "configurePreset": "tests_gcc_x86_cpp20_debug", "inherits": "base-test" },
+        { "name": "tests_win_msvc_x64_cpp20_debug", "configurePreset": "tests_win_msvc_x64_cpp20_debug", "configuration": "Build", "inherits": "base-test" },
+        { "name": "tests_win_msvc_x64_cpp20_release", "configurePreset": "tests_win_msvc_x64_cpp20_release", "configuration": "Build", "inherits": "base-test" }
     ]
 }

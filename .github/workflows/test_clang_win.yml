@@ -8,10 +8,6 @@ on:
     - cron: '20 3 * * *'
 
 
-env:
-  TEST_DIR: tests
-
-
 jobs:
   all:
     strategy:
@@ -33,15 +29,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+
     - name: Install clang
       uses: KyleMayes/install-llvm-action@v2.0.9
       with:
         version: ${{ matrix.clang_version }}
-    - name: Build and run tests
-      working-directory: ${{env.TEST_DIR}}
-      env:
-        CXX: clang++
-        ADDITIONAL_FLAGS: ${{ format('-std={0} {1}', matrix.cpp_version, matrix.buildmode) }}
-        OUT_DIR_NAME: win_clang_generic
-      run: |
-        & ".\make_win_gcclike.ps1" 2>&1
+
+    - name: Configure
+      run: >
+        cmake -S . -B build 
+        -G Ninja
+        -DTINY_OPTIONAL_BUILD_TESTS=ON
+        -DCMAKE_BUILD_TYPE=
+        -DCMAKE_CXX_COMPILER=clang++
+        -DTINY_OPTIONAL_ADDITIONAL_FLAGS="${{ format('-std={0} {1}', matrix.cpp_version, matrix.buildmode) }}"
+
+    - name: Build
+      run: cmake --build build --parallel
+
+    - name: Run tests
+      run: ctest --test-dir build --output-on-failure --parallel

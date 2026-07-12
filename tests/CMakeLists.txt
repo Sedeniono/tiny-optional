@@ -59,18 +59,26 @@ target_sources(tiny_optional_tests PRIVATE
 # just introduces unnecessary complexity.
 # Basically, the difference to normal projects is that are interested in so many different combinations.
 # And the compiler invocation itself is part of what is being tested.
+# In the end, we let the callers of cmake specify the raw flags. They are forward to the tests via
+# configure_file() below. Since this approach is fundamentally incompatible with multi-configuration
+# generators, we also enforce that only a single configuration exists.
 if (CMAKE_BUILD_TYPE)
-    message(FATAL_ERROR "Do not use CMAKE_BUILD_TYPE. See comment in the source above for details.")
+    message(FATAL_ERROR
+        "Do not use CMAKE_BUILD_TYPE (set to ${CMAKE_BUILD_TYPE}). "
+        "See comment in the source above this message for details.")
 endif()
-
-set(CMAKE_CONFIGURATION_TYPES "Build" CACHE STRING "" FORCE)
+if (NOT CMAKE_CONFIGURATION_TYPES STREQUAL "Build")
+    message(FATAL_ERROR
+        "Expected CMAKE_CONFIGURATION_TYPES to be 'Build'. "
+        "See comment in the source above this message for details.")
+endif()
 
 set(TINY_OPTIONAL_ADDITIONAL_FLAGS "" CACHE STRING
     "Flags that differ between builds of the tests,and thus are set by the callers.")
 separate_arguments(ADDITIONAL_FLAGS_AS_LIST NATIVE_COMMAND "${TINY_OPTIONAL_ADDITIONAL_FLAGS}")
 
 if (MSVC)
-    set(DEFAULT_FLAGS /W4 /WX /bigobj /sdl /MP /Zi)
+    set(DEFAULT_FLAGS /W4 /WX /bigobj /sdl /MP /Zi /Zc:wchar_t /Zc:forScope /Zc:inline)
 else()
     set(DEFAULT_FLAGS -Wall -Wextra -pedantic -Wconversion -Werror -g)
 endif()
@@ -84,6 +92,20 @@ target_link_libraries(tiny_optional_tests PRIVATE tiny-optional::tiny-optional)
 target_link_options(tiny_optional_tests PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/DEBUG>)
 
 set_property(DIRECTORY "${PROJECT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT tiny_optional_tests)
+
+if (MSVC)
+    # Enable some additional common optimizations with /O2.
+    if ("/O2" IN_LIST ADDITIONAL_FLAGS_AS_LIST)
+        target_link_options(tiny_optional_tests PRIVATE /OPT:REF /OPT:ICF)
+    endif()
+    # Link-time optimization requires corresponding linker flags.
+    if ("/GL" IN_LIST ADDITIONAL_FLAGS_AS_LIST)
+        target_link_options(tiny_optional_tests PRIVATE /LTCG /INCREMENTAL:NO)
+    endif()
+else()
+    # We especially need to pass on architecture flags (-m32/-m64).
+    target_link_options(tiny_optional_tests PRIVATE ${ADDITIONAL_FLAGS_AS_LIST})
+endif()
 
 
 #---------------------------------------------------------------
