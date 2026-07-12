@@ -18,7 +18,7 @@
 [![tests of clang on macOS](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_mac.yml/badge.svg)](https://github.com/Sedeniono/tiny-optional/actions/workflows/test_clang_mac.yml)
 
 
-> **TL;DR:** `tiny::optional` requires no additional memory for certain types, in contrast to `std::optional`:
+> **TL;DR:** `tiny::optional` requires no additional memory for certain types, in contrast to `std::optional`, making it more cache-friendly:
 > ```C++
 > sizeof(tiny::optional<bool>) == sizeof(bool)
 > sizeof(tiny::optional<double>) == sizeof(double) // NaN != empty
@@ -86,7 +86,7 @@
 
 
 # Introduction
-The goal of this library is to provide the functionality of [`std::optional`](https://en.cppreference.com/w/cpp/utility/optional) while not wasting any memory unnecessarily for 
+The goal of this library is to provide the functionality of [`std::optional`](https://en.cppreference.com/w/cpp/utility/optional) while being more cache-friendly by not wasting any memory unnecessarily for 
 1. types with unused bits (currently `double`, `float`, `bool`, raw pointers; note that NaNs, `nullptr` etc. are still valid non-empty values!), or
 2. custom types with unused states, or 
 3. where a specific programmer-defined sentinel value should be used (e.g., an optional of `int` where the value `0` should indicate "no value").
