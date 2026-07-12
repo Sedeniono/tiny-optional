@@ -52,11 +52,12 @@
   - [Compatibility with `std::optional`](#compatibility-with-stdoptional)
 - [Installation](#installation)
   - [Installation via package package managers (vcpkg, Conan)](#installation-via-package-package-managers-vcpkg-conan)
-  - [Installation using cmake](#installation-using-cmake)
+  - [Installation using CMake](#installation-using-cmake)
   - [Manual installation](#manual-installation)
   - [Preprocessor flags](#preprocessor-flags)
   - [Compatibility between different versions](#compatibility-between-different-versions)
   - [Natvis](#natvis)
+  - [Running the tests](#running-the-tests)
 - [Usage](#usage)
   - [Using `tiny::optional` as `std::optional` replacement](#using-tinyoptional-as-stdoptional-replacement)
   - [Using a sentinel value](#using-a-sentinel-value)
@@ -177,7 +178,7 @@ The library requires at least C++17. The monadic operations `and_then()` and `tr
 The full functionality of the library is supported only on **x64 and x86** architectures on Windows, Linux and Mac.
 By disabling tricks relying on undefined behavior, as explained in "[Disabling platform specific tricks (`TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`)](#disabling-platform-specific-tricks-tiny_optional_use_separate_bool_instead_of_ub_tricks)", any standard conforming platform should work.
 
-The library is regularly tested on MSVC, clang and gcc on Windows, Linux and Mac (see the github actions).
+The library is regularly tested on MSVC, clang and gcc on Windows, Linux and Mac (see the GitHub actions).
 
 
 # Limitations
@@ -211,7 +212,7 @@ The library is available in the following package managers:
 * Conan: [conan.io/center/recipes/tiny-optional](https://conan.io/center/recipes/tiny-optional)
 
 
-## Installation using cmake
+## Installation using CMake
 
 Via [`find_package`](https://cmake.org/cmake/help/latest/command/find_package.html) (recommended):
 1. Clone or download the `tiny-optional` repository.
@@ -220,7 +221,7 @@ Via [`find_package`](https://cmake.org/cmake/help/latest/command/find_package.ht
    cmake -B build
    sudo cmake --install build
    ```
-   to generate the files in the folder `build` and then install them to the default location (e.g. `/usr/local/` on linux, `C:\Program Files` on Windows).
+   to generate the files in the folder `build` and then install them to the default location (e.g. `/usr/local/` on Linux, `C:\Program Files` on Windows).
    Alternatively, to install into some custom directory:
    ```sh
    cmake -B build -DCMAKE_INSTALL_PREFIX="/path/to/custom/tiny/optional/install/dir"
@@ -277,6 +278,25 @@ The same holds true for `tiny::optional_inplace`.
 Notes:
 * If you update to a more recent version of `tiny::optional`, you also need to update your copy of the Natvis file. Reason: It contains the name of the inline namespace in which all types are defined, and the name includes the version number.
 * If you compile with `TINY_OPTIONAL_USE_SEPARATE_BOOL_INSTEAD_OF_UB_TRICKS`, the types are defined in an inline namespace with a different name than the one expected by default by Natvis. So you need to replace all occurrences of the inline namespace name with the new one. See the top of the Natvis file for more information.
+
+
+## Running the tests
+
+Extensive tests are provided in the `tests` folder.
+They are deliberately not written using a common testing framework such as Google Test to keep compilation times as short as possible.
+
+To run the tests via CMake:
+* Clone the repository.
+* Open `CMakePresets.json` and choose a suitable preset, for example `tests_clang_x64_cpp20_debug`.
+* Then in the root directory:
+  * `cmake --preset tests_clang_x64_cpp20_debug`
+  * `cmake --build --preset tests_clang_x64_cpp20_debug --parallel`
+  * `ctest --preset tests_clang_x64_cpp20_debug`
+
+The tests are run daily on GitHub Actions for a wide range of compilers and platforms, see the `.github/workflows` folder.
+
+Compiler flags are deliberately passed verbatim into CMake instead of using the usual CMake abstractions (`CMAKE_BUILD_TYPE`, `CMAKE_CXX_STANDARD`, etc.) because some tests need to call the compiler themselves to check for expected build failures. Extracting the build flags would be possible, but so far it did not seem to give any advantage. The GitHub workflows are compiler-specific anyway.
+
 
 
 # Usage
