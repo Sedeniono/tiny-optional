@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.21...4.4)
 
-option(TINY_OPTIONAL_BUILD_TESTS "Build the tiny::optional tests" ${PROJECT_IS_TOP_LEVEL})
+
+option(TINY_OPTIONAL_BUILD_TESTS "Build the tiny::optional tests" OFF)
 
 if (TINY_OPTIONAL_BUILD_TESTS)
     # Compare comment in tests/CMakeLists.txt where we check CMAKE_CONFIGURATION_TYPES.
     set(CMAKE_CONFIGURATION_TYPES "Build" CACHE STRING "" FORCE)
 endif()
+
 
 project(
     tiny-optional
@@ -14,6 +16,7 @@ project(
     HOMEPAGE_URL "https://github.com/Sedeniono/tiny-optional"
     LANGUAGES CXX
 )
+
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
